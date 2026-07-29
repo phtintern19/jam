@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Bidding - BidZone</title>
+    <link rel="stylesheet" href="/css/styles.css?v=premium-animated-v1">
+    <link rel="stylesheet" href="/css/saas-theme.css?v=global-v1">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/bidding-neon.css?v=premium-animated-v1">
+</head>
+
+<body class="neon-body">
+    <!-- Header -->
+    <header class="neon-header">
+        <div class="header-container">
+            <div class="logo">
+                <i class="fas fa-gavel neon-icon"></i>
+                <span class="neon-text">BidZone</span>
+            </div>
+            <div class="header-nav" style="display: flex; align-items: center;">
+                <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle Light/Dark Mode">
+                    <i class="theme-icon fas fa-moon"></i>
+                </button>
+                <a href="/" class="nav-link neon-link">Home</a>
+                <button class="logout-btn neon-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="bidding-container">
+        <!-- Player Card -->
+        <div class="player-card neon-card">
+            <div class="player-image">
+                <div class="image-placeholder neon-glow">
+                    <i class="fas fa-user neon-icon"></i>
+                </div>
+            </div>
+            <div class="player-info">
+                <h2 class="player-name neon-text" id="playerName">John Smith</h2>
+                <div class="player-details">
+                    <span class="detail-item">
+                        <i class="fas fa-running neon-icon"></i>
+                        <span id="playerCategory">Batsman</span>
+                    </span>
+                    <span class="detail-item">
+                        <i class="fas fa-star neon-icon"></i>
+                        <span id="playerRating">4.5</span>
+                    </span>
+                    <span class="detail-item">
+                        <i class="fas fa-flag neon-icon"></i>
+                        <span id="playerCountry">India</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bidding Section -->
+        <div class="bidding-section neon-card">
+            <div class="timer-display">
+                <div class="timer-label neon-text">Time Remaining</div>
+                <div class="timer-value neon-glow" id="timer">00:30</div>
+            </div>
+
+            <div class="current-bid">
+                <div class="bid-label neon-text">Current Bid</div>
+                <div class="bid-value neon-text" id="currentBid">$500,000</div>
+                <div class="bid-team" id="currentBidder">Team Alpha</div>
+            </div>
+
+            <div class="bid-input-section">
+                <div class="input-group">
+                    <label class="neon-text">Your Bid</label>
+                    <div class="input-wrapper">
+                        <span class="currency-symbol">$</span>
+                        <input type="number" id="bidAmount" class="neon-input" placeholder="Enter amount" min="0" step="10000">
+                    </div>
+                </div>
+                <button class="place-bid-btn neon-btn neon-glow" onclick="placeBid()">
+                    <i class="fas fa-gavel"></i> Place Bid
+                </button>
+            </div>
+
+            <div class="quick-bid-buttons">
+                <button class="quick-bid neon-btn" onclick="quickBid(10000)">+$10K</button>
+                <button class="quick-bid neon-btn" onclick="quickBid(50000)">+$50K</button>
+                <button class="quick-bid neon-btn" onclick="quickBid(100000)">+$100K</button>
+                <button class="quick-bid neon-btn" onclick="quickBid(250000)">+$250K</button>
+            </div>
+        </div>
+
+        <!-- Bid History -->
+        <div class="bid-history neon-card">
+            <h3 class="section-title neon-text">
+                <i class="fas fa-history neon-icon"></i> Bid History
+            </h3>
+            <div class="history-list" id="bidHistory">
+                <div class="history-item">
+                    <div class="history-team neon-text">Team Alpha</div>
+                    <div class="history-amount neon-text">$500,000</div>
+                    <div class="history-time">2s ago</div>
+                </div>
+                <div class="history-item">
+                    <div class="history-team neon-text">Team Beta</div>
+                    <div class="history-amount neon-text">$450,000</div>
+                    <div class="history-time">15s ago</div>
+                </div>
+                <div class="history-item">
+                    <div class="history-team neon-text">Team Gamma</div>
+                    <div class="history-amount neon-text">$400,000</div>
+                    <div class="history-time">32s ago</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Stats -->
+        <div class="team-stats neon-card">
+            <h3 class="section-title neon-text">
+                <i class="fas fa-chart-line neon-icon"></i> Your Team Stats
+            </h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Remaining Budget</div>
+                    <div class="stat-value neon-text" id="remainingBudget">$7,500,000</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Players Bought</div>
+                    <div class="stat-value neon-text" id="playersBought">5</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Total Spent</div>
+                    <div class="stat-value neon-text" id="totalSpent">$2,500,000</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Slots Left</div>
+                    <div class="stat-value neon-text" id="slotsLeft">10</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="neon-footer">
+        <div class="footer-content">
+            <p class="neon-text">© 2024 BidZone - Live Sports Auction Platform</p>
+        </div>
+    </footer>
+
+    <script src="/js/bidding-page.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Details - BidZone</title>
+    <link rel="stylesheet" href="/css/styles.css?v=premium-animated-v1">
+    <link rel="stylesheet" href="/css/saas-theme.css?v=global-v1">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            padding-top: 70px;
+        }
+
+        .event-details-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .event-header {
+            background: rgba(10, 10, 10, 0.9);
+            border: 2px solid #00ffff;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
+        }
+
+        .event-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+        }
+
+        .event-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #00ffff;
+            text-shadow: 0 0 3px #00ffff;
+        }
+
+        .event-status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .status-upcoming {
+            background-color: rgba(0, 255, 255, 0.2);
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 4px rgba(0, 255, 255, 0.2);
+        }
+
+        .status-registration-open {
+            background-color: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 4px rgba(0, 255, 0, 0.2);
+        }
+
+        .status-in-progress {
+            background-color: rgba(255, 0, 255, 0.2);
+            color: #ff00ff;
+            border: 2px solid #ff00ff;
+            box-shadow: 0 0 4px rgba(255, 0, 255, 0.2);
+        }
+
+        .status-completed {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 2px solid #ffffff;
+        }
+
+        .status-cancelled {
+            background-color: rgba(255, 0, 0, 0.2);
+            color: #ff0000;
+            border: 2px solid #ff0000;
+            box-shadow: 0 0 4px rgba(255, 0, 0, 0.2);
+        }
+
+        .event-description {
+            color: #cbd5e1;
+            font-size: 1.125rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-card {
+            background: rgba(10, 10, 10, 0.9);
+            border: 2px solid #00ffff;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
+        }
+
+        .info-card h3 {
+            color: #00ffff;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-shadow: 0 0 2px #00ffff;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            color: #ffffff;
+        }
+
+        .info-item i {
+            color: #ff00ff;
+            width: 20px;
+            filter: drop-shadow(0 0 5px #ff00ff);
+        }
+
+        .sports-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .sport-badge {
+            background: linear-gradient(135deg, #00ffff, #ff00ff);
+            color: #000000;
+            padding: 0.375rem 0.875rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .budget-info {
+            background: rgba(0, 255, 0, 0.1);
+            border: 2px solid #00ff00;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 0 8px rgba(0, 255, 0, 0.2);
+        }
+
+        .budget-amount {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #00ff00;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 3px #00ff00;
+        }
+
+        .base-prices-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .price-item {
+            background: rgba(10, 10, 10, 0.9);
+            border: 2px solid #00ffff;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 0 4px rgba(0, 255, 255, 0.15);
+        }
+
+        .price-category {
+            color: #ffffff;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .price-value {
+            color: #00ff00;
+            font-size: 1.25rem;
+            font-weight: 600;
+            text-shadow: 0 0 2px #00ff00;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00ffff, #ff00ff);
+            color: #000000;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 255, 255, 0.1);
+            color: #ff00ff;
+            border-color: #ff00ff;
+            box-shadow: 0 0 8px rgba(255, 0, 255, 0.2);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: #ffffff;
+        }
+
+        .error {
+            text-align: center;
+            padding: 4rem;
+            color: #ef4444;
+        }
+
+        .participants-info h3 {
+            color: #00ffff;
+            text-shadow: 0 0 2px #00ffff;
+            margin-bottom: 1rem;
+        }
+
+        .budget-info h3 {
+            color: #00ff00;
+            text-shadow: 0 0 2px #00ff00;
+            margin-bottom: 1rem;
+        }
+
+        .budget-info p {
+            color: #ffffff;
+        }
+
+        .participants-info {
+            background: rgba(10, 10, 10, 0.9);
+            border: 2px solid #00ffff;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
+        }
+
+        .participants-bar {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ffff;
+            border-radius: 1rem;
+            height: 2rem;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .participants-progress {
+            background: linear-gradient(90deg, #00ffff, #00ff00);
+            height: 100%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000000;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .event-details-container {
+                padding: 1rem;
+            }
+
+            .event-title {
+                font-size: 2rem;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="saas-background"></div>
+    <div class="saas-noise"></div>
+    <!-- Header -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <i class="fas fa-trophy"></i>
+                    <span>BidZone</span>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="/" class="nav-link">Home</a></li>
+                    <li><a href="#events" class="nav-link">Events</a></li>
+                    <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+                    <li><a href="#contact" class="nav-link">Contact</a></li>
+                </ul>
+                <div class="nav-buttons">
+                    <a href="/login" class="btn btn-outline">Login</a>
+                    <a href="/register" class="btn btn-primary">Register</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Event Details Content -->
+    <main class="event-details-container">
+        <div id="loadingContent" class="loading">
+            <i class="fas fa-spinner fa-spin fa-3x"></i>
+            <p>Loading event details...</p>
+        </div>
+
+        <div id="errorContent" class="error" style="display: none;">
+            <i class="fas fa-exclamation-triangle fa-3x"></i>
+            <p>Event not found or an error occurred.</p>
+            <a href="/" class="btn btn-primary">Back to Home</a>
+        </div>
+
+        <div id="eventContent" style="display: none;">
+            <!-- Event Header -->
+            <div class="event-header">
+                <h1 id="eventTitle" class="event-title"></h1>
+                <span id="eventStatus" class="event-status"></span>
+                <p id="eventDescription" class="event-description"></p>
+            </div>
+
+            <!-- Participants Info -->
+            <div class="participants-info">
+                <h3><i class="fas fa-users"></i> Registration Status</h3>
+                <div class="info-item">
+                    <i class="fas fa-user-friends"></i>
+                    <span id="participantsCount"></span>
+                </div>
+                <div class="participants-bar">
+                    <div id="participantsProgress" class="participants-progress"></div>
+                </div>
+            </div>
+
+            <!-- Budget Information -->
+            <div class="budget-info">
+                <h3><i class="fas fa-money-bill-wave"></i> Budget Information</h3>
+                <div class="budget-amount" id="budgetAmount"></div>
+                <p>Total budget available for this auction event</p>
+                <div id="basePricesContainer" class="base-prices-grid" style="display: none;">
+                    <!-- Base prices will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Information Grid -->
+            <div class="info-grid">
+                <!-- Date & Time Information -->
+                <div class="info-card">
+                    <h3><i class="fas fa-calendar-alt"></i> Date & Time</h3>
+                    <div class="info-item">
+                        <i class="fas fa-play"></i>
+                        <span id="startDate"></span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-stop"></i>
+                        <span id="endDate"></span>
+                    </div>
+                    <div class="info-item" id="registrationDeadlineItem">
+                        <i class="fas fa-clock"></i>
+                        <span id="registrationDeadline"></span>
+                    </div>
+                </div>
+
+                <!-- Location Information -->
+                <div class="info-card">
+                    <h3><i class="fas fa-map-marker-alt"></i> Location</h3>
+                    <div class="info-item">
+                        <i class="fas fa-location-dot"></i>
+                        <span id="eventLocation"></span>
+                    </div>
+                    <div class="info-item" id="addressItem">
+                        <i class="fas fa-home"></i>
+                        <span id="eventAddress"></span>
+                    </div>
+                </div>
+
+                <!-- Sports Information -->
+                <div class="info-card">
+                    <h3><i class="fas fa-running"></i> Sports Categories</h3>
+                    <div id="sportsContainer" class="sports-container">
+                        <!-- Sports will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Auction Settings -->
+                <div class="info-card">
+                    <h3><i class="fas fa-gavel"></i> Auction Settings</h3>
+                    <div class="info-item">
+                        <i class="fas fa-hourglass-half"></i>
+                        <span id="bidTimeLimit"></span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-users"></i>
+                        <span id="maxParticipants"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button id="registerBtn" class="btn btn-primary" onclick="handleRegistration()">
+                    <i class="fas fa-user-plus"></i> Register for Event
+                </button>
+                <a href="/" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Events
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Registration Modal (can be added later) -->
+    <div id="registrationModal" class="modal" style="display: none;">
+        <!-- Modal content will be added here -->
+    </div>
+
+    <script>
+        // Get event ID from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventId = urlParams.get('id');
+        
+        // Debug logging
+        console.log('Event ID from URL:', eventId);
+        console.log('Full URL:', window.location.href);
+        console.log('URL search params:', window.location.search);
+
+        // Load event details when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded');
+            if (eventId) {
+                console.log('Loading event details for ID:', eventId);
+                loadEventDetails(eventId);
+            } else {
+                console.log('No event ID found, showing error');
+                showError('No event ID provided in URL.');
+            }
+        });
+
+        async function loadEventDetails(eventId) {
+            console.log('Starting loadEventDetails for ID:', eventId);
+            try {
+                console.log('Fetching from:', `/api/events/${eventId}`);
+                const response = await fetch(`/api/events/${eventId}`);
+                
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        console.log('Event not found');
+                        showError('Event not found. The event you are looking for might have been removed or the ID is incorrect.');
+                    } else {
+                        console.log('Server error:', response.status);
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+                    return;
+                }
+
+                console.log('Parsing JSON response...');
+                const event = await response.json();
+                console.log('Event data received:', event);
+                displayEventDetails(event);
+            } catch (error) {
+                console.error('Error loading event details:', error);
+                showError('Unable to load event details. Please try again later.');
+            }
+        }
+
+        function displayEventDetails(event) {
+            console.log('Starting displayEventDetails with event:', event);
+            // Hide loading and show content
+            document.getElementById('loadingContent').style.display = 'none';
+            document.getElementById('eventContent').style.display = 'block';
+
+            // Basic event information
+            document.getElementById('eventTitle').textContent = event.title || 'Untitled Event';
+            document.getElementById('eventDescription').textContent = event.description || 'No description available.';
+            
+            console.log('Set basic event info');
+            
+            // Event status
+            const statusElement = document.getElementById('eventStatus');
+            statusElement.textContent = event.status ? event.status.replace('_', ' ').toUpperCase() : 'UNKNOWN';
+            statusElement.className = `event-status status-${event.status || 'unknown'}`;
+
+            // Participants information
+            const currentParticipants = event.current_participants || 0;
+            const maxParticipants = event.max_participants || 100;
+            const participantsPercentage = Math.min((currentParticipants / maxParticipants) * 100, 100);
+            
+            document.getElementById('participantsCount').textContent = 
+                `${currentParticipants} / ${maxParticipants} participants registered`;
+            
+            const progressElement = document.getElementById('participantsProgress');
+            progressElement.style.width = `${participantsPercentage}%`;
+            progressElement.textContent = `${Math.round(participantsPercentage)}%`;
+
+            // Budget information
+            const budget = parseFloat(event.budget) || 0;
+            document.getElementById('budgetAmount').textContent = `₹${budget.toLocaleString('en-IN')}`;
+
+            // Base prices if available
+            if (event.base_prices && typeof event.base_prices === 'object') {
+                const basePricesContainer = document.getElementById('basePricesContainer');
+                basePricesContainer.style.display = 'grid';
+                basePricesContainer.innerHTML = '';
+                
+                for (const [category, price] of Object.entries(event.base_prices)) {
+                    const priceItem = document.createElement('div');
+                    priceItem.className = 'price-item';
+                    priceItem.innerHTML = `
+                        <div class="price-category">${category.replace('_', ' ').toUpperCase()}</div>
+                        <div class="price-value">₹${parseFloat(price).toLocaleString('en-IN')}</div>
+                    `;
+                    basePricesContainer.appendChild(priceItem);
+                }
+            }
+
+            // Date and time information
+            document.getElementById('startDate').textContent = 
+                event.start_date ? `Start: ${formatDateTime(event.start_date)}` : 'Start date not set';
+            document.getElementById('endDate').textContent = 
+                event.end_date ? `End: ${formatDateTime(event.end_date)}` : 'End date not set';
+            
+            const deadlineElement = document.getElementById('registrationDeadlineItem');
+            const deadlineText = document.getElementById('registrationDeadline');
+            if (event.registration_deadline) {
+                deadlineElement.style.display = 'flex';
+                deadlineText.textContent = `Registration Deadline: ${formatDateTime(event.registration_deadline)}`;
+            } else {
+                deadlineElement.style.display = 'none';
+            }
+
+            // Location information
+            const locationParts = [];
+            if (event.city) locationParts.push(event.city);
+            if (event.state) locationParts.push(event.state);
+            if (event.country) locationParts.push(event.country);
+            
+            document.getElementById('eventLocation').textContent = 
+                locationParts.length > 0 ? locationParts.join(', ') : event.location || 'Location not specified';
+            
+            const addressElement = document.getElementById('addressItem');
+            const addressText = document.getElementById('eventAddress');
+            if (event.address) {
+                addressElement.style.display = 'flex';
+                addressText.textContent = event.address;
+            } else {
+                addressElement.style.display = 'none';
+            }
+
+            // Sports information
+            const sportsContainer = document.getElementById('sportsContainer');
+            sportsContainer.innerHTML = '';
+            
+            if (event.sports && event.sports.length > 0) {
+                event.sports.forEach(sport => {
+                    const sportBadge = document.createElement('span');
+                    sportBadge.className = 'sport-badge';
+                    sportBadge.textContent = sport.name || sport.sport_name || 'Unknown Sport';
+                    sportsContainer.appendChild(sportBadge);
+                });
+            } else {
+                sportsContainer.innerHTML = '<span style="color: #00ffff;">No sports specified</span>';
+            }
+
+            // Auction settings
+            document.getElementById('bidTimeLimit').textContent = 
+                `Bid Time Limit: ${event.bid_time_limit || 20} seconds`;
+            document.getElementById('maxParticipants').textContent = 
+                `Max Participants: ${event.max_participants || 100}`;
+
+            // Update register button based on event status
+            updateRegisterButton(event);
+        }
+
+        function formatDateTime(dateString) {
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleString('en-IN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (error) {
+                return dateString;
+            }
+        }
+
+        function updateRegisterButton(event) {
+            const registerBtn = document.getElementById('registerBtn');
+            
+            if (event.status === 'completed' || event.status === 'cancelled') {
+                registerBtn.disabled = true;
+                registerBtn.innerHTML = '<i class="fas fa-times"></i> Registration Closed';
+                registerBtn.className = 'btn btn-secondary';
+            } else if (event.current_participants >= event.max_participants) {
+                registerBtn.disabled = true;
+                registerBtn.innerHTML = '<i class="fas fa-users"></i> Event Full';
+                registerBtn.className = 'btn btn-secondary';
+            } else if (event.registration_deadline && new Date(event.registration_deadline) < new Date()) {
+                registerBtn.disabled = true;
+                registerBtn.innerHTML = '<i class="fas fa-clock"></i> Registration Deadline Passed';
+                registerBtn.className = 'btn btn-secondary';
+            } else {
+                registerBtn.disabled = false;
+                registerBtn.innerHTML = '<i class="fas fa-user-plus"></i> Register for Event';
+                registerBtn.className = 'btn btn-primary';
+            }
+        }
+
+        function handleRegistration() {
+            // This can be expanded to show a registration modal or redirect to registration page
+            // For now, let's redirect to a registration page with the event ID
+            window.location.href = `/register?event_id=${eventId}`;
+        }
+
+        function showError(message = 'Event not found or an error occurred.') {
+            document.getElementById('loadingContent').style.display = 'none';
+            document.getElementById('errorContent').style.display = 'block';
+            
+            // Update error message if provided
+            const errorText = document.querySelector('#errorContent p');
+            if (errorText && message !== 'Event not found or an error occurred.') {
+                errorText.textContent = message;
+            }
+        }
+    </script>
+</body>
+
+</html>

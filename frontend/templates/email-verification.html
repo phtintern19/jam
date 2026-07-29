@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification - BidZone</title>
+    <link rel="stylesheet" href="/css/styles.css?v=premium-animated-v1">
+    <link rel="stylesheet" href="/css/saas-theme.css?v=global-v1">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .verification-container {
+            max-width: 500px;
+            width: 100%;
+            background: rgba(10, 10, 10, 0.9);
+            border: 2px solid #00ffff;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+            text-align: center;
+        }
+
+        .verification-icon {
+            font-size: 4rem;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+            margin-bottom: 1.5rem;
+        }
+
+        .verification-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            margin-bottom: 1rem;
+        }
+
+        .verification-subtitle {
+            color: #ffffff;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .verification-info {
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .verification-info h3 {
+            color: #00ffff;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 5px #00ffff;
+        }
+
+        .verification-info p {
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .verification-info .role {
+            color: #ff00ff;
+            font-weight: 600;
+            text-shadow: 0 0 5px #ff00ff;
+        }
+
+        .verification-info .team {
+            color: #00ff00;
+            font-weight: 600;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        .verify-btn {
+            background: linear-gradient(135deg, #00ffff, #ff00ff);
+            color: #000000;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .verify-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.8);
+        }
+
+        .verify-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            color: #ff0000;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            text-shadow: 0 0 5px #ff0000;
+        }
+
+        .success-message {
+            color: #00ff00;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        .loading {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="saas-background"></div>
+    <div class="saas-noise"></div>
+    <div class="verification-container">
+        <div class="verification-icon">
+            <i class="fas fa-envelope-open-text"></i>
+        </div>
+        <h1 class="verification-title">Email Verification</h1>
+        <p class="verification-subtitle">Verify your email to complete your registration as a team staff member</p>
+
+        <div id="loadingState">
+            <i class="fas fa-spinner fa-spin fa-2x" style="color: #00ffff;"></i>
+            <p style="margin-top: 1rem;">Verifying your email...</p>
+        </div>
+
+        <div id="verificationContent" style="display: none;">
+            <div class="verification-info">
+                <h3>Invitation Details</h3>
+                <p><strong>Role:</strong> <span class="role" id="userRole"></span></p>
+                <p><strong>Team:</strong> <span class="team" id="teamName"></span></p>
+                <p><strong>Team Owner:</strong> <span id="ownerName"></span></p>
+            </div>
+
+            <button id="verifyBtn" class="verify-btn" onclick="verifyEmail()">
+                <i class="fas fa-check-circle"></i> Verify Email & Set Password
+            </button>
+
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+        </div>
+
+        <div id="errorState" style="display: none;">
+            <i class="fas fa-exclamation-triangle fa-3x" style="color: #ff0000; margin-bottom: 1rem;"></i>
+            <h2 style="color: #ff0000; margin-bottom: 1rem;">Verification Failed</h2>
+            <p id="errorText" style="color: #ffffff; margin-bottom: 2rem;"></p>
+            <a href="/" class="verify-btn" style="display: inline-block; text-decoration: none;">
+                <i class="fas fa-home"></i> Return to Home
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+
+        async function verifyEmail() {
+            const verifyBtn = document.getElementById('verifyBtn');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<i class="fas fa-spinner loading"></i> Processing...';
+            errorMessage.textContent = '';
+            successMessage.textContent = '';
+
+            try {
+                const response = await fetch('/api/verify-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ token: token })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    successMessage.textContent = 'Email verified successfully! Redirecting to password setup...';
+                    setTimeout(() => {
+                        window.location.href = `/set-password?token=${token}`;
+                    }, 2000);
+                } else {
+                    errorMessage.textContent = data.message || 'Verification failed. Please try again.';
+                    verifyBtn.disabled = false;
+                    verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> Verify Email & Set Password';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'An error occurred. Please try again.';
+                verifyBtn.disabled = false;
+                verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> Verify Email & Set Password';
+            }
+        }
+
+        async function loadInvitationDetails() {
+            if (!token) {
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('errorState').style.display = 'block';
+                document.getElementById('errorText').textContent = 'Invalid verification link. No token provided.';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/check-invitation?token=${token}`);
+                const data = await response.json();
+
+                document.getElementById('loadingState').style.display = 'none';
+
+                if (response.ok && data.success) {
+                    document.getElementById('verificationContent').style.display = 'block';
+                    document.getElementById('userRole').textContent = data.role.replace('_', ' ').toUpperCase();
+                    document.getElementById('teamName').textContent = data.team_name;
+                    document.getElementById('ownerName').textContent = data.owner_name;
+                } else {
+                    document.getElementById('errorState').style.display = 'block';
+                    document.getElementById('errorText').textContent = data.message || 'Invalid or expired invitation.';
+                }
+            } catch (error) {
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('errorState').style.display = 'block';
+                document.getElementById('errorText').textContent = 'Failed to load invitation details.';
+            }
+        }
+
+        // Load invitation details on page load
+        document.addEventListener('DOMContentLoaded', loadInvitationDetails);
+    </script>
+</body>
+</html>

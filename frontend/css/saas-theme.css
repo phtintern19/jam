@@ -1,0 +1,1427 @@
+
+/* ==========================================================================
+   PREMIUM SAAS REDESIGN (Overriding default styles.css)
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --bg-very-dark: #09090B;
+    --bg-dark-navy: #0F172A;
+    --bg-slate: #111827;
+    --bg-indigo: #1E1B4B;
+    
+    --accent-cyan: #22D3EE;
+    --accent-purple: #8B5CF6;
+    --accent-blue: #3B82F6;
+    
+    --text-white: #FFFFFF;
+    --text-light: #D1D5DB;
+    --text-muted: #9CA3AF;
+    
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: var(--bg-body, var(--bg-very-dark)) !important;
+    color: var(--text-primary, var(--text-white)) !important;
+    font-family: 'Inter', sans-serif !important;
+    overflow-x: hidden;
+}
+
+/* Override old gradient injections */
+body::before, body::after { display: none !important; }
+
+/* --------------------------------------------------------------------------
+   BACKGROUND (Aurora & Mesh)
+   -------------------------------------------------------------------------- */
+.saas-background {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: -10;
+    background: linear-gradient(125deg, var(--bg-very-dark), var(--bg-slate), var(--bg-dark-navy));
+    background-size: 400% 400%;
+    animation: gradientShift 20s ease infinite;
+    overflow: hidden;
+}
+
+.saas-background::before {
+    content: '';
+    position: absolute;
+    top: -30%; left: -10%; width: 70vw; height: 70vw;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 60%);
+    border-radius: 50%;
+    filter: blur(100px);
+    animation: floatBlob1 18s ease-in-out infinite alternate;
+}
+
+.saas-background::after {
+    content: '';
+    position: absolute;
+    bottom: -20%; right: -10%; width: 60vw; height: 60vw;
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.1) 0%, transparent 60%);
+    border-radius: 50%;
+    filter: blur(120px);
+    animation: floatBlob2 22s ease-in-out infinite alternate;
+}
+
+.saas-noise {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%220.03%22/%3E%3C/svg%3E');
+    pointer-events: none;
+    z-index: -9;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+@keyframes floatBlob1 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(10%, 15%) scale(1.1); }
+}
+@keyframes floatBlob2 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(-15%, -10%) scale(1.2); }
+}
+
+/* --------------------------------------------------------------------------
+   NAVIGATION
+   -------------------------------------------------------------------------- */
+.header {
+    background: transparent !important;
+    border-bottom: none !important;
+}
+.navbar {
+    background: var(--bg-navbar, rgba(9, 9, 11, 0.7)) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.05)) !important;
+    padding: 1rem 0 !important;
+    transition: all 0.3s ease;
+}
+.nav-logo {
+    font-weight: 800;
+    font-size: 1.5rem !important;
+    letter-spacing: -0.5px;
+}
+.nav-logo i { color: var(--text-white) !important; }
+.nav-logo span {
+    background: linear-gradient(to right, var(--text-white), var(--text-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.nav-link {
+    color: var(--text-light) !important;
+    font-weight: 500 !important;
+    font-size: 0.95rem !important;
+    position: relative;
+    transition: color 0.3s ease;
+}
+.nav-link:hover {
+    color: var(--text-white) !important;
+}
+.nav-link::after {
+    content: '';
+    position: absolute;
+    width: 0; height: 2px;
+    bottom: -4px; left: 0;
+    background: var(--accent-cyan);
+    transition: width 0.3s ease;
+}
+.nav-link:hover::after { width: 100%; }
+
+/* Buttons */
+.saas-btn-primary {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+    color: var(--text-white) !important;
+    font-weight: 600;
+    padding: 0.6rem 1.5rem;
+    border-radius: 99px;
+    border: none;
+    box-shadow: 0 4px 15px rgba(34, 211, 238, 0.3);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.saas-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(34, 211, 238, 0.5);
+    background: linear-gradient(135deg, #34E0F9, #4B90F7);
+}
+.saas-btn-secondary {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-white) !important;
+    font-weight: 600;
+    padding: 0.6rem 1.5rem;
+    border-radius: 99px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.saas-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+/* --------------------------------------------------------------------------
+   HERO SECTION
+   -------------------------------------------------------------------------- */
+.saas-hero {
+    min-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 2rem;
+    position: relative;
+}
+.saas-hero-content {
+    max-width: 900px;
+    z-index: 10;
+    animation: slideUpFade 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.saas-hero-title {
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.5rem;
+    color: var(--text-white);
+}
+.saas-hero-subtitle {
+    font-size: clamp(1.1rem, 2vw, 1.3rem);
+    color: var(--text-muted);
+    font-weight: 400;
+    line-height: 1.6;
+    margin-bottom: 2.5rem;
+    max-width: 700px;
+    margin-left: auto; margin-right: auto;
+}
+.saas-hero-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+@keyframes slideUpFade {
+    0% { opacity: 0; transform: translateY(40px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* --------------------------------------------------------------------------
+   EVENTS SECTION & CARDS
+   -------------------------------------------------------------------------- */
+.events-section { background: transparent !important; }
+.section-header h2 {
+    font-size: 2.5rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+    color: var(--text-white) !important;
+}
+.section-header p {
+    color: var(--text-muted) !important;
+    font-size: 1.1rem !important;
+}
+
+.ecr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 2rem;
+    padding: 2rem 0;
+}
+
+.saas-card {
+    background: rgba(17, 24, 39, 0.6);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 2rem;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+    display: flex; flex-direction: column; height: 100%;
+}
+.saas-card::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-purple), transparent);
+    opacity: 0; transition: opacity 0.4s ease;
+}
+.saas-card:hover {
+    transform: translateY(-8px) scale(1.01);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 20px rgba(139, 92, 246, 0.15);
+}
+.saas-card:hover::before { opacity: 1; }
+
+.saas-card-badge {
+    position: absolute; top: 1.5rem; right: 1.5rem;
+    background: rgba(34, 211, 238, 0.1);
+    border: 1px solid rgba(34, 211, 238, 0.2);
+    color: var(--accent-cyan);
+    padding: 0.3rem 0.8rem; border-radius: 99px;
+    font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.saas-card-title {
+    font-size: 1.5rem; font-weight: 700; color: var(--text-white);
+    margin-top: 1rem; margin-bottom: 0.5rem; line-height: 1.2;
+}
+.saas-card-sports {
+    display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+}
+.saas-card-sport-tag {
+    background: rgba(255, 255, 255, 0.05); color: var(--text-light);
+    padding: 0.3rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 500;
+}
+.saas-card-meta {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    margin-bottom: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1.5rem;
+}
+.saas-meta-item {
+    display: flex; flex-direction: column; gap: 0.2rem;
+}
+.saas-meta-label {
+    font-size: 0.75rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.02em;
+}
+.saas-meta-val {
+    font-size: 0.95rem; color: var(--text-light); font-weight: 500; display: flex; align-items: center; gap: 0.4rem;
+}
+.saas-meta-val i { color: var(--accent-purple); font-size: 0.9rem; }
+.saas-card-footer {
+    margin-top: auto; padding-top: 1.5rem; display: flex; gap: 1rem;
+}
+.saas-card-footer .saas-btn-primary { width: 100%; }
+
+
+/* ==========================================================================
+   GLOBAL SAAS OVERRIDES (DO NOT MODIFY HTML CLASSES)
+   ========================================================================== */
+
+/* Buttons */
+.btn, .btn-primary, .submit-btn, button[type="submit"] {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)) !important;
+    color: var(--text-white) !important;
+    font-weight: 600 !important;
+    padding: 0.6rem 1.5rem !important;
+    border-radius: 99px !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(34, 211, 238, 0.3) !important;
+    transition: all 0.3s ease !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+
+.btn:hover, .btn-primary:hover, .submit-btn:hover, button[type="submit"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(34, 211, 238, 0.5) !important;
+    background: linear-gradient(135deg, #34E0F9, #4B90F7) !important;
+}
+
+.btn-secondary, .btn-outline {
+    background: rgba(255, 255, 255, 0.03) !important;
+    color: var(--text-white) !important;
+    font-weight: 600 !important;
+    padding: 0.6rem 1.5rem !important;
+    border-radius: 99px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px) !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-secondary:hover, .btn-outline:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Cards & Modals */
+.card, .dashboard-card, .stat-card, .modal-content, .auth-container, .login-container {
+    background: rgba(17, 24, 39, 0.6) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border-radius: 24px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+    color: var(--text-white) !important;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.card:hover, .dashboard-card:hover, .stat-card:hover {
+    transform: translateY(-8px) scale(1.01) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 20px rgba(139, 92, 246, 0.15) !important;
+}
+
+/* Forms & Inputs */
+.form-control, .input-group input, input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 12px !important;
+    color: var(--text-white) !important;
+    padding: 0.8rem 1rem !important;
+    transition: all 0.3s ease !important;
+}
+
+.form-control:focus, .input-group input:focus, input:focus, select:focus, textarea:focus {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.15) !important;
+    outline: none !important;
+}
+
+/* Base Body Styles for Dashboards */
+body {
+    background-color: var(--bg-very-dark) !important;
+    color: var(--text-white) !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* Typography Overrides */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-white) !important;
+    font-weight: 700 !important;
+}
+p, span, label {
+    color: var(--text-light) !important;
+}
+
+/* Ensure structural z-index safety */
+.saas-background { pointer-events: none !important; z-index: -10 !important; }
+.saas-noise { pointer-events: none !important; z-index: -9 !important; }
+
+
+/* ==========================================================================
+   EXTRA ADMIN DASHBOARD OVERRIDES
+   ========================================================================== */
+
+/* Event Cards in Admin Dashboard */
+.event-card, .monitoring-card {
+    background: rgba(17, 24, 39, 0.6) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border-radius: 24px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+    color: var(--text-white) !important;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.event-card:hover, .monitoring-card:hover {
+    transform: translateY(-8px) scale(1.01) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 20px rgba(139, 92, 246, 0.15) !important;
+}
+
+/* Event Budget Inner Box */
+.event-budget {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 12px !important;
+}
+
+/* Action Buttons (Admin) */
+.action-btn, .link-btn {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)) !important;
+    color: var(--text-white) !important;
+    font-weight: 600 !important;
+    padding: 0.6rem 1.5rem !important;
+    border-radius: 99px !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(34, 211, 238, 0.3) !important;
+    transition: all 0.3s ease !important;
+}
+
+.action-btn:hover, .link-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(34, 211, 238, 0.5) !important;
+    background: linear-gradient(135deg, #34E0F9, #4B90F7) !important;
+}
+
+/* Danger Action Button */
+.action-btn-danger, .action-btn-danger:hover {
+    background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3) !important;
+}
+.action-btn-danger:hover {
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5) !important;
+}
+
+/* Link Button Secondary */
+.link-btn {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: none !important;
+}
+.link-btn:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Event Links Flex Fix */
+.event-links, .event-actions {
+    display: flex !important;
+    gap: 0.5rem !important;
+    flex-wrap: wrap !important;
+}
+.event-links button, .event-actions button {
+    flex: 1 !important;
+}
+
+
+/* ==========================================================================
+   HOME PAGE UPCOMING EVENTS (ECR GRID/CARD)
+   ========================================================================== */
+
+.ecr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    padding: 2rem 0;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.ecr-card {
+    background: rgba(17, 24, 39, 0.6) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border-radius: 24px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.ecr-card:hover {
+    transform: translateY(-8px) scale(1.01) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 20px rgba(139, 92, 246, 0.15) !important;
+}
+
+.saas-card-badge {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(34, 211, 238, 0.2));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-white);
+    padding: 0.4rem 1rem;
+    border-radius: 99px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+}
+
+.saas-card-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-white);
+    margin: 0;
+    margin-top: 1rem;
+    line-height: 1.3;
+}
+
+.saas-card-sports {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.saas-card-sport-tag {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+    padding: 0.3rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.saas-card-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1.25rem;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.saas-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.saas-meta-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.saas-meta-val {
+    font-size: 0.95rem;
+    color: var(--text-white);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.saas-meta-val i {
+    color: var(--accent-cyan);
+}
+
+.saas-card-action {
+    margin-top: auto;
+}
+
+.saas-card-action button {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)) !important;
+    color: var(--text-white) !important;
+    font-weight: 600 !important;
+    padding: 1rem !important;
+    border-radius: 12px !important;
+    border: none !important;
+    font-size: 1.05rem;
+    cursor: pointer;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 15px rgba(34, 211, 238, 0.3) !important;
+}
+
+.saas-card-action button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(34, 211, 238, 0.5) !important;
+    background: linear-gradient(135deg, #34E0F9, #4B90F7) !important;
+}
+
+
+
+/* ==========================================================================
+   BIDZONE — ENTERPRISE LIGHT THEME
+   Applies exclusively when html[data-theme="light"] is set.
+   Dark theme is completely untouched.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. CSS VARIABLE OVERRIDES (Light Mode Design Tokens)
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] {
+    --bg-very-dark: #F8FAFC;
+    --bg-dark-navy: #EEF2F7;
+    --bg-slate: #F1F5F9;
+    --bg-indigo: #E5E7EB;
+
+    --accent-cyan: #0891B2;
+    --accent-purple: #7C3AED;
+    --accent-blue: #2563EB;
+
+    --text-white: #111827;
+    --text-light: #4B5563;
+    --text-muted: #6B7280;
+}
+
+/* --------------------------------------------------------------------------
+   2. BODY & GLOBAL
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] body {
+    background-color: #F8FAFC !important;
+    color: #111827 !important;
+}
+
+html[data-theme="light"] h1,
+html[data-theme="light"] h2,
+html[data-theme="light"] h3,
+html[data-theme="light"] h4,
+html[data-theme="light"] h5,
+html[data-theme="light"] h6 {
+    color: #111827 !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] p { color: #4B5563 !important; }
+html[data-theme="light"] span { color: #374151 !important; }
+html[data-theme="light"] label { color: #374151 !important; }
+
+/* --------------------------------------------------------------------------
+   3. BACKGROUND — Clean white-blue gradient, no aurora, no blobs
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .saas-background {
+    background: linear-gradient(160deg, #EEF2FF 0%, #F8FAFC 50%, #F1F5F9 100%) !important;
+    animation: none !important;
+}
+
+html[data-theme="light"] .saas-background::before,
+html[data-theme="light"] .saas-background::after {
+    display: none !important;
+}
+
+html[data-theme="light"] .saas-noise {
+    display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. NAVBAR — White, clean shadow
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .header {
+    background: transparent !important;
+    border-bottom: none !important;
+}
+
+html[data-theme="light"] .navbar {
+    background: rgba(255, 255, 255, 0.96) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid #E5E7EB !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
+}
+
+html[data-theme="light"] .nav-logo i {
+    color: #2563EB !important;
+    filter: none !important;
+}
+
+html[data-theme="light"] .nav-logo span {
+    background: linear-gradient(135deg, #2563EB, #7C3AED) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+}
+
+html[data-theme="light"] .nav-link {
+    color: #374151 !important;
+}
+
+html[data-theme="light"] .nav-link:hover {
+    color: #2563EB !important;
+}
+
+html[data-theme="light"] .nav-link::after {
+    background: #2563EB !important;
+}
+
+html[data-theme="light"] .theme-toggle-btn { color: #374151 !important; }
+html[data-theme="light"] .theme-toggle-btn:hover { color: #2563EB !important; }
+
+/* --------------------------------------------------------------------------
+   5. CARDS — White, 1px border, soft shadow
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .card,
+html[data-theme="light"] .dashboard-card,
+html[data-theme="light"] .stat-card,
+html[data-theme="light"] .glass-card,
+html[data-theme="light"] .modal-content,
+html[data-theme="light"] .auth-container,
+html[data-theme="light"] .login-container,
+html[data-theme="light"] .event-card,
+html[data-theme="light"] .monitoring-card,
+html[data-theme="light"] .ecr-card,
+html[data-theme="light"] .saas-card,
+html[data-theme="light"] .neon-card,
+html[data-theme="light"] .registrations-section,
+html[data-theme="light"] .messages-section,
+html[data-theme="light"] .activity-log-section,
+html[data-theme="light"] .system-monitoring-section,
+html[data-theme="light"] .preference-card,
+html[data-theme="light"] .step-card,
+html[data-theme="light"] .admin-decision-panel {
+    background: #FFFFFF !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid #E5E7EB !important;
+    border-radius: 16px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+    color: #111827 !important;
+}
+
+html[data-theme="light"] .card:hover,
+html[data-theme="light"] .dashboard-card:hover,
+html[data-theme="light"] .stat-card:hover,
+html[data-theme="light"] .glass-card:hover,
+html[data-theme="light"] .event-card:hover,
+html[data-theme="light"] .ecr-card:hover,
+html[data-theme="light"] .saas-card:hover {
+    border-color: #C7D2FE !important;
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.10), 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+    transform: translateY(-4px) !important;
+}
+
+/* Stat card specifics */
+html[data-theme="light"] .stat-value { color: #111827 !important; text-shadow: none !important; }
+html[data-theme="light"] .stat-label { color: #6B7280 !important; text-shadow: none !important; }
+html[data-theme="light"] .stat-icon-wrapper { border-radius: 12px !important; }
+
+/* --------------------------------------------------------------------------
+   6. TABLES — Clean enterprise style, white bg, sticky header
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] table { background: #FFFFFF !important; color: #111827 !important; }
+
+html[data-theme="light"] table th,
+html[data-theme="light"] .registrations-table th,
+html[data-theme="light"] .responses-table th,
+html[data-theme="light"] .activity-log-table th {
+    background: #F8FAFC !important;
+    color: #374151 !important;
+    font-weight: 600 !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    border-bottom: 2px solid #E5E7EB !important;
+    padding: 0.875rem 1rem !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] table td,
+html[data-theme="light"] .registrations-table td,
+html[data-theme="light"] .responses-table td,
+html[data-theme="light"] .activity-log-table td {
+    background: #FFFFFF !important;
+    color: #374151 !important;
+    border-bottom: 1px solid #F3F4F6 !important;
+    padding: 0.875rem 1rem !important;
+}
+
+html[data-theme="light"] table tbody tr:nth-child(even) td { background: #FAFAFA !important; }
+html[data-theme="light"] table tbody tr:hover td { background: #EEF2FF !important; }
+
+html[data-theme="light"] .registrations-table-container,
+html[data-theme="light"] .activity-log-table-container {
+    border: 1px solid #E5E7EB !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    background: #FFFFFF !important;
+}
+
+/* --------------------------------------------------------------------------
+   7. BUTTONS — Blue primary, white secondary, semantic variants
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .btn,
+html[data-theme="light"] .btn-primary,
+html[data-theme="light"] .submit-btn {
+    background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
+    text-shadow: none !important;
+    transition: all 0.2s ease !important;
+}
+
+html[data-theme="light"] .btn:hover,
+html[data-theme="light"] .btn-primary:hover,
+html[data-theme="light"] .submit-btn:hover {
+    background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35) !important;
+    transform: translateY(-1px) !important;
+}
+
+html[data-theme="light"] .btn-secondary,
+html[data-theme="light"] .btn-outline {
+    background: #FFFFFF !important;
+    color: #2563EB !important;
+    border: 1px solid #2563EB !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="light"] .btn-secondary:hover,
+html[data-theme="light"] .btn-outline:hover {
+    background: #EEF2FF !important;
+    border-color: #1D4ED8 !important;
+    transform: translateY(-1px) !important;
+}
+
+html[data-theme="light"] .create-event-btn,
+html[data-theme="light"] .auction-control-btn {
+    background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] .auction-control-btn.secondary {
+    background: #FFFFFF !important;
+    color: #374151 !important;
+    border: 1px solid #D1D5DB !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+html[data-theme="light"] .auction-control-btn.danger {
+    background: linear-gradient(135deg, #DC2626, #B91C1C) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+}
+
+html[data-theme="light"] .action-btn {
+    background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2) !important;
+    text-shadow: none !important;
+    border-radius: 8px !important;
+}
+
+html[data-theme="light"] .action-btn:hover {
+    background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+    transform: translateY(-1px) !important;
+}
+
+html[data-theme="light"] .action-btn-danger {
+    background: linear-gradient(135deg, #DC2626, #B91C1C) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.2) !important;
+    border: none !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] .link-btn {
+    background: #FFFFFF !important;
+    color: #374151 !important;
+    border: 1px solid #D1D5DB !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+html[data-theme="light"] .link-btn:hover {
+    background: #F9FAFB !important;
+    border-color: #9CA3AF !important;
+    transform: translateY(-1px) !important;
+}
+
+html[data-theme="light"] .saas-btn-primary {
+    background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+}
+
+html[data-theme="light"] .saas-btn-primary:hover {
+    background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4) !important;
+}
+
+html[data-theme="light"] .saas-btn-secondary {
+    background: #FFFFFF !important;
+    color: #374151 !important;
+    border: 1px solid #D1D5DB !important;
+}
+
+html[data-theme="light"] .saas-btn-secondary:hover {
+    background: #F9FAFB !important;
+    border-color: #9CA3AF !important;
+}
+
+html[data-theme="light"] .pagination-btn {
+    background: #FFFFFF !important;
+    border: 1px solid #E5E7EB !important;
+    color: #374151 !important;
+}
+
+html[data-theme="light"] .pagination-btn:not(:disabled):hover {
+    background: #EEF2FF !important;
+    border-color: #2563EB !important;
+    color: #2563EB !important;
+}
+
+html[data-theme="light"] .filter-btn {
+    background: #FFFFFF !important;
+    color: #374151 !important;
+    border: 1px solid #E5E7EB !important;
+}
+
+html[data-theme="light"] .filter-btn.active,
+html[data-theme="light"] .filter-btn:hover {
+    background: #EEF2FF !important;
+    color: #2563EB !important;
+    border-color: #C7D2FE !important;
+}
+
+html[data-theme="light"] .tab-btn {
+    color: #6B7280 !important;
+    background: transparent !important;
+}
+
+html[data-theme="light"] .tab-btn:hover { color: #111827 !important; }
+
+html[data-theme="light"] .tab-btn.active {
+    color: #2563EB !important;
+    font-weight: 600 !important;
+}
+
+html[data-theme="light"] .tab-btn.active::after {
+    background-color: #2563EB !important;
+}
+
+html[data-theme="light"] .approve-btn {
+    background: #16A34A !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2) !important;
+}
+
+html[data-theme="light"] .reject-btn,
+html[data-theme="light"] .delete-btn {
+    background: #DC2626 !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.2) !important;
+}
+
+html[data-theme="light"] .refresh-log-btn {
+    background: #EEF2FF !important;
+    color: #2563EB !important;
+    border: 1px solid #C7D2FE !important;
+    font-weight: 600 !important;
+}
+
+html[data-theme="light"] .set-bid-time-btn {
+    background: linear-gradient(135deg, #16A34A, #15803D) !important;
+    border-color: #16A34A !important;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25) !important;
+}
+
+/* --------------------------------------------------------------------------
+   8. FORMS & INPUTS
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .form-control,
+html[data-theme="light"] input[type="text"],
+html[data-theme="light"] input[type="email"],
+html[data-theme="light"] input[type="password"],
+html[data-theme="light"] input[type="number"],
+html[data-theme="light"] input[type="tel"],
+html[data-theme="light"] input[type="date"],
+html[data-theme="light"] input[type="time"],
+html[data-theme="light"] select,
+html[data-theme="light"] textarea {
+    background: #FFFFFF !important;
+    border: 1px solid #D1D5DB !important;
+    border-radius: 8px !important;
+    color: #111827 !important;
+    padding: 0.625rem 0.875rem !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    transition: all 0.2s ease !important;
+    caret-color: #111827 !important;
+}
+
+html[data-theme="light"] .form-control:focus,
+html[data-theme="light"] input:focus,
+html[data-theme="light"] select:focus,
+html[data-theme="light"] textarea:focus {
+    background: #FFFFFF !important;
+    border-color: #2563EB !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+    outline: none !important;
+}
+
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder {
+    color: #9CA3AF !important;
+}
+
+html[data-theme="light"] .form-group label {
+    color: #374151 !important;
+    font-weight: 500 !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] select option {
+    background: #FFFFFF !important;
+    color: #111827 !important;
+}
+
+/* --------------------------------------------------------------------------
+   9. MODALS
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .admin-modal,
+html[data-theme="light"] .modal-overlay {
+    background: rgba(0, 0, 0, 0.4) !important;
+}
+
+html[data-theme="light"] .admin-modal .modal-content,
+html[data-theme="light"] .modal-overlay .modal-content {
+    background: #FFFFFF !important;
+    border: 1px solid #E5E7EB !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
+    color: #111827 !important;
+}
+
+html[data-theme="light"] .modal-header {
+    border-bottom: 1px solid #F3F4F6 !important;
+}
+
+html[data-theme="light"] .modal-header h2 {
+    color: #111827 !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] .modal-subtitle { color: #6B7280 !important; }
+
+html[data-theme="light"] .modal-close {
+    color: #6B7280 !important;
+    background: #F3F4F6 !important;
+    border: none !important;
+}
+
+html[data-theme="light"] .modal-close:hover {
+    background: #E5E7EB !important;
+    color: #111827 !important;
+}
+
+/* --------------------------------------------------------------------------
+   10. SAAS CARDS (Homepage events)
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .saas-card::before {
+    background: linear-gradient(90deg, transparent, #2563EB, transparent) !important;
+}
+
+html[data-theme="light"] .saas-card-badge {
+    background: rgba(37, 99, 235, 0.08) !important;
+    border: 1px solid rgba(37, 99, 235, 0.2) !important;
+    color: #2563EB !important;
+}
+
+html[data-theme="light"] .saas-card-title { color: #111827 !important; }
+
+html[data-theme="light"] .saas-card-sport-tag {
+    background: #EEF2FF !important;
+    border: 1px solid #C7D2FE !important;
+    color: #4338CA !important;
+}
+
+html[data-theme="light"] .saas-card-meta {
+    background: #F8FAFC !important;
+    border: 1px solid #E5E7EB !important;
+}
+
+html[data-theme="light"] .saas-meta-label { color: #6B7280 !important; }
+html[data-theme="light"] .saas-meta-val { color: #111827 !important; }
+html[data-theme="light"] .saas-meta-val i { color: #2563EB !important; }
+
+html[data-theme="light"] .saas-card-action button {
+    background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+}
+
+html[data-theme="light"] .saas-card-action button:hover {
+    background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35) !important;
+}
+
+/* ECR Cards */
+html[data-theme="light"] .ecr-title { color: #111827 !important; text-shadow: none !important; }
+html[data-theme="light"] .ecr-footer { border-top: 2px solid #E5E7EB !important; }
+html[data-theme="light"] .ecr-view-link { color: #2563EB !important; text-shadow: none !important; }
+html[data-theme="light"] .ecr-view-link:hover { color: #1D4ED8 !important; }
+html[data-theme="light"] .ecr-meta-item { color: #4B5563 !important; }
+html[data-theme="light"] .ecr-meta-item i { color: #2563EB !important; text-shadow: none !important; }
+html[data-theme="light"] .ecr-sport-tag {
+    background: #EEF2FF !important;
+    border: 1px solid #C7D2FE !important;
+    color: #4338CA !important;
+    text-shadow: none !important;
+}
+html[data-theme="light"] .ecr-fee-display {
+    background: #EEF2FF !important;
+    color: #2563EB !important;
+    border: 1px solid #C7D2FE !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   11. HERO & SECTIONS
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .saas-hero-title { color: #111827 !important; text-shadow: none !important; }
+html[data-theme="light"] .saas-hero-subtitle { color: #4B5563 !important; }
+html[data-theme="light"] .section-header h2 { color: #111827 !important; text-shadow: none !important; }
+html[data-theme="light"] .section-header p { color: #6B7280 !important; }
+
+html[data-theme="light"] .team-owner-cta,
+html[data-theme="light"] .cta,
+html[data-theme="light"] .stats,
+html[data-theme="light"] .auctions,
+html[data-theme="light"] .how-it-works {
+    background: transparent !important;
+}
+
+html[data-theme="light"] .benefit-item { color: #374151 !important; }
+html[data-theme="light"] .benefit-item i { color: #2563EB !important; }
+
+html[data-theme="light"] .stat-number { color: #2563EB !important; text-shadow: none !important; }
+html[data-theme="light"] .stat-icon {
+    background: #EEF2FF !important;
+    border-color: #C7D2FE !important;
+    color: #4338CA !important;
+}
+html[data-theme="light"] .step-icon {
+    background: #EEF2FF !important;
+    border-color: #C7D2FE !important;
+    color: #4338CA !important;
+}
+html[data-theme="light"] .step-card h3 { color: #2563EB !important; text-shadow: none !important; }
+
+/* --------------------------------------------------------------------------
+   12. EVENTS TOOLBAR
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .events-toolbar {
+    background: #FFFFFF !important;
+    border: 1px solid #E5E7EB !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    border-radius: 12px !important;
+}
+
+/* --------------------------------------------------------------------------
+   13. EVENT BUDGET
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .event-budget {
+    background: #F0FDF4 !important;
+    border: 1px solid #BBF7D0 !important;
+    border-radius: 8px !important;
+    color: #16A34A !important;
+}
+
+/* --------------------------------------------------------------------------
+   14. ACTIVITY LOG
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .activity-log-section { background: #FFFFFF !important; }
+html[data-theme="light"] .no-logs { color: #9CA3AF !important; }
+
+/* --------------------------------------------------------------------------
+   15. MESSAGES SECTION
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .messages-section { background: #FFFFFF !important; }
+html[data-theme="light"] .messages-container {
+    border: 1px solid #E5E7EB !important;
+    background: #F9FAFB !important;
+}
+
+/* --------------------------------------------------------------------------
+   16. PAGINATION
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .pagination-controls {
+    border-top: 1px solid #E5E7EB !important;
+}
+
+html[data-theme="light"] .page-info,
+html[data-theme="light"] .page-number {
+    color: #6B7280 !important;
+}
+
+/* --------------------------------------------------------------------------
+   17. STATUS BADGES
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .badge-active, html[data-theme="light"] .status-active {
+    background: #DCFCE7 !important;
+    color: #16A34A !important;
+    border: 1px solid #BBF7D0 !important;
+}
+html[data-theme="light"] .badge-pending, html[data-theme="light"] .status-pending {
+    background: #FEF3C7 !important;
+    color: #D97706 !important;
+    border: 1px solid #FDE68A !important;
+}
+html[data-theme="light"] .badge-rejected, html[data-theme="light"] .status-rejected {
+    background: #FEE2E2 !important;
+    color: #DC2626 !important;
+    border: 1px solid #FECACA !important;
+}
+
+/* --------------------------------------------------------------------------
+   18. RESPONSES TABS BORDER
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .responses-tabs {
+    border-bottom: 1px solid #E5E7EB !important;
+}
+
+/* --------------------------------------------------------------------------
+   19. TIME OPTIONS
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .time-option {
+    background: #FFFFFF !important;
+    border: 1px solid #E5E7EB !important;
+    box-shadow: none !important;
+}
+html[data-theme="light"] .time-option:hover,
+html[data-theme="light"] .time-option.selected {
+    background: #EEF2FF !important;
+    border-color: #2563EB !important;
+}
+html[data-theme="light"] .option-time { color: #2563EB !important; text-shadow: none !important; }
+html[data-theme="light"] .team-name { color: #2563EB !important; text-shadow: none !important; }
+html[data-theme="light"] .preference-time { color: #16A34A !important; text-shadow: none !important; }
+html[data-theme="light"] .decision-info h4 { color: #2563EB !important; text-shadow: none !important; }
+
+/* --------------------------------------------------------------------------
+   20. FOOTER
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .footer {
+    background: #F1F5F9 !important;
+    border-top: 1px solid #E5E7EB !important;
+}
+html[data-theme="light"] .footer-logo { color: #111827 !important; }
+html[data-theme="light"] .footer-logo i { color: #2563EB !important; }
+html[data-theme="light"] .footer h4 { color: #111827 !important; }
+html[data-theme="light"] .footer ul li a { color: #6B7280 !important; }
+html[data-theme="light"] .footer ul li a:hover { color: #2563EB !important; }
+html[data-theme="light"] .footer .social-links a { color: #6B7280 !important; }
+html[data-theme="light"] .footer .social-links a:hover { color: #2563EB !important; }
+html[data-theme="light"] .footer-bottom { border-top: 1px solid #E5E7EB !important; color: #9CA3AF !important; }
+
+/* --------------------------------------------------------------------------
+   21. SCROLLBAR
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] ::-webkit-scrollbar-track {
+    background: #F1F5F9 !important;
+    border: 1px solid #E5E7EB !important;
+}
+html[data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: #CBD5E1 !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+}
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #94A3B8 !important; }
+
+/* --------------------------------------------------------------------------
+   22. NEON REMOVALS
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .neon-text { color: #2563EB !important; text-shadow: none !important; filter: none !important; }
+html[data-theme="light"] .neon-icon { color: #2563EB !important; filter: none !important; }
+html[data-theme="light"] .neon-glow { box-shadow: none !important; }
+html[data-theme="light"] .neon-btn {
+    background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+    border: none !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
+    text-shadow: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   23. INLINE DARK STYLE OVERRIDES (most critical)
+   -------------------------------------------------------------------------- */
+
+/* Override rgba(10,10,10) dark backgrounds */
+html[data-theme="light"] [style*="background: rgba(10, 10, 10"],
+html[data-theme="light"] [style*="background:rgba(10,10,10"],
+html[data-theme="light"] [style*="background-color: rgba(10, 10, 10"] {
+    background: #FFFFFF !important;
+    color: #111827 !important;
+}
+
+/* Override pure black */
+html[data-theme="light"] [style*="background: #000000"],
+html[data-theme="light"] [style*="background-color: #000000"],
+html[data-theme="light"] [style*="background:#000000"] {
+    background: #FFFFFF !important;
+    color: #111827 !important;
+}
+
+/* Override dark rgba backgrounds */
+html[data-theme="light"] [style*="background: rgba(0, 0, 0, 0.8)"],
+html[data-theme="light"] [style*="background: rgba(0, 0, 0, 0.95)"],
+html[data-theme="light"] [style*="background-color: rgba(0, 0, 0, 0.8)"] {
+    background: #FFFFFF !important;
+    color: #111827 !important;
+}
+
+/* Override neon cyan text colors */
+html[data-theme="light"] [style*="color: #00ffff"],
+html[data-theme="light"] [style*="color:#00ffff"] {
+    color: #2563EB !important;
+    text-shadow: none !important;
+}
+
+html[data-theme="light"] [style*="color: #00ff00"],
+html[data-theme="light"] [style*="color:#00ff00"] {
+    color: #16A34A !important;
+    text-shadow: none !important;
+}
+
+/* Override neon borders */
+html[data-theme="light"] [style*="border: 2px solid #00ffff"],
+html[data-theme="light"] [style*="border:2px solid #00ffff"],
+html[data-theme="light"] [style*="border-color: #00ffff"] {
+    border: 1px solid #D1D5DB !important;
+    box-shadow: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   24. LOGIN MODAL INPUTS
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] #loginModal .modal-content,
+html[data-theme="light"] #teamOwnerRegistrationForm .modal-content,
+html[data-theme="light"] #staffRegistrationModal .modal-content {
+    background: #FFFFFF !important;
+    border: 1px solid #E5E7EB !important;
+    color: #111827 !important;
+}
+
+html[data-theme="light"] #loginModal input,
+html[data-theme="light"] #loginModal select {
+    background: #FFFFFF !important;
+    border: 1px solid #D1D5DB !important;
+    color: #111827 !important;
+    caret-color: #111827 !important;
+}
+
+html[data-theme="light"] #loginModal input::placeholder { color: #9CA3AF !important; }
+
+/* --------------------------------------------------------------------------
+   25. SECTION HEADER ICONS
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] .section-header h3 i,
+html[data-theme="light"] .form-section-header h3 i,
+html[data-theme="light"] .decision-info h4 i {
+    color: #2563EB !important;
+    filter: none !important;
+}
+
+html[data-theme="light"] .section-header h3 { text-shadow: none !important; }
+html[data-theme="light"] .form-section-header p { color: #6B7280 !important; }
+
+/* --------------------------------------------------------------------------
+   26. GLOBAL TEXT-SHADOW REMOVAL for light mode
+   -------------------------------------------------------------------------- */
+html[data-theme="light"] * {
+    text-shadow: none !important;
+}
+
+/* Restore box-shadow on items that need it */
+html[data-theme="light"] .btn,
+html[data-theme="light"] .btn-primary,
+html[data-theme="light"] .action-btn,
+html[data-theme="light"] .create-event-btn,
+html[data-theme="light"] .saas-btn-primary,
+html[data-theme="light"] .approve-btn,
+html[data-theme="light"] .reject-btn,
+html[data-theme="light"] .delete-btn {
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
+}
+
+html[data-theme="light"] .card:hover,
+html[data-theme="light"] .stat-card:hover,
+html[data-theme="light"] .ecr-card:hover,
+html[data-theme="light"] .saas-card:hover {
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.10) !important;
+}

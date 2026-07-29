@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        // SPA Interceptor for RBAC Dashboard (No Backend Changes)
+        if (window.location.pathname.startsWith('/dashboard')) {
+            fetch('/team-owner-dashboard.html')
+                .then(r => r.text())
+                .then(html => {
+                    document.open();
+                    document.write(html);
+                    document.close();
+                });
+        }
+    </script>
+    <title>BidZone - Live Sports Player Auctions</title>
+    <link rel="stylesheet" href="/css/styles.css?v=global-v2">
+    <link rel="stylesheet" href="/css/saas-theme.css?v=1.0">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        /* Password Requirements Styles - Modern Neon Theme */
+        .password-requirements {
+            margin-top: 0.75rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 0.5rem;
+            border: 2px solid #00ffff;
+            box-shadow: 
+                0 0 1px rgba(0, 255, 255, 0.04),
+                inset 0 0 2px rgba(0, 255, 255, 0.01);
+        }
+
+        .requirement {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+
+        .requirement:last-child {
+            margin-bottom: 0;
+        }
+
+        .requirement-icon {
+            font-size: 0.5rem;
+            color: #64748b;
+            transition: color 0.3s ease;
+        }
+
+        .requirement.met .requirement-icon {
+            color: #00ff00;
+            text-shadow: 0 0 1px #00ff00;
+        }
+
+        .requirement.met {
+            color: #00ff00;
+            text-shadow: 0 0 1px #00ff00;
+        }
+
+        /* Redesigned Event Cards - Modern Neon Theme */
+        .ecr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 2.5rem;
+            padding: 2rem 0;
+        }
+
+        .ecr-card {
+            background: rgba(10, 10, 10, 0.95);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 
+                0 0 2px rgba(0, 255, 255, 0.06),
+                0 0 4px rgba(0, 255, 255, 0.04);
+            border: 2px solid rgba(0, 255, 255, 0.15);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .ecr-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 
+                0 0 15px rgba(0, 255, 0, 0.15),
+                0 0 30px rgba(0, 255, 0, 0.10);
+            border-color: rgba(0, 255, 0, 0.15);
+        }
+
+        .ecr-header {
+            height: 180px;
+            padding: 2.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            color: white;
+        }
+
+        .ecr-header h3 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 0;
+            line-height: 1.2;
+            text-shadow: 
+                0 0 1px #00ffff,
+                0 0 2px #00ffff;
+            letter-spacing: -0.02em;
+            color: #00ffff;
+        }
+
+        .ecr-header .ecr-badge {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            padding: 0.6rem 1.2rem;
+            background: rgba(0, 255, 255, 0.2);
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            text-shadow: 0 0 1px #00ffff;
+            backdrop-filter: blur(8px);
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            box-shadow: 
+                0 0 1px rgba(0, 255, 255, 0.06),
+                0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .ecr-body {
+            padding: 2.5rem 2.2rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ecr-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #00ffff;
+            margin-bottom: 1.2rem;
+            line-height: 1.3;
+            text-shadow: 0 0 1px #00ffff;
+        }
+
+        .ecr-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .ecr-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            color: #94a3b8;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .ecr-meta-item i {
+            width: 20px;
+            color: #00ffff;
+            font-size: 1.1rem;
+            text-shadow: 0 0 1px #00ffff;
+        }
+
+        .ecr-sports {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .ecr-sport-tag {
+            padding: 0.5rem 1rem;
+            background: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            transition: all 0.2s;
+            box-shadow: 
+                0 0 1px rgba(0, 255, 0, 0.06),
+                0 2px 4px rgba(0, 255, 0, 0.04);
+            text-shadow: 0 0 1px #00ff00;
+        }
+
+        .ecr-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: auto;
+            padding-top: 1.5rem;
+            border-top: 2px solid #00ffff;
+        }
+
+        .ecr-view-link {
+            color: #00ffff;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.3s;
+            padding: 0.5rem 1rem 0.5rem 0;
+            text-shadow: 0 0 1px #00ffff;
+        }
+
+        .ecr-view-link:hover {
+            color: #00ff00;
+            transform: translateX(3px);
+            text-shadow: 0 0 1px #00ff00;
+        }
+
+        .ecr-reg-btn {
+            background: linear-gradient(135deg, #7c3aed26, #6d28d926);
+            border: 2px solid #7c3aed;
+            color: white;
+            padding: 1.2rem 3rem;
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 
+                0 0 2px rgba(124, 58, 237, 0.06),
+                0 10px 20px rgba(124, 58, 237, 0.25);
+        }
+
+        .ecr-reg-btn:hover {
+            background: linear-gradient(135deg, #6d28d9, #5b21b6);
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 
+                0 0 3px rgba(124, 58, 237, 0.1),
+                0 15px 30px rgba(124, 58, 237, 0.35);
+        }
+
+        .ecr-reg-closed {
+            background: rgba(100, 116, 139, 0.3);
+            color: #94a3b8;
+            padding: 1.2rem 2.5rem;
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            border: 2px solid #64748b;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            cursor: not-allowed;
+        }
+
+        .ecr-fee-display {
+            background: rgba(0, 255, 255, 0.1);
+            color: #00ffff;
+            border: 1px solid #00ffff;
+            text-shadow: 0 0 3px #00ffff;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-left: auto;
+            margin-bottom: 0.8rem;
+            display: inline-block;
+            box-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+        }
+    </style>
+    <style>
+        /* Team Management Styles - Modern Neon Theme */
+        .team-section {
+            display: none;
+            padding: 2rem 0;
+        }
+
+        .team-card {
+            background: rgba(10, 10, 10, 0.95);
+            border: 2px solid #00ffff;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 
+                0 0 10px rgba(0, 255, 255, 0.3),
+                0 0 20px rgba(0, 255, 255, 0.2);
+        }
+
+        .player-card {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ffff;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 0 5px rgba(0, 255, 255, 0.2),
+                inset 0 0 10px rgba(0, 255, 255, 0.05);
+        }
+
+        .player-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 0 10px rgba(0, 255, 255, 0.4),
+                0 4px 6px rgba(0, 0, 0, 0.1);
+            border-color: #00ff00;
+        }
+
+        .player-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            text-align: center;
+            border: 1px solid #00ffff;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: #ff00ff;
+            text-shadow: 0 0 3px #ff00ff;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .auction-timer {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            border: 2px solid #f97316;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            margin-top: 1rem;
+            box-shadow: 
+                0 0 10px rgba(249, 115, 22, 0.3),
+                0 0 20px rgba(249, 115, 22, 0.2);
+        }
+
+        .auction-timer i {
+            margin-right: 0.5rem;
+        }
+
+        .team-budget {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="saas-background"></div>
+    <div class="saas-noise"></div>
+    <!-- Team Management Section (initially hidden) -->
+    <div id="teamSection" class="team-section">
+        <div class="section-container">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-white">My Team Dashboard</h2>
+                <div class="flex items-center space-x-4">
+                    <div class="auction-timer">
+                        <i class="fas fa-clock"></i>
+                        <span id="auctionTimer">00:00:00</span>
+                    </div>
+                    <button id="logoutBtn"
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Team Info Card -->
+                <div class="team-card">
+                    <h3 class="text-xl font-semibold text-white mb-4">Team Information</h3>
+                    <div id="teamInfo" class="space-y-3">
+                        <div class="flex items-center">
+                            <div
+                                class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center text-2xl text-yellow-400 mr-4">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div>
+                                <h4 id="teamName" class="text-lg font-medium text-white">Loading...</h4>
+                                <p class="text-gray-400">Team Owner</p>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-gray-400">Budget:</span>
+                                <span id="teamBudget" class="team-budget">$0M</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-2.5">
+                                <div id="budgetBar" class="bg-yellow-500 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mt-4">
+                            <div class="text-center p-3 bg-gray-800 rounded-lg">
+                                <div id="playerCount" class="text-2xl font-bold text-yellow-400">0</div>
+                                <div class="text-sm text-gray-400">Players</div>
+                            </div>
+                            <div class="text-center p-3 bg-gray-800 rounded-lg">
+                                <div id="teamValue" class="text-2xl font-bold text-green-400">$0M</div>
+                                <div class="text-sm text-gray-400">Team Value</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Players -->
+                <div class="lg:col-span-2">
+                    <div class="bg-gray-900 p-6 rounded-xl">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-semibold text-white">Squad</h3>
+                            <div class="flex space-x-3
+                            ">
+                                <button id="addPlayerBtn"
+                                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center">
+                                    <i class="fas fa-plus mr-2"></i> Add Player
+                                </button>
+                                <button id="viewAuctionsBtn"
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
+                                    <i class="fas fa-gavel mr-2"></i> View Auctions
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="playersList" class="space-y-4">
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-users text-4xl mb-2"></i>
+                                <p>Your team is empty. Add players to build your squad!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Details Modal -->
+            <div id="playerModal"
+                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+                <div class="bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 id="playerModalName" class="text-2xl font-bold text-white">Player Name</h3>
+                                <div class="flex items-center mt-1 space-x-2">
+                                    <span id="playerModalPosition"
+                                        class="px-3 py-1 bg-blue-600 text-white text-sm rounded-full">POS</span>
+                                    <span id="playerModalCountry" class="text-gray-400 text-sm">
+                                        <i class="fas fa-flag"></i> Country
+                                    </span>
+                                </div>
+                            </div>
+                            <button onclick="closePlayerModal()" class="text-gray-400 hover:text-white">
+                                <i class="fas fa-times text-2xl"></i>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <div class="bg-gray-700 rounded-lg p-4 mb-4">
+                                    <h4 class="text-lg font-medium text-white mb-3">Player Details</h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">Age:</span>
+                                            <span id="playerModalAge" class="text-white font-medium">25</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">Base Price:</span>
+                                            <span id="playerModalPrice" class="text-yellow-400 font-medium">$5.0M</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">Status:</span>
+                                            <span id="playerModalStatus"
+                                                class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Available</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-gray-700 rounded-lg p-4">
+                                    <h4 class="text-lg font-medium text-white mb-3">Skill Ratings</h4>
+                                    <div id="playerSkills" class="space-y-3">
+                                        <!-- Skills will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="bg-gray-700 rounded-lg p-4 mb-4">
+                                    <h4 class="text-lg font-medium text-white mb-3">Performance Stats</h4>
+                                    <div id="playerStats" class="space-y-3">
+                                        <!-- Stats will be populated by JavaScript -->
+                                    </div>
+                                </div>
+
+                                <div class="bg-gray-700 rounded-lg p-4">
+                                    <h4 class="text-lg font-medium text-white mb-3">Actions</h4>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <button id="bidOnPlayerBtn"
+                                            class="w-full py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition flex items-center justify-center">
+                                            <i class="fas fa-gavel mr-2"></i> Place Bid
+                                        </button>
+                                        <button id="addToTeamBtn"
+                                            class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center">
+                                            <i class="fas fa-plus-circle mr-2"></i> Add to Team
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <i class="fas fa-trophy"></i>
+                    <span>BidZone</span>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#events" class="nav-link">Events</a></li>
+                    <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+                    <li><a href="#about-teams" class="nav-link">About Teams</a></li>
+                    <li><a href="#contact" class="nav-link">Contact</a></li>
+                </ul>
+                <div class="nav-buttons" style="display: flex; align-items: center;">
+                    <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle Light/Dark Mode">
+                        <i class="theme-icon fas fa-moon"></i>
+                    </button>
+                    <button class="saas-btn-primary" onclick="return showAuthModal('login')">Sign In</button>
+                </div>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    
+    <!-- Premium SaaS Hero -->
+    <section class="saas-hero">
+        <div class="saas-hero-content">
+            <h1 class="saas-hero-title">Build Your Dream Team Through Live Sports Auctions</h1>
+            <p class="saas-hero-subtitle">
+                The ultimate professional platform for sports player auctions and team building. 
+                Discover elite talent, participate in real-time bidding wars, and construct championship-winning rosters with unparalleled precision.
+            </p>
+            <div class="saas-hero-buttons">
+                <a href="#events" class="saas-btn-primary">Register Now</a>
+                <a href="#how-it-works" class="saas-btn-secondary">Explore Platform</a>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Upcoming Events Section -->
+    <section class="events-section" id="events">
+        <div class="section-container">
+            <div class="section-header">
+                <h2>Upcoming Auction Events</h2>
+                <p>Register now for these exciting upcoming events and showcase your talent</p>
+            </div>
+            <div class="events-grid" id="eventsGrid">
+                <!-- Events will be loaded dynamically via JavaScript -->
+                <div class="col-span-full text-center py-10" id="loadingEvents">
+                    <i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
+                    <p class="mt-4 text-gray-500">Loading upcoming events...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="section-container">
+            <div class="section-header">
+                <h2>How It Works</h2>
+                <p>Simple steps to participate in the most exciting sports auctions</p>
+            </div>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h3>Register</h3>
+                    <p>Create your account as a player or team owner in minutes</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3>Browse Events</h3>
+                    <p>Explore upcoming auctions and find the perfect event for you</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon">
+                        <i class="fas fa-gavel"></i>
+                    </div>
+                    <h3>Place Bids</h3>
+                    <p>Join live auctions and bid on your favorite players</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <h3>Win & Celebrate</h3>
+                    <p>Build your dream team and celebrate your victories</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Owner CTA Banner -->
+    <section class="team-owner-cta" id="about-teams">
+        <div class="section-container">
+            <div class="section-header">
+                <h2>Ready to Build Your Championship Team?</h2>
+                <p>Join thousands of team owners who are discovering exceptional talent through BidZone. Get exclusive
+                    access to live auctions, player analytics, and the tools you need to build a winning team.</p>
+            </div>
+            <div class="cta-benefits-grid">
+                <div class="benefit-item">
+                    <i class="fas fa-gavel"></i>
+                    <span>Live Auction Access</span>
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Player Analytics</span>
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-users"></i>
+                    <span>Team Management</span>
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-trophy"></i>
+                    <span>Exclusive Events</span>
+                </div>
+            </div>
+            <div class="cta-actions">
+                <button class="btn btn-primary btn-large" onclick="showTeamOwnerRegistration()">
+                    <i class="fas fa-user-plus"></i>
+                    Register as Team Owner
+                </button>
+            </div>
+            <div class="cta-stats">
+                <div class="stat">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <span class="stat-number">750+</span>
+                    <span class="stat-label">Active Team Owners</span>
+                </div>
+                <div class="stat">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <span class="stat-number">₹125Cr+</span>
+                    <span class="stat-label">Total Investments</span>
+                </div>
+                <div class="stat">
+                    <div class="stat-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <span class="stat-number">95%</span>
+                    <span class="stat-label">Success Rate</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <div class="footer-logo">
+                    <i class="fas fa-trophy"></i>
+                    <span>BidZone</span>
+                </div>
+                <p>The ultimate destination for sports player auctions and team building.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h4>Platform</h4>
+                <ul>
+
+                    <li><a href="#events">Player Profiles</a></li>
+                    <li><a href="#events">Team Management</a></li>
+                    <li><a href="#events">Event Calendar</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Support</h4>
+                <ul>
+                    <li><a href="#">Help Center</a></li>
+                    <li><a href="#">Contact Us</a></li>
+                    <li><a href="terms.html" target="_blank">Terms of Service</a></li>
+                    <li><a href="privacy.html" target="_blank">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#">About Us</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">Press</a></li>
+                    <li><a href="#">Blog</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 BidZone. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Auth Modal -->
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-logo">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>BidZone Sign In</span>
+                </div>
+                <h2>Welcome Back</h2>
+                <p>Sign in to your account</p>
+            </div>
+
+            <style>
+                #loginModal input,
+                #loginModal select {
+                    background: #000000 !important;
+                    border: 2px solid #00ffff !important;
+                    color: #ffffff !important;
+                    caret-color: #ffffff !important;
+                }
+                #loginModal input::placeholder {
+                    color: #64748b !important;
+                }
+                #loginModal option {
+                    background: #000000 !important;
+                    color: #ffffff !important;
+                }
+                /* Override browser autofill styles */
+                #loginModal input:-webkit-autofill,
+                #loginModal input:-webkit-autofill:hover,
+                #loginModal input:-webkit-autofill:focus,
+                #loginModal input:-webkit-autofill:active {
+                    -webkit-box-shadow: 0 0 0 30px #000000 inset !important;
+                    -webkit-text-fill-color: #ffffff !important;
+                    background-color: #000000 !important;
+                    background-image: none !important;
+                    transition: background-color 5000s ease-in-out 0s;
+                }
+                #loginModal input:-internal-autofill-selected {
+                    background-color: #000000 !important;
+                }
+            </style>
+
+            <!-- Login Form -->
+            <form id="mainLoginForm" class="auth-form" onsubmit="return handleLogin(event)" data-staff-step="1">
+                <div class="form-group">
+                    <label id="usernameLabel" for="username">Username or Email</label>
+                    <input type="text" id="username" name="username" required placeholder="Enter your username or email"
+                        autocomplete="username" style="width: 100% !important; padding: 0.75rem 1rem !important; background: #000000 !important; border: 2px solid #00ffff !important; border-radius: 8px !important; color: #ffffff !important; font-size: 1rem !important; transition: all 0.3s ease !important; box-sizing: border-box !important;" />
+                </div>
+
+                <div class="form-group" id="passwordGroup">
+                    <label for="password">Password</label>
+                    <div style="position: relative;">
+                        <input type="password" id="password" name="password" required placeholder="Enter your password"
+                            autocomplete="current-password" style="width: 100% !important; padding: 0.75rem 2.5rem 0.75rem 1rem !important; background: #000000 !important; border: 2px solid #00ffff !important; border-radius: 8px !important; color: #ffffff !important; font-size: 1rem !important; transition: all 0.3s ease !important; box-sizing: border-box !important;" />
+                        <button type="button" onclick="togglePasswordVisibility('password', this)" 
+                            style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #00ffff; cursor: pointer; padding: 0; font-size: 1.2rem; transition: all 0.3s;">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Staff Registration Fields (Hidden by default) -->
+                <div id="staffSetupGroup" style="display: none;">
+                    <div class="invitation-info" id="staffInvitationInfo" style="background: rgba(0,255,255,0.1); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; border: 1px solid #00ffff; color: #00ffff;">
+                    </div>
+                    <div class="form-group" style="position: relative;">
+                        <label for="staffNewPassword">New Password *</label>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="password" id="staffNewPassword" name="staffNewPassword" placeholder="Create a password (min 6 chars, 1 uppercase, 1 number)"
+                                autocomplete="new-password" minlength="6" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}" title="Must contain at least one number and one uppercase and lowercase letter, and at least 6 or more characters" style="width: 100% !important; padding: 0.75rem 2.5rem 0.75rem 1rem !important; background: #000000 !important; border: 2px solid #00ffff !important; border-radius: 8px !important; color: #ffffff !important; font-size: 1rem !important; transition: all 0.3s ease !important; box-sizing: border-box !important;" />
+                            <i class="fas fa-eye toggle-password" style="position: absolute; right: 15px; cursor: pointer; color: #00ffff;" onclick="togglePasswordVisibility('staffNewPassword', this)"></i>
+                        </div>
+                        <small style="color: #64748b; font-size: 0.85rem;">Must contain at least one number, one uppercase letter, and be at least 6 chars.</small>
+                    </div>
+                    <div class="form-group" style="position: relative;">
+                        <label for="staffConfirmPassword">Confirm Password *</label>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="password" id="staffConfirmPassword" name="staffConfirmPassword" placeholder="Confirm your password"
+                                autocomplete="new-password" minlength="6" style="width: 100% !important; padding: 0.75rem 2.5rem 0.75rem 1rem !important; background: #000000 !important; border: 2px solid #00ffff !important; border-radius: 8px !important; color: #ffffff !important; font-size: 1rem !important; transition: all 0.3s ease !important; box-sizing: border-box !important;" />
+                            <i class="fas fa-eye toggle-password" style="position: absolute; right: 15px; cursor: pointer; color: #00ffff;" onclick="togglePasswordVisibility('staffConfirmPassword', this)"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" id="roleGroup">
+                    <label for="role">Select Role</label>
+                    <select id="role" name="role" required class="form-select" onchange="handleRoleChange()" style="width: 100% !important; padding: 0.75rem !important; border: 2px solid #00ffff !important; border-radius: 0.375rem !important; font-size: 0.875rem !important; background: #000000 !important; color: #ffffff !important;">
+                        <option value="player">Player</option>
+                        <option value="team_owner">Team Owner</option>
+                        <option value="team_manager">Team Manager</option>
+                        <option value="team_analyst">Team Analyst</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+
+                <div class="form-options" id="rememberForgotGroup">
+                    <div class="remember-me">
+                        <input type="checkbox" id="remember" name="remember" />
+                        <label for="remember">Remember me</label>
+                    </div>
+                    <a href="#" class="forgot-password">Forgot password?</a>
+                </div>
+
+                <div class="form-section">
+                    <button type="submit" id="loginSubmitBtn" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>Sign In</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+
+    <!-- Team Owner Registration Form -->
+    <div id="teamOwnerRegistrationForm" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeAuthModal('teamOwnerRegistrationForm')">&times;</span>
+            <div class="modal-header">
+                <h2>Team Owner Registration</h2>
+                <p>Register your team for auctions</p>
+            </div>
+            <form id="teamOwnerForm" onsubmit="return handleTeamOwnerRegistration(event)">
+                <div class="form-group">
+                    <label for="ownerTeamName">Team Name *</label>
+                    <input type="text" id="ownerTeamName" name="teamName" required placeholder="Enter your team name"
+                        autocomplete="organization" />
+                </div>
+                <div class="form-group">
+                    <label for="ownerName">Your Name *</label>
+                    <input type="text" id="ownerName" name="owner_name" required placeholder="Enter your full name"
+                        autocomplete="name" />
+                </div>
+                <div class="form-group">
+                    <label for="ownerEmail">Email Address *</label>
+                    <input type="email" id="ownerEmail" name="email" required placeholder="Enter your email"
+                        autocomplete="email" />
+                </div>
+                <div class="form-group">
+                    <label for="ownerPhone">Phone Number *</label>
+                    <input type="tel" id="ownerPhone" name="phone" required placeholder="Enter your phone number"
+                        autocomplete="tel" />
+                </div>
+                <div class="form-group" style="position: relative;">
+                    <label for="ownerPassword">Password *</label>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="password" id="ownerPassword" name="password" required placeholder="Create a password (min 6 chars, 1 uppercase, 1 number)"
+                            autocomplete="new-password" minlength="6" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}" title="Must contain at least one number and one uppercase and lowercase letter, and at least 6 or more characters" style="padding-right: 40px; width: 100%;" />
+                        <i class="fas fa-eye toggle-password" style="position: absolute; right: 15px; cursor: pointer; color: #64748b;" onclick="togglePasswordVisibility('ownerPassword', this)"></i>
+                    </div>
+                    <small style="color: #64748b; font-size: 0.85rem;">Must contain at least one number, one uppercase letter, and be at least 6 chars.</small>
+                </div>
+                <div class="form-group" style="position: relative;">
+                    <label for="ownerConfirmPassword">Confirm Password *</label>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="password" id="ownerConfirmPassword" name="confirmPassword" required placeholder="Confirm your password"
+                            autocomplete="new-password" minlength="6" style="padding-right: 40px; width: 100%;" />
+                        <i class="fas fa-eye toggle-password" style="position: absolute; right: 15px; cursor: pointer; color: #64748b;" onclick="togglePasswordVisibility('ownerConfirmPassword', this)"></i>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="ownerAddress">Address *</label>
+                    <input type="text" id="ownerAddress" name="address" required placeholder="Enter your address"
+                        autocomplete="street-address" />
+                </div>
+
+                <div class="form-group">
+                    <label for="teamOwnerEvent">Select Event *</label>
+                    <select id="teamOwnerEvent" name="event_id" required class="form-select"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.375rem; background-color: white; color: #1e293b;">
+                        <option value="">Select an event</option>
+                    </select>
+                </div>
+
+                <!-- Staff Invitation Fields for Parent-Child Relationship
+                     These optional fields allow team owner to invite staff members (manager/analyst).
+                     
+                     Flow:
+                     1. Team owner enters staff name and email (optional)
+                     2. Backend creates pending user entries with:
+                        - parent_user_id = team owner's user_id (parent-child link)
+                        - is_invited = True
+                        - invitation_status = 'pending'
+                        - is_active = False (cannot login yet)
+                     3. Staff completes registration via staff registration modal
+                     4. Staff sets username/password and account becomes active
+                     5. Staff can login and access team data based on their role
+                -->
+                <div class="form-section-header">
+                    <h3><i class="fas fa-users"></i> Team Staff (Optional)</h3>
+                    <p>Add your team manager and analyst to help manage your team</p>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="teamManagerName">Team Manager Name</label>
+                        <input type="text" id="teamManagerName" name="teamManagerName" placeholder="Enter manager name"
+                            autocomplete="name" />
+                    </div>
+                    <div class="form-group">
+                        <label for="teamManagerEmail">Team Manager Email</label>
+                        <input type="email" id="teamManagerEmail" name="teamManagerEmail" placeholder="manager@company.com"
+                            autocomplete="email" />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="teamAnalystName">Team Analyst Name</label>
+                        <input type="text" id="teamAnalystName" name="teamAnalystName" placeholder="Enter analyst name"
+                            autocomplete="name" />
+                    </div>
+                    <div class="form-group">
+                        <label for="teamAnalystEmail">Team Analyst Email</label>
+                        <input type="email" id="teamAnalystEmail" name="teamAnalystEmail" placeholder="analyst@company.com"
+                            autocomplete="email" />
+                    </div>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="ownerTerms" required>
+                    <label for="ownerTerms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy
+                            Policy</a> *</label>
+                </div>
+                <div class="form-section">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i>
+                        Register Team
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Staff Registration Modal -->
+    <!-- This modal implements the parent-child staff registration flow:
+         Step 1: Staff enters email to check for pending invitation
+         Step 2: If invitation exists, staff sets username and password to complete registration
+         
+         Flow:
+         1. Team owner registers and optionally adds staff (manager/analyst)
+         2. Staff entries are created with is_invited=True, invitation_status='pending', is_active=False
+         3. Staff opens this modal and enters their email
+         4. Backend checks if email has a pending invitation
+         5. If found, shows invitation details (role, team owner)
+         6. Staff sets username and password
+         7. Backend activates account and creates session
+         8. Staff can now login and access team data based on their role
+    -->
+    <div id="staffRegistrationModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeAuthModal('staffRegistrationModal')">&times;</span>
+            <div class="modal-header">
+                <h2>Staff Registration</h2>
+                <p>Complete your registration as a team staff member</p>
+            </div>
+            
+            <!-- Step 1: Check Invitation -->
+            <!-- Staff enters their email to check if they have a pending invitation from a team owner -->
+            <div id="staffCheckStep">
+                <form id="staffCheckForm" onsubmit="return handleStaffCheckInvitation(event)">
+                    <div class="form-group">
+                        <label for="staffEmail">Email Address *</label>
+                        <input type="email" id="staffEmail" name="email" required placeholder="Enter your email"
+                            autocomplete="email" />
+                    </div>
+                    <div class="form-section">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i>
+                            Check Invitation
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Step 2: Complete Registration -->
+            <!-- After invitation is verified, staff sets username and password to activate their account -->
+            <div id="staffCompleteStep" style="display: none;">
+                <div class="invitation-info" id="invitationInfo" style="background: #f0f9ff; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; border: 1px solid #bae6fd;">
+                    <!-- Invitation details will be populated here via JavaScript -->
+                    <!-- Shows: role (manager/analyst), team owner name -->
+                </div>
+                
+                <form id="staffCompleteForm" onsubmit="return handleStaffCompleteRegistration(event)">
+                    <div class="form-group">
+                        <label for="staffUsername">Username *</label>
+                        <input type="text" id="staffUsername" name="username" required placeholder="Choose a username"
+                            autocomplete="username" minlength="3" maxlength="50" />
+                    </div>
+                    <div class="form-group" style="position: relative;">
+                        <label for="staffPassword">Password *</label>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="password" id="staffPassword" name="password" required placeholder="Create a password (min 6 chars, 1 uppercase, 1 number)"
+                                autocomplete="new-password" minlength="6" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}" title="Must contain at least one number and one uppercase and lowercase letter, and at least 6 or more characters" style="padding-right: 40px; width: 100%;" />
+                            <i class="fas fa-eye toggle-password" style="position: absolute; right: 15px; cursor: pointer; color: #64748b;" onclick="togglePasswordVisibility('staffPassword', this)"></i>
+                        </div>
+                        <small style="color: #64748b; font-size: 0.85rem;">Must contain at least one number, one uppercase letter, and be at least 6 chars.</small>
+                    </div>
+                    <div class="form-group" style="position: relative;">
+                        <label for="staffConfirmPassword">Confirm Password *</label>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="password" id="staffConfirmPassword" name="confirmPassword" required placeholder="Confirm your password"
+                                autocomplete="new-password" minlength="6" style="padding-right: 40px; width: 100%;" />
+                            <i class="fas fa-eye toggle-password" style="position: absolute; right: 15px; cursor: pointer; color: #64748b;" onclick="togglePasswordVisibility('staffConfirmPassword', this)"></i>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-check"></i>
+                            Complete Registration
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="teamOwnerModal" class="modal-overlay" style="display: none;"
+        onclick="if(event.target === this) closeModal('teamOwnerModal')">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('teamOwnerModal')">&times;</span>
+
+            <div class="modal-header">
+                <div class="modal-logo">
+                    <i class="fas fa-crown"></i>
+                    <span>Team Owner Registration</span>
+                </div>
+                <h2>Become a Team Owner</h2>
+                <p>Join the exclusive network of team owners and start building championship teams</p>
+            </div>
+
+            <form class="registration-form" id="teamOwnerModalForm">
+                <div class="form-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-building"></i> Organization Details</h3>
+                        <p>Tell us about your team or organization</p>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="contactPerson">Contact Person *</label>
+                            <input type="text" id="contactPerson" name="contactPerson" required
+                                placeholder="Your full name" autocomplete="name" />
+                        </div>
+                        <div class="form-group">
+                            <label for="contactEmail">Email Address *</label>
+                            <input type="email" id="contactEmail" name="contactEmail" required
+                                placeholder="your.email@example.com" autocomplete="email" />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="contactPhone">Phone Number *</label>
+                            <input type="tel" id="contactPhone" name="contactPhone" required
+                                placeholder="+91 XXXXX XXXXX" autocomplete="tel" />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="teamDescription">Team Description</label>
+                            <textarea id="teamDescription" name="teamDescription" rows="3"
+                                placeholder="Brief description of your team, history, achievements, etc."
+                                autocomplete="off"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-calendar-alt"></i> Event Selection</h3>
+                        <p>Select the event you want to participate in (must be 90+ days away)</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="selectedEvent">Select Event *</label>
+                        <select id="selectedEvent" name="selectedEvent" required>
+                            <option value="">Select an event</option>
+                            <option value="1">Pro League Combine 2025 (January 15, 2025)</option>
+                            <option value="2">Championship Auction 2025 (February 10, 2025)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="terms-agreement">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="ownerTermsAccepted" name="ownerTermsAccepted" required />
+                            <label for="ownerTermsAccepted">
+                                I agree to the <a href="terms.html" class="terms-link" target="_blank">Terms of
+                                    Service</a> and <a href="privacy.html" class="terms-link" target="_blank">Privacy
+                                    Policy</a> *
+                            </label>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="ownerMarketingEmails" name="ownerMarketingEmails" />
+                            <label for="ownerMarketingEmails">
+                                I would like to receive updates about new players and auction opportunities
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <button type="submit" class="btn btn-primary registration-submit">
+                        <i class="fas fa-crown"></i>
+                        Complete Team Owner Registration
+                    </button>
+                </div>
+            </form>
+
+            <div class="form-section success-section" id="ownerSuccessSection" style="display: none;">
+                <div class="success-header">
+                    <div class="success-icon">👑</div>
+                    <h3>Registration Successful!</h3>
+                    <p>Welcome to the exclusive team owners network</p>
+                </div>
+
+                <div class="success-content">
+                    <div class="success-step">
+                        <div class="step-number">1</div>
+                        <div class="step-info">
+                            <h4>Profile Review</h4>
+                            <p>Our team will review your application within 24 hours</p>
+                        </div>
+                    </div>
+
+                    <div class="success-step">
+                        <div class="step-number">2</div>
+                        <div class="step-info">
+                            <h4>Platform Access</h4>
+                            <p>You'll receive login credentials and platform access</p>
+                        </div>
+                    </div>
+
+                    <div class="success-step">
+                        <div class="step-number">3</div>
+                        <div class="step-info">
+                            <h4>Start Building</h4>
+                            <p>Begin scouting players and participating in auctions</p>
+                        </div>
+                    </div>
+
+                    <div class="success-benefits">
+                        <h4>Your Team Owner Benefits:</h4>
+                        <ul>
+                            <li>Exclusive auction access</li>
+                            <li>Advanced player analytics</li>
+                            <li>Direct player negotiations</li>
+                            <li>Team management tools</li>
+                            <li>Performance tracking</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <!-- Generic Alert Modal -->
+    <div id="genericModal" class="modal-overlay" style="display: none; z-index: 1200;">
+        <div class="modal-content">
+            <span class="close-modal" aria-label="Close modal" onclick="closeModal('genericModal')">&times;</span>
+            <div class="modal-header">
+                <h2 id="genericModalTitle">Message</h2>
+                <p id="genericModalDescription">Status information goes here</p>
+            </div>
+            <div class="modal-footer" style="padding: 1.5rem; text-align: right; border-top: 1px solid #e5e7eb;">
+                <button class="btn btn-primary" onclick="closeModal('genericModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Redesigned Event Details Modal (Dark Theme) -->
+    <div id="eventDetailsModal" class="modal-overlay"
+        style="display: none; z-index: 1050; background: rgba(0,0,0,0.8);">
+        <div class="edm-content">
+            <div id="eventDetailsDynamicContent">
+                <!-- Content will be injected by JavaScript -->
+            </div>
+        </div>
+    </div>
+    <!-- Player Registration Modal -->
+    <div id="playerRegistrationModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('playerRegistrationModal')">&times;</span>
+            <div class="modal-header">
+                <h2>Player Registration</h2>
+                <p>Fill in your details to register as a player</p>
+            </div>
+
+            <form id="playerRegistrationForm" onsubmit="handlePlayerRegistration(event)">
+                <div class="form-group">
+                    <label for="playerFirstName">First Name *</label>
+                    <input type="text" id="playerFirstName" name="firstName" required minlength="2" maxlength="50"
+                        pattern="[A-Za-z\s]+" title="Please enter a valid first name (letters and spaces only)"
+                        placeholder="Enter first name" class="form-input" oninput="this.setCustomValidity('')"
+                        autocomplete="given-name" />
+                    <div class="error-message" id="firstNameError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="playerLastName">Last Name *</label>
+                    <input type="text" id="playerLastName" name="lastName" required minlength="1" maxlength="50"
+                        pattern="[A-Za-z\s]+" title="Please enter a valid last name (letters and spaces only)"
+                        placeholder="Enter last name" class="form-input" oninput="this.setCustomValidity('')"
+                        autocomplete="family-name" />
+                    <div class="error-message" id="lastNameError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="playerEmail">Email *</label>
+                    <input type="email" id="playerEmail" name="email" required placeholder="Enter your email"
+                        class="form-input" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}"
+                        title="Please enter a valid email address" oninput="this.setCustomValidity('')"
+                        autocomplete="email" />
+                    <div class="error-message" id="emailError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="playerPassword">Password *</label>
+                    <div class="password-container">
+                        <input type="password" id="playerPassword" name="password" required minlength="8"
+                            maxlength="100" placeholder="Enter your password" class="form-input"
+                            autocomplete="new-password"
+                            oninput="validatePasswordStrength(this.value); validatePasswordRequirements(this.value); this.setCustomValidity('')" />
+                        <span class="password-toggle" onclick="togglePasswordVisibility('playerPassword')">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                    </div>
+                    <div id="passwordStrength" class="password-strength">
+                        <div class="strength-bar"></div>
+                        <div class="strength-text">Password strength: <span>Weak</span></div>
+                    </div>
+                    <div class="error-message" id="passwordError"></div>
+                    <div class="password-requirements" id="passwordRequirements">
+                        <div class="requirement" id="req-length">
+                            <i class="fas fa-circle requirement-icon"></i>
+                            <span>At least 8 characters</span>
+                        </div>
+                        <div class="requirement" id="req-uppercase">
+                            <i class="fas fa-circle requirement-icon"></i>
+                            <span>At least one uppercase letter (A-Z)</span>
+                        </div>
+                        <div class="requirement" id="req-number">
+                            <i class="fas fa-circle requirement-icon"></i>
+                            <span>At least one number (0-9)</span>
+                        </div>
+                        <div class="requirement" id="req-special">
+                            <i class="fas fa-circle requirement-icon"></i>
+                            <span>At least one special character (!@#$%^&*)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="playerConfirmPassword">Confirm Password *</label>
+                    <div class="password-container">
+                        <input type="password" id="playerConfirmPassword" name="confirmPassword" required minlength="8"
+                            maxlength="100" placeholder="Re-enter your password" class="form-input"
+                            autocomplete="new-password" oninput="this.setCustomValidity('')" />
+                        <span class="password-toggle" onclick="togglePasswordVisibility('playerConfirmPassword')">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                    </div>
+                    <div class="error-message" id="playerConfirmPasswordError"></div>
+                </div>
+
+
+                <div class="form-group">
+                    <label for="playerPhone">Mobile Number *</label>
+                    <div class="phone-input-container">
+                        <span class="country-code">+91</span>
+                        <input type="tel" id="playerPhone" name="phone" required pattern="[0-9]{10}"
+                            title="Please enter a valid 10-digit mobile number"
+                            placeholder="Enter 10-digit mobile number" class="form-input phone-input" maxlength="10"
+                            minlength="10" autocomplete="tel"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, ''); this.setCustomValidity('')" />
+                    </div>
+                    <div class="error-message" id="phoneError"></div>
+                </div>
+
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="playerDob">Date of Birth *</label>
+                        <input type="date" id="playerDob" name="dob" required max="" class="form-input"
+                            autocomplete="bday" onfocus="setMaxDate()" onchange="validateAge()" />
+                        <div class="error-message" id="dobError"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="playerGender">Gender *</label>
+                        <select id="playerGender" name="gender" required class="form-select">
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                            <option value="prefer-not-to-say">Prefer not to say</option>
+                        </select>
+                        <div class="error-message" id="genderError"></div>
+                    </div>
+                </div>
+
+                <!-- New Address Fields -->
+                <div class="form-group">
+                    <label for="playerAddress">Address</label>
+                    <input type="text" id="playerAddress" name="address" placeholder="Enter your address"
+                        class="form-input" autocomplete="street-address" />
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="playerCity">City</label>
+                        <input type="text" id="playerCity" name="city" placeholder="Enter your city" class="form-input"
+                            autocomplete="address-level2" />
+                    </div>
+                    <div class="form-group">
+                        <label for="playerState">State</label>
+                        <input type="text" id="playerState" name="state" placeholder="Enter your state"
+                            class="form-input" autocomplete="address-level1" />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="playerCountry">Country</label>
+                        <input type="text" id="playerCountry" name="country" placeholder="Enter your country"
+                            class="form-input" autocomplete="country" />
+                    </div>
+                    <div class="form-group">
+                        <label for="playerPincode">Pincode</label>
+                        <input type="text" id="playerPincode" name="pincode" pattern="[0-9]{6}"
+                            title="Please enter a valid 6-digit pincode" placeholder="Enter pincode" class="form-input"
+                            autocomplete="postal-code" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="playerBio">Bio</label>
+                    <textarea id="playerBio" name="bio" rows="3"
+                        placeholder="Tell us about yourself (max 500 characters)" maxlength="500" class="form-textarea"
+                        autocomplete="off"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="playerHeight">Height (cm)</label>
+                        <input type="number" id="playerHeight" name="height_cm" min="100" max="250" step="1"
+                            placeholder="Height in cm" class="form-input" autocomplete="off" />
+                    </div>
+                    <div class="form-group">
+                        <label for="playerWeight">Weight (kg)</label>
+                        <input type="number" id="playerWeight" name="weight_kg" min="30" max="200" step="0.1"
+                            placeholder="Weight in kg" class="form-input" autocomplete="off" />
+                    </div>
+                </div>
+
+                <!-- Dynamic Sport Ratings Section -->
+                <div id="sportRatingsContainer" style="display: none;">
+                    <div class="form-section-header" style="margin-top: 1.5rem; margin-bottom: 1rem;">
+                        <h4 style="color: #f97316; margin: 0; font-size: 1.1rem;">
+                            <i class="fas fa-star"></i> Rate Your Skills
+                        </h4>
+                        <p style="color: #94a3b8; margin: 0.5rem 0 0 0; font-size: 0.9rem;">
+                            Rate your skill level for each sport (0-10, where 0 = No experience, 10 = Expert)
+                        </p>
+                    </div>
+                    <div id="sportRatingsInputs" class="sport-ratings-grid">
+                        <!-- Dynamic sport rating inputs will be inserted here -->
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="playerTerms" name="terms" required
+                            oninvalid="this.setCustomValidity('You must accept the terms and conditions')"
+                            oninput="this.setCustomValidity('')" />
+                        <label for="playerTerms">I agree to the
+                            <a href="/terms" target="_blank">Terms and Conditions</a> *
+                        </label>
+                    </div>
+                    <div class="error-message" id="termsError"></div>
+                </div>
+
+                <div class="form-section">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i>
+                        Register as Player
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- All JavaScript is loaded from external files -->
+    <script>
+        // Toggle password visibility
+        function togglePasswordVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Set max date for DOB (must be at least 10 years old)
+        function setMaxDate() {
+            const today = new Date();
+            const maxDate = new Date(today.getFullYear() - 10, today.getMonth(), today.getDate());
+            document.getElementById('playerDob').max = maxDate.toISOString().split('T')[0];
+        }
+
+        // Validate age (must be at least 10 years old)
+        function validateAge() {
+            const dobInput = document.getElementById('playerDob');
+            const dobError = document.getElementById('dobError');
+            const dob = new Date(dobInput.value);
+            const today = new Date();
+            const minAgeDate = new Date(today.getFullYear() - 10, today.getMonth(), today.getDate());
+
+            if (dob > minAgeDate) {
+                dobError.textContent = 'You must be at least 10 years old to register';
+                dobInput.setCustomValidity('You must be at least 10 years old');
+            } else {
+                dobError.textContent = '';
+                dobInput.setCustomValidity('');
+            }
+        }
+
+        // Toggle password visibility
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = input.nextElementSibling.querySelector('i');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Validate password strength
+        function validatePasswordStrength(password) {
+            const strengthBar = document.querySelector('.strength-bar');
+            const strengthText = document.querySelector('.strength-text span');
+            let strength = 0;
+
+            // Check password length
+            if (password.length >= 8) strength += 1;
+
+            // Check for numbers
+            if (/[0-9]/.test(password)) strength += 1;
+
+            // Check for lowercase letters
+            if (/[a-z]/.test(password)) strength += 1;
+
+            // Check for uppercase letters
+            if (/[A-Z]/.test(password)) strength += 1;
+
+            // Check for special characters
+            if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+
+            // Update strength bar and text
+            let width = (strength / 5) * 100;
+            let color = '#ef4444'; // red
+            let text = 'Very Weak';
+
+            if (strength >= 4) {
+                color = '#10b981'; // green
+                text = 'Strong';
+            } else if (strength >= 3) {
+                color = '#3b82f6'; // blue
+                text = 'Good';
+            } else if (strength >= 2) {
+                color = '#f59e0b'; // yellow
+                text = 'Fair';
+            } else if (strength >= 1) {
+                color = '#ef4444'; // red
+                text = 'Weak';
+            }
+
+            strengthBar.style.width = width + '%';
+            strengthBar.style.backgroundColor = color;
+            strengthText.textContent = text;
+            strengthText.style.color = color;
+        }
+
+        // Validate password requirements and update visual indicators
+        function validatePasswordRequirements(password) {
+            const reqLength = document.getElementById('req-length');
+            const reqUppercase = document.getElementById('req-uppercase');
+            const reqNumber = document.getElementById('req-number');
+            const reqSpecial = document.getElementById('req-special');
+
+            // Check length requirement
+            if (password.length >= 8) {
+                reqLength.classList.add('met');
+            } else {
+                reqLength.classList.remove('met');
+            }
+
+            // Check uppercase requirement
+            if (/[A-Z]/.test(password)) {
+                reqUppercase.classList.add('met');
+            } else {
+                reqUppercase.classList.remove('met');
+            }
+
+            // Check number requirement
+            if (/[0-9]/.test(password)) {
+                reqNumber.classList.add('met');
+            } else {
+                reqNumber.classList.remove('met');
+            }
+
+            // Check special character requirement
+            if (/[!@#$%^&*]/.test(password)) {
+                reqSpecial.classList.add('met');
+            } else {
+                reqSpecial.classList.remove('met');
+            }
+        }
+
+        // Initialize form validation
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('playerRegistrationForm');
+            if (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            }
+
+            // Set max date for DOB on page load
+            setMaxDate();
+        });
+
+        function showModal(title, message) {
+            const modal = document.getElementById('playerRegistrationModal');
+            const modalTitle = modal.querySelector('.modal-header h2');
+            const modalMessage = modal.querySelector('.modal-header p');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modal.style.display = 'block';
+        }
+
+    </script>
+
+    <!-- Main application script with cache-busting and no-cache headers -->
+    <script>
+        // Clear the browser's cache for this page
+        if ('caches' in window) {
+            caches.keys().then(function (names) {
+                for (let name of names) {
+                    caches.delete(name);
+                }
+            });
+        }
+
+        // Force a fresh load of the script with a unique query parameter
+        document.addEventListener('DOMContentLoaded', function () {
+            // Remove any existing script tags with the same source
+            document.querySelectorAll('script[src^="/js/script.js"]').forEach(function (script) {
+                script.remove();
+            });
+
+            // Create a new script tag with a unique timestamp
+            const script = document.createElement('script');
+            script.src = '/js/script.js?nocache=' + new Date().getTime();
+            script.defer = true;
+
+            // Add error handling
+            script.onerror = function () {
+                console.error('Failed to load script.js');
+            };
+
+            document.body.appendChild(script);
+        });
+    </script>
+
+    <!-- Sport ratings functionality -->
+    <script src="/js/sport-ratings.js"></script>
+</body>
+
+</html>

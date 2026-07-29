@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Bidding System Demo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1e293b 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .demo-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .demo-title {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #f97316;
+            margin-bottom: 1rem;
+        }
+
+        .demo-description {
+            font-size: 1.25rem;
+            color: #94a3b8;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .flow-diagram {
+            background-color: rgba(15, 23, 42, 0.8);
+            border: 1px solid #334155;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .flow-title {
+            font-size: 1.5rem;
+            color: #f97316;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .flow-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .flow-step {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .step-number {
+            background-color: #f97316;
+            color: white;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin: 0 auto 1rem;
+        }
+
+        .step-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .step-description {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
+        .flow-arrow {
+            text-align: center;
+            font-size: 2rem;
+            color: #f97316;
+            margin: 1rem 0;
+        }
+
+        .team-preferences-demo {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .demo-section {
+            background-color: rgba(15, 23, 42, 0.8);
+            border: 1px solid #334155;
+            border-radius: 1rem;
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: #f97316;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .preferences-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .preference-item {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .team-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .team-avatar {
+            width: 3rem;
+            height: 3rem;
+            background-color: #f97316;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+        }
+
+        .team-details h4 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .team-details p {
+            margin: 0.25rem 0 0 0;
+            color: #94a3b8;
+            font-size: 0.875rem;
+        }
+
+        .preference-time {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #22c55e;
+        }
+
+        .admin-decision {
+            background-color: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .final-decision {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #22c55e;
+            margin-bottom: 0.5rem;
+        }
+
+        .decision-details {
+            color: #94a3b8;
+        }
+
+        .test-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .test-btn {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            border: none;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s;
+        }
+
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+        }
+
+        .test-btn.secondary {
+            background: linear-gradient(135deg, #64748b, #475569);
+        }
+
+        .test-btn.success {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+
+        .status-message {
+            background-color: rgba(245, 158, 11, 0.1);
+            border: 1px solid #f59e0b;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin: 1rem 0;
+            color: #f59e0b;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .team-preferences-demo {
+                grid-template-columns: 1fr;
+            }
+
+            .demo-title {
+                font-size: 2rem;
+            }
+
+            .test-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="saas-background"></div>
+    <div class="saas-noise"></div>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1 class="demo-title">🎯 Complete Bidding System Demo</h1>
+            <p class="demo-description">
+                Team Owner Submission → Admin Review → Final Decision Flow
+            </p>
+        </div>
+
+        <div class="flow-diagram">
+            <h2 class="flow-title">📋 Complete Submission & Decision Flow</h2>
+
+            <div class="flow-steps">
+                <div class="flow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Team Owners Submit</div>
+                    <div class="step-description">Team owners select preferred bidding time (10s-60s) and submit when auction starts</div>
+                </div>
+
+                <div class="flow-arrow">→</div>
+
+                <div class="flow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Admin Reviews</div>
+                    <div class="step-description">Admin sees all team preferences and analyzes voting patterns</div>
+                </div>
+
+                <div class="flow-arrow">→</div>
+
+                <div class="flow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Admin Decides</div>
+                    <div class="step-description">Admin sets final bidding time based on team preferences</div>
+                </div>
+
+                <div class="flow-arrow">→</div>
+
+                <div class="flow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-title">Live Auction</div>
+                    <div class="step-description">All teams use the admin-decided bidding time for live auction</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="team-preferences-demo">
+            <div class="demo-section">
+                <h3 class="section-title">
+                    <i class="fas fa-users"></i>
+                    Team Owner Submissions
+                </h3>
+
+                <div class="preferences-list" id="teamPreferencesList">
+                    <div class="preference-item">
+                        <div class="team-info">
+                            <div class="team-avatar">MW</div>
+                            <div class="team-details">
+                                <h4>Mumbai Warriors</h4>
+                                <p>Submitted preferences</p>
+                            </div>
+                        </div>
+                        <div class="preference-time">20s</div>
+                    </div>
+
+                    <div class="preference-item">
+                        <div class="team-info">
+                            <div class="team-avatar">DD</div>
+                            <div class="team-details">
+                                <h4>Delhi Dynamos</h4>
+                                <p>Submitted preferences</p>
+                            </div>
+                        </div>
+                        <div class="preference-time">25s</div>
+                    </div>
+
+                    <div class="preference-item">
+                        <div class="team-info">
+                            <div class="team-avatar">CSK</div>
+                            <div class="team-details">
+                                <h4>Chennai Super Kings</h4>
+                                <p>Submitted preferences</p>
+                            </div>
+                        </div>
+                        <div class="preference-time">20s</div>
+                    </div>
+
+                    <div class="preference-item">
+                        <div class="team-info">
+                            <div class="team-avatar">RCB</div>
+                            <div class="team-details">
+                                <h4>Royal Challengers</h4>
+                                <p>Submitted preferences</p>
+                            </div>
+                        </div>
+                        <div class="preference-time">10s</div>
+                    </div>
+                </div>
+
+                <div class="status-message">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Current Status:</strong> 4 teams have submitted preferences
+                </div>
+            </div>
+
+            <div class="demo-section">
+                <h3 class="section-title">
+                    <i class="fas fa-user-cog"></i>
+                    Admin Decision Panel
+                </h3>
+
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="color: #94a3b8; margin-bottom: 1rem;">📊 Voting Results:</h4>
+                    <div style="display: flex; justify-content: space-around; margin-bottom: 1rem;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #f97316;">10s</div>
+                            <div style="color: #94a3b8; font-size: 0.875rem;">1 vote (25%)</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #22c55e;">20s</div>
+                            <div style="color: #94a3b8; font-size: 0.875rem;">2 votes (50%)</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #3b82f6;">25s</div>
+                            <div style="color: #94a3b8; font-size: 0.875rem;">1 vote (25%)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-decision">
+                    <div class="final-decision">
+                        <i class="fas fa-gavel"></i>
+                        Admin Decision: 20 seconds
+                    </div>
+                    <div class="decision-details">
+                        Based on majority preference (50% voted for 20s)<br>
+                        Final bidding time set for all teams
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-buttons">
+            <button class="test-btn" onclick="simulateTeamSubmissions()">
+                <i class="fas fa-users"></i>
+                Simulate Team Submissions
+            </button>
+
+            <button class="test-btn secondary" onclick="clearAllData()">
+                <i class="fas fa-trash"></i>
+                Clear All Data
+            </button>
+
+            <button class="test-btn success" onclick="showAdminDashboard()">
+                <i class="fas fa-eye"></i>
+                View Admin Dashboard
+            </button>
+        </div>
+
+        <div class="flow-diagram">
+            <h2 class="flow-title">🎮 How to Test the Complete Flow</h2>
+
+            <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin: 1rem 0;">
+                <h3 style="color: #f97316; margin-bottom: 1rem;">📋 Step-by-Step Testing:</h3>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; color: #94a3b8;">
+                    <div>
+                        <h4 style="color: #22c55e; margin-bottom: 0.5rem;">1. Team Owner View</h4>
+                        <p>• Open team owner dashboard</p>
+                        <p>• Select bidding time preference</p>
+                        <p>• Click "Submit Bidding Preferences"</p>
+                        <p>• See confirmation message</p>
+                    </div>
+
+                    <div>
+                        <h4 style="color: #22c55e; margin-bottom: 0.5rem;">2. Admin Review</h4>
+                        <p>• Open admin dashboard</p>
+                        <p>• See team preferences section</p>
+                        <p>• Review all submissions</p>
+                        <p>• Set final bidding time</p>
+                    </div>
+
+                    <div>
+                        <h4 style="color: #22c55e; margin-bottom: 0.5rem;">3. Live Auction</h4>
+                        <p>• Admin starts auction</p>
+                        <p>• Team owners auto-redirected</p>
+                        <p>• All teams use admin's time</p>
+                        <p>• Live bidding begins</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulate team submissions
+        function simulateTeamSubmissions() {
+            const mockPreferences = [
+                {
+                    username: 'owner1',
+                    teamName: 'Mumbai Warriors',
+                    preferredBidTime: 20,
+                    submittedAt: new Date().toISOString()
+                },
+                {
+                    username: 'owner2',
+                    teamName: 'Delhi Dynamos',
+                    preferredBidTime: 25,
+                    submittedAt: new Date(Date.now() - 300000).toISOString()
+                },
+                {
+                    username: 'owner3',
+                    teamName: 'Chennai Super Kings',
+                    preferredBidTime: 20,
+                    submittedAt: new Date(Date.now() - 600000).toISOString()
+                },
+                {
+                    username: 'owner4',
+                    teamName: 'Royal Challengers',
+                    preferredBidTime: 10,
+                    submittedAt: new Date(Date.now() - 900000).toISOString()
+                }
+            ];
+
+            localStorage.setItem('teamOwnerPreferences', JSON.stringify(mockPreferences));
+
+            // Set admin decision
+            localStorage.setItem('auctionBidTime', '20');
+            localStorage.setItem('adminBidTimeDecision', new Date().toISOString());
+
+            alert('✅ Team Submissions Simulated!\n\n4 teams have submitted their preferences:\n• Mumbai Warriors: 20s\n• Delhi Dynamos: 25s\n• Chennai Super Kings: 20s\n• Royal Challengers: 10s\n\nAdmin has set final time to 20 seconds (majority preference).');
+        }
+
+        // Clear all data
+        function clearAllData() {
+            if (confirm('Clear all demo data? This will reset preferences and auction state.')) {
+                localStorage.removeItem('teamOwnerPreferences');
+                localStorage.removeItem('auctionBidTime');
+                localStorage.removeItem('adminBidTimeDecision');
+                localStorage.removeItem('currentAuctionStatus');
+                localStorage.removeItem('auctionStarting');
+
+                alert('✅ All demo data cleared!\n\nSystem reset to initial state.');
+                location.reload();
+            }
+        }
+
+        // Show admin dashboard
+        function showAdminDashboard() {
+            // Simulate admin dashboard with preferences
+            const preferences = JSON.parse(localStorage.getItem('teamOwnerPreferences') || '[]');
+
+            if (preferences.length === 0) {
+                alert('📋 No Team Preferences Yet\n\nNo team owners have submitted preferences.\n\nTry clicking "Simulate Team Submissions" first!');
+                return;
+            }
+
+            const voteCounts = {};
+            preferences.forEach(p => {
+                voteCounts[p.preferredBidTime] = (voteCounts[p.preferredBidTime] || 0) + 1;
+            });
+
+            let result = '📊 Team Owner Preferences Summary:\n\n';
+            preferences.forEach(p => {
+                result += `• ${p.teamName}: ${p.preferredBidTime}s\n`;
+            });
+
+            result += '\n📈 Voting Results:\n';
+            Object.entries(voteCounts).forEach(([time, count]) => {
+                const percentage = Math.round((count / preferences.length) * 100);
+                result += `• ${time}s: ${count} votes (${percentage}%)\n`;
+            });
+
+            const finalTime = localStorage.getItem('auctionBidTime') || 'Not set yet';
+            result += `\n🎯 Admin Decision: ${finalTime} seconds\n\n`;
+
+            result += 'Admin can now review these preferences and set the final auction bidding time!';
+
+            alert(result);
+        }
+
+        // Initialize demo
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load existing preferences
+            const preferences = JSON.parse(localStorage.getItem('teamOwnerPreferences') || '[]');
+            if (preferences.length > 0) {
+                document.querySelector('.status-message').innerHTML =
+                    `<i class="fas fa-check-circle"></i> <strong>Loaded:</strong> ${preferences.length} team preferences found`;
+            }
+
+            // Check admin decision
+            const adminDecision = localStorage.getItem('auctionBidTime');
+            if (adminDecision) {
+                document.querySelector('.final-decision').innerHTML =
+                    `<i class="fas fa-gavel"></i> Final Decision: ${adminDecision} seconds`;
+            }
+        });
+    </script>
+</body>
+</html>
