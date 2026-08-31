@@ -3,9 +3,11 @@ CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     
     -- Account Information
+    username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255),
     phone VARCHAR(20) UNIQUE,
+    user_type VARCHAR(20) NOT NULL,
     
     -- Personal Information
     first_name VARCHAR(50) NOT NULL,
@@ -27,6 +29,11 @@ CREATE TABLE users (
     pincode VARCHAR(20),
     country VARCHAR(100),
     
+    -- Staff Management Fields
+    parent_user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    is_invited BOOLEAN DEFAULT false,
+    invitation_status VARCHAR(20) DEFAULT 'pending',
+
     -- Status and Timestamps
     is_active BOOLEAN DEFAULT true,
     is_verified BOOLEAN DEFAULT false,
@@ -36,6 +43,20 @@ CREATE TABLE users (
     last_login TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Sessions
+CREATE TABLE IF NOT EXISTS sessions (
+    session_id VARCHAR(255) PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    session_token VARCHAR(500) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 -- Events table
@@ -55,6 +76,15 @@ CREATE TABLE events (
     max_participants INTEGER DEFAULT 100,
     current_participants INTEGER DEFAULT 0,
     status VARCHAR(20) DEFAULT 'upcoming',
+    budget DECIMAL(12, 2) DEFAULT 0.00,
+    base_prices JSON NULL,
+    bid_time_limit INTEGER DEFAULT 20,
+    registration_fee DECIMAL(10, 2) DEFAULT 0.00,
+    max_players INTEGER NULL,
+    max_teams INTEGER NULL,
+    extra_info TEXT NULL,
+    is_live BOOLEAN DEFAULT FALSE,
+    creator_id INTEGER NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -114,3 +144,7 @@ CREATE TABLE bids (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Admin User Credentials
+-- NOTE: The password here is 'admin123' hashed with bcrypt
+INSERT INTO users (username, email, password_hash, first_name, last_name, user_type, is_active, is_verified) 
+VALUES ('admin', 'admin@bidzone.com', '$2b$12$R.325hY/QG0lJ0K6xS76tO3/tQOQWp/Lz.wXoT3p4/L/3X/5/K/oW', 'Admin', 'User', 'admin', true, true);

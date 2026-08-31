@@ -197,6 +197,7 @@ class PlayerRegistration(BaseModel):
     weight_kg: Optional[float] = None
     event_id: int = Field(..., alias='eventId')  # Required field
     sport_ratings: Optional[List[dict]] = Field(default=[], alias='sportRatings')  # [{sport_id: 1, rating: 8}, ...]
+    sport_profiles: Optional[Dict[str, Any]] = Field(default=None, alias='sportProfiles')
 
 
     @validator('password')

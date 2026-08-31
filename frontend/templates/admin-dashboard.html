@@ -4,22 +4,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - BidZone</title>
+    <title>Admin Dashboard - JamRig</title>
     <link rel="stylesheet" href="/css/styles.css?v=premium-animated-v1">
-    <link rel="stylesheet" href="/css/saas-theme.css?v=global-v1">
+    <link rel="stylesheet" href="/css/saas-theme.css?v=global-v2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* Admin Dashboard Specific Styles - Modern Neon Theme */
-        body {
+        html, body {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
             background-color: #000000;
             color: #ffffff;
             font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            padding-top: 70px;
-            /* Account for fixed header */
+            margin: 0;
+            padding: 0;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         /* Override header for admin dashboard to match neon theme */
         .header {
+            position: sticky;
+            top: 0;
+            width: calc(100% - 240px);
+            margin-left: 240px;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            z-index: 900;
             background: rgba(0, 0, 0, 0.95);
             backdrop-filter: blur(15px);
             border-bottom: 2px solid #00ffff;
@@ -72,17 +87,56 @@
                 0 0 4px rgba(0, 255, 255, 0.06);
         }
 
-        .dashboard-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
+        /* Align header content with main content */
+        .nav-container {
+            margin: 0 !important;
+            padding: 0 2rem !important;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+
+        .admin-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 240px !important;
+            height: 100vh;
+            box-sizing: border-box;
+            z-index: 1000;
+        }
+
+        .dashboard-container {
+            margin-left: 240px; /* Sidebar width */
+            padding: 28px 32px 40px;
+            transition: margin-left 0.3s ease;
+            width: calc(100% - 240px);
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+        
+        @media (max-width: 1024px) {
+            .dashboard-container {
+                margin-left: 0;
+                width: 100%;
+            }
+            .header {
+                width: 100%;
+                margin-left: 0;
+            }
+        }
+
 
         .dashboard-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
+            width: 100%;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .dashboard-header h1 {
@@ -383,6 +437,9 @@
             border-radius: 0.75rem;
             padding: 1.5rem;
             transition: all 0.3s;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
             box-shadow: 
                 0 0 2px rgba(0, 255, 255, 0.06),
                 0 0 4px rgba(0, 255, 255, 0.04);
@@ -408,12 +465,19 @@
         }
 
         .event-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 24px;
             color: #94a3b8;
             font-size: 0.875rem;
             margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .event-meta {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
         }
 
         .event-meta-item {
@@ -1180,41 +1244,113 @@
             margin: 0 0 1.5rem 0;
         }
 
-        .responses-tabs {
-            display: flex;
-            border-bottom: 1px solid #334155;
-            margin-bottom: 1.5rem;
+        /* Sidebar Navigation Styles */
+        .admin-sidebar {
+            width: 240px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            background: rgba(10, 10, 10, 0.95);
+            border-right: 2px solid #00ffff;
+            box-shadow: 2px 0 5px rgba(0, 255, 255, 0.05);
+            padding: 1.5rem 1rem;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: transform 0.3s ease;
         }
 
-        .tab-btn {
-            background: none;
+
+        .sidebar-section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 1.5rem 0 0.5rem 0.75rem;
+        }
+
+        .admin-sidebar .tab-btn {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            background: transparent;
             border: none;
             color: #94a3b8;
-            padding: 0.75rem 1.5rem;
+            padding: 0.875rem 1.25rem;
+            margin-bottom: 0.25rem;
             font-size: 1rem;
             font-weight: 500;
             cursor: pointer;
-            position: relative;
-            transition: all 0.3s ease;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            text-align: left;
         }
 
-        .tab-btn:hover {
+        .admin-sidebar .tab-btn i {
+            width: 24px;
+            font-size: 1.1rem;
+            margin-right: 0.75rem;
+            text-align: center;
+            opacity: 0.8;
+            transition: all 0.2s ease;
+        }
+
+        .admin-sidebar .tab-btn:hover {
             color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
         }
 
-        .tab-btn.active {
-            color: #f97316;
+        .admin-sidebar .tab-btn:hover i {
+            opacity: 1;
+            text-shadow: 0 0 5px rgba(255,255,255,0.5);
+        }
+
+        .admin-sidebar .tab-btn.active {
+            color: #ffffff;
+            background: linear-gradient(90deg, rgba(249, 115, 22, 0.15) 0%, rgba(0, 255, 255, 0.05) 100%);
+            border-left: 4px solid #f97316;
             font-weight: 600;
+            box-shadow: inset 2px 0 5px rgba(249, 115, 22, 0.1);
         }
 
-        .tab-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background-color: #f97316;
+        .admin-sidebar .tab-btn.active i {
+            color: #00ffff;
+            opacity: 1;
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+        }
+        
+        /* Mobile Hamburger & Sidebar Toggle */
+        .mobile-nav-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            color: #00ffff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-right: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .mobile-nav-toggle:hover {
+            text-shadow: 0 0 5px #00ffff;
+        }
+
+        @media (max-width: 1024px) {
+            .mobile-nav-toggle {
+                display: block;
+            }
+            .admin-sidebar {
+                transform: translateX(-100%);
+            }
+            .admin-sidebar.sidebar-open {
+                transform: translateX(0);
+            }
+            .header {
+                width: 100%;
+                margin-left: 0;
+            }
         }
 
         .tab-content {
@@ -1398,8 +1534,51 @@
         /* --- HEADER & NAV --- */
         html[data-theme="light"] .header {
             background: rgba(255,255,255,0.96) !important;
-            border-bottom: 1px solid #E5E7EB !important;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+            border-bottom: 2px solid #E5E7EB !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+        }
+        html[data-theme="light"] .nav-logo {
+            color: #2563EB !important;
+            text-shadow: none !important;
+        }
+        html[data-theme="light"] .nav-link {
+            color: #4B5563 !important;
+            text-shadow: none !important;
+        }
+        html[data-theme="light"] .nav-link:hover {
+            color: #2563EB !important;
+        }
+        html[data-theme="light"] .nav-buttons .btn-outline {
+            color: #4B5563 !important;
+            border-color: #D1D5DB !important;
+            box-shadow: none !important;
+        }
+        html[data-theme="light"] .nav-buttons .btn-outline:hover {
+            background-color: #F3F4F6 !important;
+            color: #111827 !important;
+        }
+
+        /* --- SIDEBAR (Light Theme) --- */
+        html[data-theme="light"] .admin-sidebar {
+            background: #FFFFFF !important;
+            border-right: 1px solid #E5E7EB !important;
+            box-shadow: 1px 0 3px rgba(0,0,0,0.05) !important;
+        }
+
+        html[data-theme="light"] .sidebar-section-title {
+            color: #6B7280 !important;
+        }
+        html[data-theme="light"] .admin-sidebar .tab-btn {
+            color: #4B5563 !important;
+        }
+        html[data-theme="light"] .admin-sidebar .tab-btn:hover {
+            background: #F3F4F6 !important;
+            color: #111827 !important;
+        }
+        html[data-theme="light"] .admin-sidebar .tab-btn.active {
+            background: #EEF2FF !important;
+            color: #2563EB !important;
+            border-left: 4px solid #2563EB !important;
         }
         html[data-theme="light"] .nav-logo {
             color: #2563EB !important;
@@ -1866,6 +2045,24 @@
             text-shadow: none !important;
         }
 
+        /* --- PREMIUM VIEW LIGHT MODE --- */
+        html[data-theme="light"] .manage-events-container.premium-view {
+            background: #FFFFFF !important;
+            border: 1px solid #E5E7EB !important;
+            border-top: 4px solid #8b5cf6 !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        }
+        html[data-theme="light"] .manage-events-container.premium-view .section-title {
+            color: #4f46e5 !important;
+        }
+        html[data-theme="light"] .manage-events-container.premium-view .glass-card {
+            background: #F8FAFC !important;
+            border: 1px solid #E5E7EB !important;
+        }
+        html[data-theme="light"] .manage-events-container.premium-view .events-toolbar.glass-card {
+            background: #F1F5F9 !important;
+        }
+
         /* --- GLOBAL TEXT-SHADOW REMOVAL in light mode --- */
         html[data-theme="light"] * {
             text-shadow: none !important;
@@ -1901,9 +2098,14 @@
     <header class="header">
         <nav class="navbar">
             <div class="nav-container">
-                <div class="nav-logo">
-                    <i class="fas fa-trophy"></i>
-                    <span>BidZone</span>
+                <div style="display: flex; align-items: center;">
+                    <button class="mobile-nav-toggle" onclick="toggleSidebar()" aria-label="Toggle Sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="nav-logo">
+                        <i class="fas fa-trophy"></i>
+                        <span>JamRig</span>
+                    </div>
                 </div>
                 <ul class="nav-menu">
                     <li><a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
@@ -1912,25 +2114,61 @@
                     <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle Light/Dark Mode">
                         <i class="theme-icon fas fa-moon"></i>
                     </button>
-                    <button class="btn btn-outline" onclick="logout()">Logout</button>
                 </div>
             </div>
         </nav>
     </header>
+    <!-- Sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar" style="display: flex; flex-direction: column; height: 100vh;">
+        <div class="sidebar-section-title" style="margin-top: 0.5rem;">Menu</div>
+        <button class="tab-btn active" data-tab="dashboard">
+            <i class="fas fa-chart-line"></i> Overview
+        </button>
+        <button class="tab-btn" data-tab="sports">
+            <i class="fas fa-trophy"></i> Sports
+        </button>
+
+        <div class="sidebar-section-title">Management</div>
+        <button class="tab-btn" data-tab="teams">
+            <i class="fas fa-users-cog"></i> Teams
+        </button>
+        <button class="tab-btn" data-tab="players">
+            <i class="fas fa-user-plus"></i> Players
+        </button>
+        <button class="tab-btn" data-tab="team-owners">
+            <i class="fas fa-briefcase"></i> Team Owners
+        </button>
+
+        <div class="sidebar-section-title">Auction</div>
+        <button class="tab-btn" data-tab="auctions">
+            <i class="fas fa-gavel"></i> Auctions
+        </button>
+
+        <div class="sidebar-section-title">Reporting</div>
+        <button class="tab-btn" data-tab="reports">
+            <i class="fas fa-file-invoice"></i> Reports
+        </button>
+
+        <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; width: 100%;">
+            <button class="tab-btn" onclick="logout()" style="color: #ef4444; justify-content: flex-start;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </aside>
 
     <!-- Dashboard Container -->
     <div class="dashboard-container">
         <div class="dashboard-header">
-            <h1>Admin Dashboard</h1>
+            <div>
+                <h1>Welcome back, Admin 👋</h1>
+                <p style="color: #94a3b8; margin-top: 0.5rem; font-size: 1.1rem;">Manage your events, teams, and live auctions.</p>
+            </div>
             <div class="admin-controls">
                 <button class="create-event-btn" onclick="openCreateEventModal()">
                     <i class="fas fa-plus-circle"></i>
                     Create Event
                 </button>
-                <button class="auction-control-btn" id="startAuctionBtn" onclick="prepareAuction()">
-                    <i class="fas fa-play"></i>
-                    Start Auction
-                </button>
+
                 <button class="auction-control-btn secondary" id="pauseAuctionBtn" onclick="pauseAuction()"
                     style="display: none;">
                     <i class="fas fa-pause"></i>
@@ -1943,33 +2181,17 @@
                 </button>
             </div>
         </div>
-        <!-- Tabs Navigation -->
-        <div class="responses-tabs" style="display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid #334155; padding-bottom: 1rem; overflow-x: auto;">
-            <button class="tab-btn active" data-tab="dashboard">
-                <i class="fas fa-chart-line"></i> Overview
-            </button>
-            <button class="tab-btn" data-tab="sports">
-                <i class="fas fa-trophy"></i> Sports
-            </button>
-            <button class="tab-btn" data-tab="teams">
-                <i class="fas fa-users-cog"></i> Teams
-            </button>
-            <button class="tab-btn" data-tab="players">
-                <i class="fas fa-user-plus"></i> Players
-            </button>
-            <button class="tab-btn" data-tab="team-owners">
-                <i class="fas fa-briefcase"></i> Team Owners
-            </button>
-            <button class="tab-btn" data-tab="auctions">
-                <i class="fas fa-gavel"></i> Auctions
-            </button>
-            <button class="tab-btn" data-tab="reports">
-                <i class="fas fa-file-invoice"></i> Reports
-            </button>
-        </div>
+
 
         <!-- Dashboard Overview Section -->
-        <div class="registrations-section" id="dashboardSection">
+        <div id="dashboardSection">
+            <!-- Activity Log Modal Trigger (FAB) -->
+            <div style="position: fixed; bottom: 30px; right: 30px; z-index: 9999;">
+                <button onclick="document.getElementById('activityLogModal').classList.add('active')" title="View Activity Logs" style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #000; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 1.5rem; cursor: pointer; box-shadow: 0 0 15px rgba(0,255,255,0.5); display: flex; align-items: center; justify-content: center; transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                    <i class="fas fa-history"></i>
+                </button>
+            </div>
+        </div>
         <div class="registrations-section" id="registrationsSection" style="display: none;">
             <div class="section-header">
                 <div>
@@ -1985,8 +2207,8 @@
                     </select>
                 </div>
             </div>
-            <div class="registrations-table-container">
-                <table class="registrations-table">
+            <div class="admin-table-container">
+                <table class="admin-table">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -2044,8 +2266,8 @@
                     </select>
                 </div>
             </div>
-            <div class="registrations-table-container">
-                <table class="registrations-table">
+            <div class="admin-table-container">
+                <table class="admin-table">
                     <thead>
                         <tr>
                             <th>Team Name</th>
@@ -2322,7 +2544,7 @@
                 </div>
             </div>
         </div>
-    </div>
+
 
         <!-- New Admin Dashboard Modules -->
 
@@ -2337,8 +2559,8 @@
                     <i class="fas fa-plus"></i> Add Sport
                 </button>
             </div>
-            <div class="table-container">
-                <table class="data-table" id="sportsTable">
+            <div class="admin-table-container">
+                <table class="admin-table" id="sportsTable">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -2362,8 +2584,8 @@
                     <p>View all registered teams and staff</p>
                 </div>
             </div>
-            <div class="table-container">
-                <table class="data-table" id="teamsTable">
+            <div class="admin-table-container">
+                <table class="admin-table" id="teamsTable">
                     <thead>
                         <tr>
                             <th>Team ID</th>
@@ -2390,8 +2612,8 @@
                     <p>Monitor live bids and auction events</p>
                 </div>
             </div>
-            <div class="table-container">
-                <table class="data-table" id="bidsTable">
+            <div class="admin-table-container">
+                <table class="admin-table" id="bidsTable">
                     <thead>
                         <tr>
                             <th>Bid ID</th>
@@ -2437,11 +2659,109 @@
             </div>
         </div>
 
-    <div class="manage-events-container" id="manageEventsContainer" style="display: none;">
-        <h2 class="section-title">Manage Events</h2>
+    <style>
+        .manage-events-container.premium-view {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(10, 10, 10, 0.98));
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            border-top: 4px solid #8b5cf6;
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .manage-events-container.premium-view .section-title {
+            color: #c4b5fd;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 1.75rem;
+            text-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .manage-events-container.premium-view .section-title::before {
+            content: '\f073';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: #8b5cf6;
+        }
+        .manage-events-container.premium-view .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Fix Manage Events Statistics Cards Layout */
+        .events-summary-cards .stat-card {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            padding: 1.5rem !important;
+            gap: 1rem !important;
+            position: relative !important;
+            overflow: hidden !important; /* Ensure nothing escapes card boundaries */
+            height: 100% !important;
+            box-sizing: border-box !important;
+        }
+        
+        .events-summary-cards .stat-card .stat-icon-wrapper {
+            width: 48px !important;
+            height: 48px !important;
+            border-radius: 12px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 1.5rem !important;
+            margin: 0 !important;
+            flex-shrink: 0 !important;
+        }
+        
+        .events-summary-cards .stat-card .stat-info {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0.25rem !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+        
+        .events-summary-cards .stat-card .stat-value {
+            font-size: 1.75rem !important;
+            font-weight: 700 !important;
+            line-height: 1.2 !important;
+            margin: 0 !important;
+        }
+        
+        .events-summary-cards .stat-card .stat-label {
+            font-size: 0.875rem !important;
+            opacity: 0.8 !important;
+            font-weight: 500 !important;
+            margin: 0 !important;
+        }
+
+        @media (min-width: 1025px) {
+            .events-summary-cards { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+        }
+        @media (max-width: 1024px) {
+            .events-summary-cards { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        }
+        @media (max-width: 640px) {
+            .events-summary-cards { grid-template-columns: minmax(0, 1fr) !important; }
+        }
+        @media (max-width: 768px) {
+            .events-toolbar { grid-template-columns: 1fr !important; }
+            .events-toolbar select { width: 100% !important; }
+        }
+    </style>
+    <div class="manage-events-container premium-view" id="manageEventsContainer">
+        <h2 class="section-title">Manage Events Center</h2>
         
         <!-- Summary Cards -->
-        <div class="events-summary-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="events-summary-cards" style="display: grid; gap: 1.5rem; margin-bottom: 2rem;">
             <div class="stat-card glass-card">
                 <div class="stat-icon-wrapper" style="color: #3b82f6; background: rgba(59, 130, 246, 0.1);"><i class="fas fa-calendar-alt"></i></div>
                 <div class="stat-info"><div class="stat-value" id="summaryTotalEvents">0</div><div class="stat-label">Total Events</div></div>
@@ -2461,8 +2781,8 @@
         </div>
 
         <!-- Toolbar (Search & Filter) -->
-        <div class="events-toolbar glass-card" style="display: flex; gap: 1rem; align-items: center; margin-bottom: 2rem; flex-wrap: wrap;">
-            <div class="search-box" style="flex: 1; min-width: 250px;">
+        <div class="events-toolbar glass-card" style="display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 16px; align-items: center; margin-bottom: 2rem; padding: 1.5rem; box-sizing: border-box;">
+            <div class="search-box">
                 <input type="text" id="eventSearch" placeholder="Search events by name or venue..." class="form-control" style="width: 100%;">
             </div>
             <select id="filterSport" class="form-control" style="width: auto; min-width: 150px;">
@@ -2476,7 +2796,7 @@
             </select>
         </div>
 
-        <div class="events-grid" id="eventsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+        <div class="events-grid" id="eventsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
             <!-- Events will be dynamically loaded here -->
         </div>
     </div>
@@ -2521,114 +2841,8 @@
             transition: all 0.3s ease;
         }
     </style>
-    <!-- Activity Log Section -->
-    <div class="activity-log-section">
-        <div class="activity-log-header">
-            <h3><i class="fas fa-history"></i> Activity Log</h3>
-            <div class="activity-log-controls">
-                <div class="sort-controls">
-                    <label for="sortOrder">Sort by:</label>
-                    <select id="sortOrder" onchange="applySortAndFilter()">
-                        <option value="newest">Newest First</option>
-                        <option value="oldest">Oldest First</option>
-                    </select>
-                </div>
-                <div class="filter-controls">
-                    <span style="font-weight: 600; color: #6b7280; font-size: 0.875rem;">Filter:</span>
-                    <div class="filter-buttons">
-                        <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
-                        <button class="filter-btn" data-filter="admin" onclick="setFilter('admin')">Admin</button>
-                        <button class="filter-btn" data-filter="team_owner" onclick="setFilter('team_owner')">Team
-                            Owners</button>
-                        <button class="filter-btn" data-filter="player" onclick="setFilter('player')">Players</button>
-                    </div> <!-- end of filter-buttons -->
-                    <!-- Pagination controls for activity log -->
-                    <div class="pagination-controls activity-log-pagination">
-                        <div class="pagination-info">
-                            <span id="activityLogInfo">Showing 0-0 of 0</span>
-                        </div>
-                        <div class="pagination-buttons">
-                            <button class="pagination-btn" id="activityLogPrevBtn"
-                                onclick="changeActivityLogPage(-1)">Prev</button>
-                            <span class="page-number" id="activityLogPageNumber">Page 1</span>
-                            <button class="pagination-btn" id="activityLogNextBtn"
-                                onclick="changeActivityLogPage(1)">Next</button>
-                        </div>
-                        <div class="page-size-selector">
-                            <label for="activityLogPageSize">Page size:</label>
-                            <select id="activityLogPageSize" onchange="changeActivityLogPageSize(this.value)">
-                                <option value="10" selected>10</option>
-                                <option value="20">20</option>
-                                <option value="50">50</option>
-                            </select>
-                        </div>
-                    </div>
-                </div> <!-- end of filter-controls -->
-                <button class="refresh-log-btn" onclick="refreshActivityLog()">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
-            </div>
-        </div>
-        <div class="activity-log-table-container">
-            <table class="activity-log-table" id="activityLogTable">
-                <thead>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>Action</th>
-                        <th>Details</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Activity logs will be dynamically loaded here -->
-                </tbody>
-            </table>
-        </div>
-        <div class="no-logs" id="noLogsMessage" style="display: none;">
-            No activity logs yet.
-        </div>
-    </div>
-
-    <!-- Messages Section -->
-    <div class="messages-section"
-        style="background-color: rgba(10, 10, 10, 0.95); border: 2px solid #00ffff; border-radius: 1rem; padding: 2rem; margin-bottom: 2rem;">
-        <div class="section-header">
-            <h3
-                style="color: #00ffff; font-size: 1.5rem; margin: 0 0 0.5rem 0; padding: 0; display: flex; align-items: center; gap: 0.75rem; text-shadow: 0 0 1px #00ffff;">
-                <i class="fas fa-envelope"></i> Support Messages
-            </h3>
-            <p style="color: #94a3b8; margin: 0 0 1rem 0;">Real-time support requests from team owners.</p>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <label for="messageSortSelect" style="color: #94a3b8; font-size: 0.875rem;">Sort by:</label>
-                    <select id="messageSortSelect" onchange="loadMessages()" class="form-control" style="width: auto; min-width: 160px;">
-                        <option value="date_desc">Newest First</option>
-                        <option value="date_asc">Oldest First</option>
-                        <option value="unread">Unread First</option>
-                        <option value="team_name">Team Name (A-Z)</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <div class="messages-container" id="messagesContainer"
-            style="max-height: 400px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem;">
-            <!-- Messages will be loaded here -->
-        </div>
-        <div id="noMessages" style="text-align: center; color: #94a3b8; padding: 2rem; display: none;">
-            No messages yet.
-        </div>
-        <!-- Pagination Controls -->
-        <div id="messagePagination"
-            style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; display: none;">
-            <button class="pagination-btn" onclick="changeMessagePage(-1)">
-                <i class="fas fa-chevron-left"></i> Previous
-            </button>
-            <span id="messagePageInfo" class="page-info">Page 1 of 1</span>
-            <button class="pagination-btn" onclick="changeMessagePage(1)">
-                Next <i class="fas fa-chevron-right"></i>
-            </button>
-        </div>
-    </div>
+    <!-- Removed Activity Log Section -->
+    <!-- Removed Messages Section -->
     </div>
 
     <!-- Edit Event Modal -->
@@ -2649,15 +2863,13 @@
                     </div>
 
                     <div class="form-group">
-                        <span class="form-label-group"
-                            style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #94a3b8;">Sports</span>
-                        <div class="sports-checkboxes" id="editSportsCheckboxes">
-                            <!-- Sports checkboxes will be dynamically added -->
-                        </div>
-                        <button type="button" class="add-sport-btn">
-                            <i class="fas fa-plus"></i>
-                            Add Sport
-                        </button>
+                        <label for="editSportId" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #94a3b8;">Sport Category</label>
+                        <select id="editSportId" class="form-control" required onchange="handleSportSelectionChange(this.value)">
+                            <option value="">Select a Sport...</option>
+                        </select>
+                        <small style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem; display: block;">
+                            Selecting a sport will auto-fill its default configurations.
+                        </small>
                     </div>
 
                     <div class="form-group">
@@ -2884,6 +3096,73 @@
         </div>
     </div>
 
+    <!-- Configure Sport Modal -->
+    <div class="admin-modal" id="configureSportModal">
+        <div class="modal-content" style="max-width: 900px; width: 90%;">
+            <div class="modal-header">
+                <div>
+                    <h2><i class="fas fa-cogs"></i> Configure Cricket</h2>
+                    <p class="modal-subtitle" id="configureSportModalSubtitle">Set the default auction configuration for Cricket events.</p>
+                </div>
+                <button class="modal-close" onclick="closeConfigureSportModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 1.5rem;">
+                <input type="hidden" id="configureSportId">
+                <input type="hidden" id="configRolesHidden">
+                <input type="hidden" id="configAttributesHidden">
+                <input type="hidden" id="configRulesHidden">
+                
+                <div class="form-section">
+                    <h3 style="margin-bottom: 1rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">Team Budget</h3>
+                    <div class="form-group">
+                        <label>Default Team Budget (₹)</label>
+                        <input type="number" id="configDefaultBudget" class="form-control" placeholder="e.g. 10000000" min="1" required>
+                    </div>
+                </div>
+
+                <div class="form-section" style="margin-top: 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">Player Categories</h3>
+                    
+                    <table class="table" style="width: 100%; margin-bottom: 1rem; text-align: left;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid #334155; color: #94a3b8;">
+                                <th style="padding-bottom: 0.5rem;">Category</th>
+                                <th style="padding-bottom: 0.5rem;">Base Price (₹)</th>
+                                <th style="padding-bottom: 0.5rem; text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="configCategoriesTableBody">
+                            <!-- Categories will be rendered here dynamically -->
+                        </tbody>
+                    </table>
+
+                    <div style="background: #1e293b; padding: 1rem; border-radius: 0.5rem; display: flex; gap: 1rem; align-items: flex-end;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.875rem;">Category Name</label>
+                            <input type="text" id="newCategoryName" class="form-control" placeholder="e.g. Marquee">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.875rem;">Base Price (₹)</label>
+                            <input type="number" id="newCategoryPrice" class="form-control" placeholder="e.g. 100000" min="0">
+                        </div>
+                        <button class="btn btn-primary" onclick="addSportCategory()" type="button" style="padding: 0.75rem 1.5rem; height: 42px;">+ Add</button>
+                    </div>
+                </div>
+                
+                <div class="form-section" style="margin-top: 2rem; background: #0f172a; padding: 1rem; border-radius: 0.5rem; border: 1px dashed #334155;">
+                    <h4 style="color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem;"><i class="fas fa-info-circle"></i> Cricket Configuration</h4>
+                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>Roles:</strong> Batsman · Bowler · All-Rounder · Wicket-Keeper</p>
+                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>Player Attributes:</strong> Automatically configured for Cricket</p>
+                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0;"><strong>Auction Rules:</strong> Automatically configured</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeConfigureSportModal()">Cancel</button>
+                <button class="btn-save" onclick="saveSportConfiguration()">Save Configuration</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Event Team Owners Modal -->
     <div class="admin-modal" id="eventTeamOwnersModal">
         <div class="modal-content" style="max-width: 1200px; width: 90%;">
@@ -2950,7 +3229,103 @@
         </div>
     </div>
 
-    <script src="/js/admin-dashboard.js?v=17"></script>
+    <!-- Auction Preparation Modal -->
+    <div class="admin-modal" id="auctionPrepModal">
+        <div class="modal-content" style="max-width: 800px; width: 90%;">
+            <div class="modal-header">
+                <div>
+                    <h2><i class="fas fa-gavel"></i> Auction Preparation</h2>
+                    <p class="modal-subtitle" id="auctionPrepSubtitle">Review registered teams and players before starting the auction.</p>
+                </div>
+                <button class="modal-close" onclick="document.getElementById('auctionPrepModal').classList.remove('active')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem;" id="auctionPrepBody">
+                <div style="text-align: center; color: #94a3b8;">Loading preparation data...</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="document.getElementById('auctionPrepModal').classList.remove('active')">Cancel</button>
+                <button class="btn-save" id="btnProceedAuction" style="background: linear-gradient(135deg, #00ffff 0%, #0080ff 100%); color: black;" onclick="proceedWithAuction()">Proceed With Auction</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Log Modal -->
+    <div class="admin-modal" id="activityLogModal">
+        <div class="modal-content" style="max-width: 900px; width: 90%;">
+            <div class="modal-header">
+                <div>
+                    <h2><i class="fas fa-history"></i> Activity Logs</h2>
+                    <p class="modal-subtitle">Review recent actions and events.</p>
+                </div>
+                <button class="modal-close" onclick="document.getElementById('activityLogModal').classList.remove('active')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1rem;">
+                <div class="activity-log-section" style="border: none; box-shadow: none; padding: 0;">
+                    <div class="activity-log-controls" style="margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div class="sort-controls">
+                            <label for="sortOrder">Sort by:</label>
+                            <select id="sortOrder" onchange="applySortAndFilter()">
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                            </select>
+                        </div>
+                        <div class="filter-controls">
+                            <span style="font-weight: 600; color: #6b7280; font-size: 0.875rem;">Filter:</span>
+                            <div class="filter-buttons">
+                                <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+                                <button class="filter-btn" data-filter="admin" onclick="setFilter('admin')">Admin</button>
+                                <button class="filter-btn" data-filter="team_owner" onclick="setFilter('team_owner')">Team Owners</button>
+                                <button class="filter-btn" data-filter="player" onclick="setFilter('player')">Players</button>
+                            </div>
+                            <div class="pagination-controls activity-log-pagination" style="margin-top: 10px;">
+                                <div class="pagination-info">
+                                    <span id="activityLogInfo">Showing 0-0 of 0</span>
+                                </div>
+                                <div class="pagination-buttons">
+                                    <button class="pagination-btn" id="activityLogPrevBtn" onclick="changeActivityLogPage(-1)">Prev</button>
+                                    <span class="page-number" id="activityLogPageNumber">Page 1</span>
+                                    <button class="pagination-btn" id="activityLogNextBtn" onclick="changeActivityLogPage(1)">Next</button>
+                                </div>
+                                <div class="page-size-selector">
+                                    <label for="activityLogPageSize">Page size:</label>
+                                    <select id="activityLogPageSize" onchange="changeActivityLogPageSize(this.value)">
+                                        <option value="10" selected>10</option>
+                                        <option value="20">20</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="refresh-log-btn" onclick="refreshActivityLog()" style="margin-top: 10px;">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="admin-table-container">
+                        <table class="admin-table" id="activityLogTable" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Action</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Activity logs will be dynamically loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="no-logs" id="noLogsMessage" style="display: none; padding: 2rem; text-align: center;">
+                        No activity logs yet.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="document.getElementById('activityLogModal').classList.remove('active')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/admin-dashboard.js?v=21"></script>
 </body>
 
 </html>

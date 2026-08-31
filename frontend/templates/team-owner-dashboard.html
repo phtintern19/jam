@@ -4,12 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team Owner Dashboard - BidZone</title>
+    <title>Team Owner Dashboard - JamRig</title>
     <!-- Fonts -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap">
     <!-- FontAwesome / Lucide equivalents -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- CSS Dependencies -->
     <link rel="stylesheet" href="/css/styles.css?v=premium-animated-v1">
     <link rel="stylesheet" href="/css/saas-theme.css?v=global-v2">
@@ -22,15 +23,28 @@
             font-family: 'Inter', sans-serif;
             overflow-x: hidden;
             min-height: 100vh;
-            /* padding-top moved to layout */
             padding-bottom: 3rem;
         }
 
-        h1, h2, h3, h4, h5, h6 {
+        .view-section {
+            display: none;
+            width: 100%;
+        }
+
+        .view-section.active-view {
+            display: grid;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
-        
+
         /* --------------------------------------------------------------------------
            UNIFIED SIDEBAR (RBAC)
            -------------------------------------------------------------------------- */
@@ -39,17 +53,19 @@
             min-height: 100vh;
             padding-top: 75px;
         }
+
         .saas-sidebar {
             width: 260px;
             background: rgba(9, 9, 11, 0.7);
             backdrop-filter: blur(20px);
-            border-right: 1px solid rgba(255,255,255,0.05);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
             padding: 2rem 1rem;
             position: fixed;
             height: calc(100vh - 75px);
             overflow-y: auto;
             z-index: 100;
         }
+
         .sidebar-item {
             display: flex;
             align-items: center;
@@ -62,28 +78,40 @@
             transition: all 0.3s ease;
             font-weight: 500;
         }
-        .sidebar-item:hover, .sidebar-item.active {
-            background: rgba(255,255,255,0.05);
+
+        .sidebar-item:hover,
+        .sidebar-item.active {
+            background: rgba(255, 255, 255, 0.05);
             color: var(--text-white);
         }
+
         .sidebar-item i {
             width: 20px;
             text-align: center;
             color: var(--accent-cyan);
         }
+
         .sidebar-item.active {
             background: linear-gradient(90deg, rgba(6, 182, 212, 0.15) 0%, transparent 100%);
             border-left: 3px solid var(--accent-cyan);
         }
+
         .saas-main-content {
             flex-grow: 1;
             margin-left: 260px;
             padding: 2rem;
             max-width: calc(100% - 260px);
         }
+
         @media (max-width: 992px) {
-            .saas-sidebar { display: none; }
-            .saas-main-content { margin-left: 0; max-width: 100%; }
+            .saas-sidebar {
+                display: none;
+            }
+
+            .saas-main-content {
+                margin-left: 0;
+                max-width: 100%;
+            }
         }
 
         /* --------------------------------------------------------------------------
@@ -145,8 +173,10 @@
         .hero-banner::before {
             content: '';
             position: absolute;
-            top: -50%; left: -10%;
-            width: 50%; height: 200%;
+            top: -50%;
+            left: -10%;
+            width: 50%;
+            height: 200%;
             background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
             transform: rotate(30deg);
             pointer-events: none;
@@ -155,8 +185,10 @@
         .hero-banner::after {
             content: '';
             position: absolute;
-            bottom: -50%; right: -10%;
-            width: 40%; height: 200%;
+            bottom: -50%;
+            right: -10%;
+            width: 40%;
+            height: 200%;
             background: radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 70%);
             transform: rotate(-30deg);
             pointer-events: none;
@@ -192,7 +224,7 @@
             position: relative;
             z-index: 2;
             font-size: 8rem;
-            color: rgba(255,255,255,0.05);
+            color: rgba(255, 255, 255, 0.05);
             background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
             -webkit-background-clip: text;
             background-clip: text;
@@ -221,14 +253,29 @@
             justify-content: center;
             font-size: 1.5rem;
             flex-shrink: 0;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .stat-icon-blue { color: var(--accent-blue); box-shadow: 0 0 20px rgba(59, 130, 246, 0.2) inset; }
-        .stat-icon-purple { color: var(--accent-purple); box-shadow: 0 0 20px rgba(139, 92, 246, 0.2) inset; }
-        .stat-icon-cyan { color: var(--accent-cyan); box-shadow: 0 0 20px rgba(6, 182, 212, 0.2) inset; }
-        .stat-icon-green { color: #10B981; box-shadow: 0 0 20px rgba(16, 185, 129, 0.2) inset; }
+        .stat-icon-blue {
+            color: var(--accent-blue);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2) inset;
+        }
+
+        .stat-icon-purple {
+            color: var(--accent-purple);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.2) inset;
+        }
+
+        .stat-icon-cyan {
+            color: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2) inset;
+        }
+
+        .stat-icon-green {
+            color: #10B981;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.2) inset;
+        }
 
         .stat-info {
             display: flex;
@@ -254,9 +301,26 @@
         /* --------------------------------------------------------------------------
            MAIN DASHBOARD PANELS
            -------------------------------------------------------------------------- */
-        .left-panel { grid-column: span 3; display: flex; flex-direction: column; gap: 1.5rem; }
-        .center-panel { grid-column: span 6; display: flex; flex-direction: column; gap: 1.5rem; }
-        .right-panel { grid-column: span 3; display: flex; flex-direction: column; gap: 1.5rem; }
+        .left-panel {
+            grid-column: span 3;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .center-panel {
+            grid-column: span 6;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .right-panel {
+            grid-column: span 3;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
 
         .panel-header {
             display: flex;
@@ -293,7 +357,10 @@
         .live-auction-card::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 4px;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
             background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
         }
 
@@ -324,10 +391,32 @@
             animation: pulse-glow 2s infinite;
         }
 
-        .status-not-started { background: rgba(100, 116, 139, 0.2); color: #94A3B8; border: 1px solid rgba(100, 116, 139, 0.4); animation: none; }
-        .status-running { background: rgba(34, 197, 94, 0.2); color: #4ADE80; border: 1px solid rgba(34, 197, 94, 0.4); }
-        .status-paused { background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.4); animation: none; }
-        .status-ended { background: rgba(239, 68, 68, 0.2); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.4); animation: none; }
+        .status-not-started {
+            background: rgba(100, 116, 139, 0.2);
+            color: #94A3B8;
+            border: 1px solid rgba(100, 116, 139, 0.4);
+            animation: none;
+        }
+
+        .status-running {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ADE80;
+            border: 1px solid rgba(34, 197, 94, 0.4);
+        }
+
+        .status-paused {
+            background: rgba(245, 158, 11, 0.2);
+            color: #FBBF24;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            animation: none;
+        }
+
+        .status-ended {
+            background: rgba(239, 68, 68, 0.2);
+            color: #F87171;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            animation: none;
+        }
 
         #countdownTimer {
             font-size: 3rem;
@@ -341,25 +430,29 @@
 
         /* Auction Content (Injected by JS) styling overrides */
         #auctionContent .player-card-auction {
-            background: rgba(255,255,255,0.02) !important;
-            border: 1px solid rgba(255,255,255,0.05) !important;
+            background: rgba(255, 255, 255, 0.02) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
             border-radius: 20px !important;
         }
+
         #auctionContent .base-price-large,
         #auctionContent .current-bid {
-            background: rgba(0,0,0,0.2) !important;
-            border: 1px solid rgba(255,255,255,0.05) !important;
+            background: rgba(0, 0, 0, 0.2) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
         }
+
         #auctionContent .bidding-panel {
-            background: rgba(255,255,255,0.02) !important;
-            border: 1px solid rgba(255,255,255,0.05) !important;
+            background: rgba(255, 255, 255, 0.02) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
             border-radius: 20px !important;
         }
+
         #auctionContent .quick-bid-btn {
-            background: rgba(255,255,255,0.05) !important;
+            background: rgba(255, 255, 255, 0.05) !important;
             color: var(--text-white) !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
+
         #auctionContent .quick-bid-btn:hover:not(:disabled) {
             background: var(--accent-cyan) !important;
             border-color: var(--accent-cyan) !important;
@@ -379,10 +472,23 @@
         }
 
         /* Custom Scrollbar */
-        .list-container::-webkit-scrollbar { width: 6px; }
-        .list-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 10px; }
-        .list-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-        .list-container::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        .list-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .list-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        .list-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .list-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
 
         .list-item {
             display: flex;
@@ -413,7 +519,7 @@
             font-weight: 700;
             color: #FFF;
             flex-shrink: 0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
 
         .item-details {
@@ -455,7 +561,7 @@
 
         .empty-icon {
             font-size: 3rem;
-            color: rgba(255,255,255,0.1);
+            color: rgba(255, 255, 255, 0.1);
             margin-bottom: 1rem;
         }
 
@@ -508,12 +614,14 @@
         /* Navbar Overrides */
         .header {
             position: fixed;
-            top: 0; left: 0; width: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
             z-index: 1000;
             background: rgba(9, 9, 11, 0.6) !important;
             backdrop-filter: blur(20px) !important;
             -webkit-backdrop-filter: blur(20px) !important;
-            border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
             padding: 1rem 0;
         }
 
@@ -525,33 +633,86 @@
 
         /* Responsive Breakpoints */
         @media (max-width: 1400px) {
-            .stat-card { grid-column: span 6; }
-            .left-panel { grid-column: span 4; }
-            .center-panel { grid-column: span 8; }
-            .right-panel { grid-column: span 12; }
+            .stat-card {
+                grid-column: span 6;
+            }
+
+            .left-panel {
+                grid-column: span 4;
+            }
+
+            .center-panel {
+                grid-column: span 8;
+            }
+
+            .right-panel {
+                grid-column: span 12;
+            }
         }
+
         @media (max-width: 992px) {
-            .left-panel, .center-panel, .right-panel { grid-column: span 12; }
-            .hero-banner { flex-direction: column; text-align: center; gap: 2rem; }
-            .hero-content { max-width: 100%; }
-            .hero-actions { justify-content: center; }
-            .hero-illustration { display: none; }
+
+            .left-panel,
+            .center-panel,
+            .right-panel {
+                grid-column: span 12;
+            }
+
+            .hero-banner {
+                flex-direction: column;
+                text-align: center;
+                gap: 2rem;
+            }
+
+            .hero-content {
+                max-width: 100%;
+            }
+
+            .hero-actions {
+                justify-content: center;
+            }
+
+            .hero-illustration {
+                display: none;
+            }
         }
+
         @media (max-width: 768px) {
-            .stat-card { grid-column: span 12; }
-            #countdownTimer { font-size: 2rem; }
+            .stat-card {
+                grid-column: span 12;
+            }
+
+            #countdownTimer {
+                font-size: 2rem;
+            }
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
         }
+
         @keyframes pulse-glow {
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 15px rgba(34, 197, 94, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+            }
         }
-    
+
         /* JS Injected Squad Classes */
         .squad-player {
             display: flex;
@@ -563,11 +724,13 @@
             border-radius: 16px;
             transition: all 0.3s ease;
         }
+
         .squad-player:hover {
             background: rgba(255, 255, 255, 0.06);
             border-color: rgba(255, 255, 255, 0.1);
             transform: translateX(5px);
         }
+
         .squad-player-avatar {
             width: 48px;
             height: 48px;
@@ -580,12 +743,14 @@
             font-weight: 700;
             color: #FFF;
             flex-shrink: 0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
+
         .squad-player-info {
             flex-grow: 1;
             overflow: hidden;
         }
+
         .squad-player-name {
             font-weight: 600;
             font-size: 1rem;
@@ -595,11 +760,13 @@
             text-overflow: ellipsis;
             margin-bottom: 0.2rem;
         }
+
         .squad-player-price {
             color: #10B981;
             font-weight: 700;
             font-size: 0.9rem;
         }
+
         .empty-squad {
             text-align: center;
             padding: 3rem 1rem;
@@ -621,10 +788,12 @@
             border-radius: 16px;
             transition: all 0.3s ease;
         }
+
         .participant-item:hover {
             background: rgba(255, 255, 255, 0.06);
             border-color: rgba(255, 255, 255, 0.1);
         }
+
         .participant-avatar {
             width: 40px;
             height: 40px;
@@ -638,10 +807,12 @@
             color: #FFF;
             flex-shrink: 0;
         }
+
         .participant-info {
             flex-grow: 1;
             overflow: hidden;
         }
+
         .participant-name {
             font-weight: 600;
             font-size: 0.9rem;
@@ -650,11 +821,166 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         .participant-rating {
             font-size: 0.75rem;
             color: var(--text-muted);
         }
 
+        /* ==========================================================================
+           TEAM OWNER LIGHT MODE OVERRIDES
+           ========================================================================== */
+        html[data-theme="light"] {
+            background-color: #F8FAFC !important;
+            color: #111827 !important;
+        }
+
+        html[data-theme="light"] body,
+        html[data-theme="light"] .saas-background {
+            background-color: #F8FAFC !important;
+            background: #F8FAFC !important;
+            color: #111827 !important;
+        }
+
+        html[data-theme="light"] .saas-sidebar {
+            background: #FFFFFF !important;
+            border-right: 1px solid #E5E7EB !important;
+        }
+
+        html[data-theme="light"] .sidebar-item {
+            color: #4B5563 !important;
+        }
+
+        html[data-theme="light"] .sidebar-item:hover,
+        html[data-theme="light"] .sidebar-item.active {
+            background: #EEF2FF !important;
+            color: #111827 !important;
+        }
+
+        html[data-theme="light"] .sidebar-item.active {
+            border-left: 3px solid #2563EB !important;
+        }
+
+        html[data-theme="light"] .glass-card {
+            background: #FFFFFF !important;
+            border: 1px solid #E5E7EB !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        html[data-theme="light"] .stat-value,
+        html[data-theme="light"] .panel-title,
+        html[data-theme="light"] .hero-title,
+        html[data-theme="light"] h1,
+        html[data-theme="light"] h2,
+        html[data-theme="light"] h3,
+        html[data-theme="light"] h4 {
+            color: #111827 !important;
+            -webkit-text-fill-color: #111827 !important;
+            text-shadow: none !important;
+        }
+
+        html[data-theme="light"] .hero-subtitle,
+        html[data-theme="light"] .stat-label,
+        html[data-theme="light"] .item-meta,
+        html[data-theme="light"] .participant-rating {
+            color: #6B7280 !important;
+        }
+
+        html[data-theme="light"] .hero-banner {
+            background: #FFFFFF !important;
+            border: 1px solid #E5E7EB !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05) !important;
+        }
+
+        html[data-theme="light"] .hero-title {
+            background: none !important;
+            -webkit-text-fill-color: #111827 !important;
+        }
+
+        html[data-theme="light"] .list-item,
+        html[data-theme="light"] .squad-player,
+        html[data-theme="light"] .participant-item {
+            background: #F8FAFC !important;
+            border: 1px solid #E5E7EB !important;
+        }
+
+        html[data-theme="light"] .list-item:hover,
+        html[data-theme="light"] .squad-player:hover,
+        html[data-theme="light"] .participant-item:hover {
+            background: #EEF2FF !important;
+            border-color: #C7D2FE !important;
+        }
+
+        html[data-theme="light"] .item-name,
+        html[data-theme="light"] .squad-player-name,
+        html[data-theme="light"] .participant-name {
+            color: #111827 !important;
+        }
+
+        html[data-theme="light"] .live-auction-card {
+            background: #FFFFFF !important;
+            border: 1px solid #E5E7EB !important;
+            border-top: 4px solid #2563EB !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        html[data-theme="light"] .live-auction-card::before {
+            display: none !important;
+        }
+
+        html[data-theme="light"] .auction-header-status {
+            border-bottom: 1px solid #E5E7EB !important;
+        }
+
+        html[data-theme="light"] #countdownTimer {
+            background: none !important;
+            color: #2563EB !important;
+            -webkit-text-fill-color: #2563EB !important;
+            text-shadow: none !important;
+        }
+
+        html[data-theme="light"] .header {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border-bottom: 1px solid #E5E7EB !important;
+        }
+
+        html[data-theme="light"] .nav-logo,
+        html[data-theme="light"] .nav-logo span {
+            color: #111827 !important;
+        }
+
+        html[data-theme="light"] #teamSelector {
+            background: #FFFFFF !important;
+            color: #111827 !important;
+            border: 1px solid #D1D5DB !important;
+        }
+
+        html[data-theme="light"] .btn-outline-premium {
+            background: #FFFFFF !important;
+            color: #374151 !important;
+            border: 1px solid #D1D5DB !important;
+        }
+
+        html[data-theme="light"] .btn-outline-premium:hover {
+            background: #F9FAFB !important;
+            color: #111827 !important;
+            border-color: #9CA3AF !important;
+        }
+
+        html[data-theme="light"] .empty-state,
+        html[data-theme="light"] .empty-squad,
+        html[data-theme="light"] .empty-state p,
+        html[data-theme="light"] .empty-squad p {
+            color: #6B7280 !important;
+        }
+
+        html[data-theme="light"] .empty-icon {
+            color: #D1D5DB !important;
+        }
+
+        html[data-theme="light"] * {
+            text-shadow: none !important;
+        }
     </style>
 </head>
 
@@ -665,333 +991,524 @@
 
     <!-- Header / Navbar -->
     <header class="header">
-        <nav class="navbar" style="background: transparent !important; padding: 0 !important; border: none !important; backdrop-filter: none !important;">
-            <div class="nav-container" style="max-width: 1600px; padding: 0 2rem; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <nav class="navbar"
+            style="background: transparent !important; padding: 0 !important; border: none !important; backdrop-filter: none !important;">
+            <div class="nav-container"
+                style="max-width: 1600px; padding: 0 2rem; display: flex; justify-content: space-between; align-items: center; width: 100%;">
                 <div class="nav-logo">
                     <i class="fas fa-trophy"></i>
-                    <span>BidZone Dashboard</span>
+                    <span>JamRig Dashboard</span>
                 </div>
-                
+
                 <div class="nav-buttons" style="display: flex; align-items: center; gap: 1rem;">
                     <select id="teamSelector" class="form-control"
                         style="padding: 0.5rem 1rem; border-radius: 12px; background: rgba(255,255,255,0.05); color: var(--text-white); border: 1px solid rgba(255,255,255,0.1); outline: none; cursor: pointer; appearance: none; display: none;"
                         onchange="loadTeamOwnerData(this.value)">
                         <option value="" style="background: #0f172a;">Select Event</option>
                     </select>
-                    
-                    <button class="btn-outline-premium" style="width: 40px; height: 40px; padding: 0; justify-content: center; border-radius: 50%;">
+
+                    <button class="btn-outline-premium"
+                        style="width: 40px; height: 40px; padding: 0; justify-content: center; border-radius: 50%;">
                         <i class="fas fa-bell"></i>
                     </button>
-                    <button class="btn-outline-premium" style="width: 40px; height: 40px; padding: 0; justify-content: center; border-radius: 50%;">
+                    <button class="btn-outline-premium"
+                        style="width: 40px; height: 40px; padding: 0; justify-content: center; border-radius: 50%;">
                         <i class="fas fa-comment-alt"></i>
                     </button>
-                    
-                    <button class="theme-toggle-btn btn-outline-premium" onclick="toggleTheme()" aria-label="Toggle Light/Dark Mode" style="width: 40px; height: 40px; padding: 0; justify-content: center; border-radius: 50%;">
+
+                    <button class="theme-toggle-btn btn-outline-premium" onclick="toggleTheme()"
+                        aria-label="Toggle Light/Dark Mode"
+                        style="width: 40px; height: 40px; padding: 0; justify-content: center; border-radius: 50%;">
                         <i class="theme-icon fas fa-moon"></i>
                     </button>
-                    
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-left: 0.5rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+
+                    <div
+                        style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-left: 0.5rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
                         TO
                     </div>
-                    
-                    <button class="btn-outline-premium" onclick="logout()" style="margin-left: 0.5rem;">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </button>
+
+
                 </div>
             </div>
         </nav>
     </header>
 
     <!-- Auction Countdown Overlay -->
-    <div id="auction-countdown-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; flex-direction: column; justify-content: center; align-items: center;">
+    <div id="auction-countdown-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; flex-direction: column; justify-content: center; align-items: center;">
         <div style="text-align: center; color: white;" class="glass-card">
-            <i class="fas fa-hourglass-half" style="font-size: 3rem; color: var(--accent-cyan); margin-bottom: 1rem; animation: float 3s infinite;"></i>
+            <i class="fas fa-hourglass-half"
+                style="font-size: 3rem; color: var(--accent-cyan); margin-bottom: 1rem; animation: float 3s infinite;"></i>
             <h2>Waiting for Auction</h2>
             <p style="color: var(--text-muted); margin-top: 0.5rem;">The auction will begin shortly.</p>
         </div>
     </div>
 
-    
+
     <!-- RBAC Unified Layout -->
     <div class="saas-layout">
         <aside class="saas-sidebar" id="unified-sidebar">
             <!-- Populated by rbac-router.js -->
         </aside>
-        
+
         <div class="saas-main-content">
             <!-- Main Dashboard Container -->
             <main class="saas-dashboard" style="padding-top: 0;">
 
-    <main class="saas-dashboard">
-        
-        <!-- Grid Layout -->
-        <div class="dashboard-grid live-auction-container" style="display: block;"> <!-- JS toggles display on this container -->
-            
-            <div id="owner-panel" class="role-panel dashboard-grid" style="width: 100%; margin: 0;"> <!-- Inner Grid to maintain layout since live-auction-container is toggled -->
-                
-                <!-- Hero Section -->
-                <div class="hero-banner">
-                    <div class="hero-content">
-                        <h1 class="hero-title">Welcome back, Team Owner.</h1>
-                        <p class="hero-subtitle">You have active auctions waiting for your participation. Expand your squad and build the ultimate team.</p>
-                        <div class="hero-actions">
-                            <button class="btn-premium"><i class="fas fa-gavel"></i> Join Live Auction</button>
-                            <button class="btn-outline-premium"><i class="fas fa-users"></i> View My Squad</button>
+                <!-- Auction Lobby Container (Phase 3) -->
+                <div id="auction-lobby-container" class="dashboard-grid" style="display: none; width: 100%;">
+                    <div class="glass-card" style="grid-column: span 12; text-align: center;">
+                        <h2>Auction Lobby</h2>
+                        <p>Waiting for other teams and the admin to start the auction.</p>
+                        <div id="lobby-teams-list"
+                            style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-top: 2rem;">
+                            <!-- Team statuses injected here -->
                         </div>
-                    </div>
-                    <div class="hero-illustration">
-                        <i class="fas fa-trophy"></i>
-                    </div>
-                </div>
-
-                <!-- Quick Stats -->
-                <div class="stat-card glass-card">
-                    <div class="stat-icon-wrapper stat-icon-green">
-                        <i class="fas fa-wallet"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" id="walletAmount">₹0</div>
-                        <div class="stat-label">Available Balance</div>
+                        <button id="btn-team-ready" class="btn-premium" style="margin-top: 2rem;"
+                            onclick="markTeamReady()">I'm Ready</button>
                     </div>
                 </div>
 
-                <div class="stat-card glass-card">
-                    <div class="stat-icon-wrapper stat-icon-cyan">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value">12</div>
-                        <div class="stat-label">Squad Size</div>
-                    </div>
-                </div>
+                <!-- Grid Layout -->
+                <div class="dashboard-grid live-auction-container" style="display: block;">
+                    <!-- JS toggles display on this container -->
 
-                <div class="stat-card glass-card">
-                    <div class="stat-icon-wrapper stat-icon-blue">
-                        <i class="fas fa-gavel"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value">1</div>
-                        <div class="stat-label">Live Auctions</div>
-                    </div>
-                </div>
+                    <div id="owner-panel" class="role-panel dashboard-grid" style="width: 100%; margin: 0;">
+                        <!-- Inner Grid to maintain layout since live-auction-container is toggled -->
 
-                <div class="stat-card glass-card">
-                    <div class="stat-icon-wrapper stat-icon-purple">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value">4</div>
-                        <div class="stat-label">Active Bids</div>
-                    </div>
-                </div>
-
-                <!-- Left Panel: Participants & Upcoming -->
-                <div class="left-panel">
-                    
-                    <div class="glass-card" style="flex-grow: 1;">
-                        <div class="panel-header">
-                            <h3 class="panel-title"><i class="fas fa-user-friends"></i> Participants</h3>
-                        </div>
-                        <div class="list-container" id="participantsList">
-                            <!-- Populated by JS -->
-                            <div class="empty-state">
-                                <i class="fas fa-spinner fa-spin empty-icon" style="font-size: 2rem;"></i>
-                                <p>Loading participants...</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="glass-card">
-                        <div class="panel-header">
-                            <h3 class="panel-title"><i class="fas fa-calendar-alt"></i> Upcoming Events</h3>
-                        </div>
-                        <div class="list-container" style="max-height: 250px;">
-                            <div class="list-item">
-                                <div class="avatar-circle" style="background: rgba(6, 182, 212, 0.1); color: var(--accent-cyan); width: 40px; height: 40px; font-size: 1rem;"><i class="fas fa-clock"></i></div>
-                                <div class="item-details">
-                                    <div class="item-name">Registration Deadline</div>
-                                    <div class="item-meta"><span>Tomorrow, 5:00 PM</span></div>
+                        <!-- DASHBOARD VIEW -->
+                        <div id="view-dashboard" class="view-section dashboard-grid active-view"
+                            style="grid-column: span 12;">
+                            <!-- Hero Section -->
+                            <div class="hero-banner" style="grid-column: span 12;">
+                                <div class="hero-content">
+                                    <h1 class="hero-title">Welcome back, Team Owner.</h1>
+                                    <p class="hero-subtitle">You have active auctions waiting for your participation.
+                                        Expand your squad and build the ultimate team.</p>
+                                    <div class="hero-actions">
+                                        <button class="btn-premium"
+                                            onclick="if(window.currentAuction && window.currentAuction.eventId) { window.location.href='/templates/live-auction.html?id=' + window.currentAuction.eventId; } else { alert('No active auction found for your current event.'); }"><i
+                                                class="fas fa-gavel"></i> Join Live Auction</button>
+                                        <button class="btn-outline-premium"><i class="fas fa-users"></i> View My
+                                            Squad</button>
+                                    </div>
+                                </div>
+                                <div class="hero-illustration">
+                                    <i class="fas fa-trophy"></i>
                                 </div>
                             </div>
-                            <div class="list-item">
-                                <div class="avatar-circle" style="background: rgba(139, 92, 246, 0.1); color: var(--accent-purple); width: 40px; height: 40px; font-size: 1rem;"><i class="fas fa-calendar-check"></i></div>
-                                <div class="item-details">
-                                    <div class="item-name">Season Kickoff</div>
-                                    <div class="item-meta"><span>Oct 15, 2026</span></div>
+
+                            <!-- Quick Stats -->
+                            <div class="stat-card glass-card">
+                                <div class="stat-icon-wrapper stat-icon-green">
+                                    <i class="fas fa-wallet"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-value" id="walletAmount">₹0</div>
+                                    <div class="stat-label">Available Balance</div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card glass-card">
+                                <div class="stat-icon-wrapper stat-icon-cyan">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-value" id="squadSize">0</div>
+                                    <div class="stat-label">Squad Size</div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card glass-card">
+                                <div class="stat-icon-wrapper stat-icon-blue">
+                                    <i class="fas fa-gavel"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-value" id="liveAuctions">0</div>
+                                    <div class="stat-label">Live Auctions</div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card glass-card">
+                                <div class="stat-icon-wrapper stat-icon-purple">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-value" id="activeBids">0</div>
+                                    <div class="stat-label">Active Bids</div>
+                                </div>
+                            </div>
+
+                            <!-- Left Panel: Participants & Upcoming -->
+                            <div class="left-panel">
+
+                                <div class="glass-card" style="flex-grow: 1;">
+                                    <div class="panel-header">
+                                        <h3 class="panel-title"><i class="fas fa-user-friends"></i> Participants</h3>
+                                    </div>
+                                    <div class="list-container" id="participantsList">
+                                        <!-- Populated by JS -->
+                                        <div class="empty-state">
+                                            <i class="fas fa-spinner fa-spin empty-icon" style="font-size: 2rem;"></i>
+                                            <p>Loading participants...</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="glass-card">
+                                    <div class="panel-header">
+                                        <h3 class="panel-title"><i class="fas fa-calendar-alt"></i> Upcoming Events</h3>
+                                    </div>
+                                    <div class="list-container" id="upcomingEventsList" style="max-height: 250px;">
+                                        <div class="empty-state">
+                                            <i class="fas fa-spinner fa-spin empty-icon" style="font-size: 2rem;"></i>
+                                            <p>Loading upcoming events...</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- Center Panel: Live Auction -->
+                            <div class="center-panel">
+                                <div class="glass-card live-auction-card">
+                                    <div class="auction-header-status">
+                                        <div class="auction-status status-not-started" id="auctionStatus">Loading...
+                                        </div>
+                                        <h2 id="currentEventTitle">Select an Event</h2>
+                                        <div id="countdownTimer">--:--</div>
+                                    </div>
+
+                                    <!-- JS Injects player card and bidding controls here -->
+                                    <div id="auctionContent"
+                                        style="flex-grow: 1; display: flex; flex-direction: column;">
+                                        <div class="empty-state" style="margin: auto;">
+                                            <i class="fas fa-gavel empty-icon" style="font-size: 4rem;"></i>
+                                            <h3 style="color: var(--text-white); font-weight: 600; font-size: 1.2rem;">
+                                                No Active Auction</h3>
+                                            <p>Please select an event from the top menu or wait for the auction to
+                                                begin.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Panel: My Squad -->
+                            <div class="right-panel">
+
+                                <div class="glass-card" style="flex-grow: 1; display: flex; flex-direction: column;">
+                                    <div class="panel-header">
+                                        <h3 class="panel-title"><i class="fas fa-shield-alt"></i> My Squad</h3>
+                                        <button class="btn-outline-premium" onclick="downloadSquadCSV()"
+                                            style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                                            <i class="fas fa-download"></i> CSV
+                                        </button>
+                                    </div>
+
+                                    <div class="list-container" id="squadList" style="flex-grow: 1;">
+                                        <!-- Populated by JS -->
+                                        <!-- Existing JS completely overwrites this innerHTML when populated or empty -->
+                                    </div>
+                                </div>
+
+                                <!-- Support Card -->
+                                <div class="glass-card">
+                                    <div class="panel-header">
+                                        <h3 class="panel-title"><i class="fas fa-life-buoy"></i> Support</h3>
+                                    </div>
+                                    <p
+                                        style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; line-height: 1.5;">
+                                        Need help with auctions or have questions about bidding? Our team is here.</p>
+                                    <button class="btn-outline-premium" style="width: 100%; justify-content: center;"
+                                        onclick="contactSupport()">
+                                        <i class="fas fa-envelope"></i> Contact Admin
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div> <!-- End Dashboard View -->
+
+                        <!-- PLAYERS VIEW -->
+                        <div id="view-players" class="view-section dashboard-grid" style="grid-column: span 12;">
+                            <div class="glass-card" style="grid-column: span 12;">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-users"></i> My Squad & Players</h3>
+                                    <div style="display: flex; gap: 1rem;">
+                                        <input type="text" id="playerSearch" placeholder="Search players..."
+                                            class="form-control"
+                                            style="background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.5rem 1rem;">
+                                        <select id="playerFilter" class="form-control"
+                                            style="background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.5rem 1rem;">
+                                            <option value="all" style="background: #0f172a;">All Categories</option>
+                                            <option value="Standard" style="background: #0f172a;">Standard</option>
+                                            <option value="Premium" style="background: #0f172a;">Premium</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div id="playersFullList" class="dashboard-grid"
+                                    style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+                                    <!-- Populated by JS -->
+                                    <div class="empty-state" style="grid-column: 1 / -1;">
+                                        <i class="fas fa-spinner fa-spin empty-icon" style="font-size: 2rem;"></i>
+                                        <p>Loading players...</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                </div>
-
-                <!-- Center Panel: Live Auction -->
-                <div class="center-panel">
-                    <div class="glass-card live-auction-card">
-                        <div class="auction-header-status">
-                            <div class="auction-status status-not-started" id="auctionStatus">Loading...</div>
-                            <h2 id="currentEventTitle">Select an Event</h2>
-                            <div id="countdownTimer">--:--</div>
-                        </div>
-                        
-                        <!-- JS Injects player card and bidding controls here -->
-                        <div id="auctionContent" style="flex-grow: 1; display: flex; flex-direction: column;">
-                            <div class="empty-state" style="margin: auto;">
-                                <i class="fas fa-gavel empty-icon" style="font-size: 4rem;"></i>
-                                <h3 style="color: var(--text-white); font-weight: 600; font-size: 1.2rem;">No Active Auction</h3>
-                                <p>Please select an event from the top menu or wait for the auction to begin.</p>
+                        <!-- AUCTION VIEW -->
+                        <div id="view-auction" class="view-section dashboard-grid" style="grid-column: span 12;">
+                            <div class="center-panel" style="grid-column: span 12;">
+                                <div class="glass-card live-auction-card" style="min-height: 600px;">
+                                    <div class="auction-header-status">
+                                        <div class="auction-status status-not-started" id="dedicatedAuctionStatus">
+                                            Loading...</div>
+                                        <h2 id="dedicatedEventTitle">Select an Event</h2>
+                                        <div id="dedicatedCountdownTimer">--:--</div>
+                                    </div>
+                                    <div id="dedicatedAuctionContent"
+                                        style="flex-grow: 1; display: flex; flex-direction: column;">
+                                        <div class="empty-state" style="margin: auto;">
+                                            <i class="fas fa-gavel empty-icon" style="font-size: 4rem;"></i>
+                                            <h3 style="color: var(--text-white); font-weight: 600; font-size: 1.2rem;">
+                                                No Active Auction</h3>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Right Panel: My Squad -->
-                <div class="right-panel">
-                    
-                    <div class="glass-card" style="flex-grow: 1; display: flex; flex-direction: column;">
-                        <div class="panel-header">
-                            <h3 class="panel-title"><i class="fas fa-shield-alt"></i> My Squad</h3>
-                            <button class="btn-outline-premium" onclick="downloadSquadCSV()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                                <i class="fas fa-download"></i> CSV
-                            </button>
-                        </div>
-                        
-                        <div class="list-container" id="squadList" style="flex-grow: 1;">
-                            <!-- Populated by JS -->
-                            <!-- Existing JS completely overwrites this innerHTML when populated or empty -->
-                        </div>
-                    </div>
+                        <!-- WALLET VIEW -->
+                        <div id="view-wallet" class="view-section dashboard-grid" style="grid-column: span 12;">
+                            <!-- Wallet Stats -->
+                            <div class="stat-card glass-card" style="grid-column: span 4;">
+                                <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-wallet"></i></div>
+                                <div class="stat-info">
+                                    <div class="stat-value" id="walletTotalBudget">₹0</div>
+                                    <div class="stat-label">Total Budget</div>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="grid-column: span 4;">
+                                <div class="stat-icon-wrapper stat-icon-purple"><i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-value" id="walletSpent">₹0</div>
+                                    <div class="stat-label">Total Spent</div>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="grid-column: span 4;">
+                                <div class="stat-icon-wrapper stat-icon-blue"><i class="fas fa-piggy-bank"></i></div>
+                                <div class="stat-info">
+                                    <div class="stat-value" id="walletAvailable">₹0</div>
+                                    <div class="stat-label">Available Balance</div>
+                                </div>
+                            </div>
 
-                    <!-- Support Card -->
-                    <div class="glass-card">
-                        <div class="panel-header">
-                            <h3 class="panel-title"><i class="fas fa-life-buoy"></i> Support</h3>
+                            <div class="glass-card" style="grid-column: span 12;">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-history"></i> Transaction History</h3>
+                                </div>
+                                <div id="transactionHistoryList" class="list-container">
+                                    <div class="empty-state">
+                                        <i class="fas fa-spinner fa-spin empty-icon" style="font-size: 2rem;"></i>
+                                        <p>Loading transactions...</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; line-height: 1.5;">Need help with auctions or have questions about bidding? Our team is here.</p>
-                        <button class="btn-outline-premium" style="width: 100%; justify-content: center;" onclick="contactSupport()">
-                            <i class="fas fa-envelope"></i> Contact Admin
-                        </button>
-                    </div>
 
-                </div>
-            </div> <!-- Inner Grid End (owner-panel) -->
-            
-            <!-- MANAGER PANEL -->
-            <div id="manager-panel" class="role-panel dashboard-grid" style="display: none; width: 100%; margin: 0;">
-                <div class="hero-banner" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2)); grid-column: span 12;">
-                    <div class="hero-content">
-                        <h1 class="hero-title">Manager Hub</h1>
-                        <p class="hero-subtitle">Manage your squad, plan training schedules, and monitor shortlisted players.</p>
-                        <div class="hero-actions">
-                            <button class="btn-premium"><i class="fas fa-dumbbell"></i> Schedule Training</button>
-                            <button class="btn-outline-premium"><i class="fas fa-star"></i> View Shortlist</button>
+                        <!-- REPORTS VIEW -->
+                        <div id="view-reports" class="view-section dashboard-grid" style="grid-column: span 12;">
+                            <div class="glass-card" style="grid-column: span 6;">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-chart-pie"></i> Auction Summary</h3>
+                                </div>
+                                <div id="reportAuctionSummary" style="color: var(--text-white); line-height: 2;">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                            <div class="glass-card" style="grid-column: span 6;">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-chart-bar"></i> Spending Summary</h3>
+                                </div>
+                                <div id="reportSpendingSummary" style="color: var(--text-white); line-height: 2;">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                            <div class="glass-card" style="grid-column: span 12;">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-history"></i> Auction History</h3>
+                                </div>
+                                <div id="reportAuctionHistory" style="overflow-x: auto;">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="hero-illustration"><i class="fas fa-users-cog"></i></div>
-                </div>
-                
-                <div class="stat-card glass-card">
-                    <div class="stat-icon-wrapper stat-icon-cyan"><i class="fas fa-running"></i></div>
-                    <div class="stat-info"><div class="stat-value">24</div><div class="stat-label">Available Players</div></div>
-                </div>
-                <div class="stat-card glass-card">
-                    <div class="stat-icon-wrapper stat-icon-purple"><i class="fas fa-star"></i></div>
-                    <div class="stat-info"><div class="stat-value">8</div><div class="stat-label">Shortlisted</div></div>
-                </div>
-                <div class="stat-card glass-card">
-                    <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-calendar-check"></i></div>
-                    <div class="stat-info"><div class="stat-value">3</div><div class="stat-label">Upcoming Matches</div></div>
-                </div>
-                <div class="stat-card glass-card">
-                    <div class="stat-icon-wrapper stat-icon-blue"><i class="fas fa-dumbbell"></i></div>
-                    <div class="stat-info"><div class="stat-value">Active</div><div class="stat-label">Training</div></div>
-                </div>
+                    </div> <!-- Inner Grid End (owner-panel) -->
 
-                <div class="center-panel" style="grid-column: span 8;">
-                    <div class="glass-card">
-                        <div class="panel-header"><h3 class="panel-title"><i class="fas fa-calendar-alt"></i> Training Calendar</h3></div>
-                        <div class="empty-state">
-                            <i class="fas fa-calendar-times empty-icon"></i>
-                            <p>No training sessions scheduled yet.</p>
+                    <!-- MANAGER PANEL -->
+                    <div id="manager-panel" class="role-panel dashboard-grid"
+                        style="display: none; width: 100%; margin: 0;">
+                        <div class="hero-banner"
+                            style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2)); grid-column: span 12;">
+                            <div class="hero-content">
+                                <h1 class="hero-title">Manager Hub</h1>
+                                <p class="hero-subtitle">Manage your squad, plan training schedules, and monitor
+                                    shortlisted players.</p>
+                                <div class="hero-actions">
+                                    <button class="btn-premium"><i class="fas fa-dumbbell"></i> Schedule
+                                        Training</button>
+                                    <button class="btn-outline-premium"><i class="fas fa-star"></i> View
+                                        Shortlist</button>
+                                </div>
+                            </div>
+                            <div class="hero-illustration"><i class="fas fa-users-cog"></i></div>
                         </div>
-                    </div>
-                </div>
-                <div class="right-panel" style="grid-column: span 4;">
-                    <div class="glass-card">
-                        <div class="panel-header"><h3 class="panel-title"><i class="fas fa-envelope"></i> Messages</h3></div>
-                        <div class="empty-state">
-                            <i class="fas fa-inbox empty-icon"></i>
-                            <p>No new messages.</p>
-                        </div>
-                    </div>
-                </div>
-            </div> <!-- End Manager Panel -->
 
-            <!-- ANALYST PANEL -->
-            <div id="analyst-panel" class="role-panel dashboard-grid" style="display: none; width: 100%; margin: 0;">
-                <div class="hero-banner" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2)); grid-column: span 12;">
-                    <div class="hero-content">
-                        <h1 class="hero-title">Analytics Engine</h1>
-                        <p class="hero-subtitle">AI-powered insights, performance predictions, and heat maps.</p>
-                        <div class="hero-actions">
-                            <button class="btn-premium"><i class="fas fa-chart-line"></i> Generate Report</button>
-                            <button class="btn-outline-premium"><i class="fas fa-balance-scale"></i> Compare Players</button>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon-wrapper stat-icon-cyan"><i class="fas fa-running"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="managerAvailablePlayers">0</div>
+                                <div class="stat-label">Available Players</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="hero-illustration"><i class="fas fa-brain"></i></div>
-                </div>
-                
-                <div class="stat-card glass-card">
-                    <div class="stat-icon-wrapper stat-icon-purple"><i class="fas fa-chart-pie"></i></div>
-                    <div class="stat-info"><div class="stat-value">98%</div><div class="stat-label">Win Probability</div></div>
-                </div>
-                <div class="stat-card glass-card">
-                    <div class="stat-icon-wrapper stat-icon-cyan"><i class="fas fa-bolt"></i></div>
-                    <div class="stat-info"><div class="stat-value">Top 3</div><div class="stat-label">Team Rank</div></div>
-                </div>
-                <div class="stat-card glass-card">
-                    <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-chart-line"></i></div>
-                    <div class="stat-info"><div class="stat-value">+12%</div><div class="stat-label">Performance Trend</div></div>
-                </div>
-                <div class="stat-card glass-card">
-                    <div class="stat-icon-wrapper stat-icon-blue"><i class="fas fa-search-dollar"></i></div>
-                    <div class="stat-info"><div class="stat-value">3</div><div class="stat-label">Value Picks</div></div>
-                </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon-wrapper stat-icon-purple"><i class="fas fa-star"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="managerShortlisted">0</div>
+                                <div class="stat-label">Shortlisted</div>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-calendar-check"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="managerUpcomingMatches">0</div>
+                                <div class="stat-label">Upcoming Matches</div>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon-wrapper stat-icon-blue"><i class="fas fa-dumbbell"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="managerTraining">N/A</div>
+                                <div class="stat-label">Training</div>
+                            </div>
+                        </div>
 
-                <div class="center-panel" style="grid-column: span 6;">
-                    <div class="glass-card">
-                        <div class="panel-header"><h3 class="panel-title"><i class="fas fa-fire"></i> Player Heat Maps</h3></div>
-                        <div class="empty-state" style="min-height: 250px;">
-                            <i class="fas fa-map-marked-alt empty-icon"></i>
-                            <p>Select a player to view performance heat map.</p>
+                        <div class="center-panel" style="grid-column: span 8;">
+                            <div class="glass-card">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-calendar-alt"></i> Training Calendar</h3>
+                                </div>
+                                <div class="empty-state">
+                                    <i class="fas fa-calendar-times empty-icon"></i>
+                                    <p>No training sessions scheduled yet.</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <div class="center-panel" style="grid-column: span 6;">
-                    <div class="glass-card">
-                        <div class="panel-header"><h3 class="panel-title"><i class="fas fa-balance-scale"></i> Player Comparison</h3></div>
-                        <div class="empty-state" style="min-height: 250px;">
-                            <i class="fas fa-not-equal empty-icon"></i>
-                            <p>Add players to compare stats.</p>
+                        <div class="right-panel" style="grid-column: span 4;">
+                            <div class="glass-card">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-envelope"></i> Messages</h3>
+                                </div>
+                                <div class="empty-state">
+                                    <i class="fas fa-inbox empty-icon"></i>
+                                    <p>No new messages.</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </div> <!-- End Analyst Panel -->
+                    </div> <!-- End Manager Panel -->
 
-        </div> <!-- Live Auction Container End -->
-    </main>
+                    <!-- ANALYST PANEL -->
+                    <div id="analyst-panel" class="role-panel dashboard-grid"
+                        style="display: none; width: 100%; margin: 0;">
+                        <div class="hero-banner"
+                            style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2)); grid-column: span 12;">
+                            <div class="hero-content">
+                                <h1 class="hero-title">Analytics Engine</h1>
+                                <p class="hero-subtitle">AI-powered insights, performance predictions, and heat maps.
+                                </p>
+                                <div class="hero-actions">
+                                    <button class="btn-premium"><i class="fas fa-chart-line"></i> Generate
+                                        Report</button>
+                                    <button class="btn-outline-premium"><i class="fas fa-balance-scale"></i> Compare
+                                        Players</button>
+                                </div>
+                            </div>
+                            <div class="hero-illustration"><i class="fas fa-brain"></i></div>
+                        </div>
+
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon-wrapper stat-icon-purple"><i class="fas fa-chart-pie"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="analystWinProb">N/A</div>
+                                <div class="stat-label">Win Probability</div>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon-wrapper stat-icon-cyan"><i class="fas fa-bolt"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="analystTeamRank">N/A</div>
+                                <div class="stat-label">Team Rank</div>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-chart-line"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="analystPerfTrend">N/A</div>
+                                <div class="stat-label">Performance Trend</div>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon-wrapper stat-icon-blue"><i class="fas fa-search-dollar"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="analystValuePicks">N/A</div>
+                                <div class="stat-label">Value Picks</div>
+                            </div>
+                        </div>
+
+                        <div class="center-panel" style="grid-column: span 6;">
+                            <div class="glass-card">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-fire"></i> Player Heat Maps</h3>
+                                </div>
+                                <div class="empty-state" style="min-height: 250px;">
+                                    <i class="fas fa-map-marked-alt empty-icon"></i>
+                                    <p>Select a player to view performance heat map.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="center-panel" style="grid-column: span 6;">
+                            <div class="glass-card">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-balance-scale"></i> Player Comparison</h3>
+                                </div>
+                                <div class="empty-state" style="min-height: 250px;">
+                                    <i class="fas fa-not-equal empty-icon"></i>
+                                    <p>Add players to compare stats.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- End Analyst Panel -->
+
+                </div> <!-- Live Auction Container End -->
+            </main>
         </div>
     </div>
 
     <!-- Auction Modal (Injected JS expects these IDs) -->
-    <div class="admin-modal modal-overlay" id="auctionModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
-        <div class="modal-content glass-card" style="width: 100%; max-width: 500px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.1);">
-            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 1rem;">
+    <div class="admin-modal modal-overlay" id="auctionModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+        <div class="modal-content glass-card"
+            style="width: 100%; max-width: 500px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.1);">
+            <div class="modal-header"
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 1rem;">
                 <div>
                     <h2 style="font-size: 1.5rem; font-weight: 700; color: white; margin: 0;">Place Bid</h2>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0.2rem 0 0 0;">Confirm your bid amount</p>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0.2rem 0 0 0;">Confirm your bid
+                        amount</p>
                 </div>
-                <button class="btn-outline-premium" style="border: none; padding: 0.5rem; background: transparent;" onclick="closeAuctionModal()">
+                <button class="btn-outline-premium" style="border: none; padding: 0.5rem; background: transparent;"
+                    onclick="closeAuctionModal()">
                     <i class="fas fa-times" style="font-size: 1.2rem;"></i>
                 </button>
             </div>
@@ -1004,7 +1521,9 @@
     </div>
 
     <!-- JS Files -->
-    <script src="/js/rbac-router.js?v=1"></script>
-    <script src="/js/team-owner-dashboard.js?v=20"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="/js/rbac-router.js?v=21"></script>
+    <script src="/js/team-owner-dashboard.js?v=21"></script>
 </body>
+
 </html>

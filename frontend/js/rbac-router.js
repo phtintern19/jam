@@ -7,8 +7,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initRBAC() {
     const userStr = localStorage.getItem('user');
+    let path = window.location.pathname + window.location.hash;
+
     if (!userStr) {
-        window.location.href = '/index.html';
+        if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
+            window.location.href = '/index.html';
+        }
         return;
     }
     
@@ -16,25 +20,27 @@ function initRBAC() {
     try {
         user = JSON.parse(userStr);
     } catch(e) {
-        window.location.href = '/index.html';
+        if (path !== '/' && path !== '/index.html') {
+            window.location.href = '/index.html';
+        }
         return;
     }
 
     // Role can be in user.role or user.user_type
     const role = user.role || user.user_type; 
-    let path = window.location.pathname;
 
     // Normalize direct HTML access
     if (path.includes('team-owner-dashboard.html')) {
+        const currentHash = window.location.hash;
         if (role === 'team_manager') {
-            window.history.replaceState({}, '', '/dashboard/manager');
-            path = '/dashboard/manager';
+            window.history.replaceState({}, '', '/dashboard/manager' + currentHash);
+            path = '/dashboard/manager' + currentHash;
         } else if (role === 'team_analyst') {
-            window.history.replaceState({}, '', '/dashboard/analyst');
-            path = '/dashboard/analyst';
+            window.history.replaceState({}, '', '/dashboard/analyst' + currentHash);
+            path = '/dashboard/analyst' + currentHash;
         } else {
-            window.history.replaceState({}, '', '/dashboard');
-            path = '/dashboard';
+            window.history.replaceState({}, '', '/dashboard' + currentHash);
+            path = '/dashboard' + currentHash;
         }
     }
 
@@ -69,7 +75,7 @@ function initRBAC() {
 
     // Handle Browser Back/Forward navigation
     window.addEventListener('popstate', () => {
-        const newPath = window.location.pathname;
+        const newPath = window.location.pathname + window.location.hash;
         renderSidebar(role, newPath);
         renderPanels(role, newPath);
     });
@@ -112,34 +118,33 @@ function renderSidebar(role, currentPath) {
     let items = [];
     if (role === 'team_owner') {
         items = [
-            { title: 'Dashboard', icon: 'fa-home', path: '/dashboard' },
+            { title: 'Dashboard', icon: 'fa-home', path: '/dashboard#dashboard' },
+            { title: 'Players / Squad', icon: 'fa-users', path: '/dashboard#players' },
+            { title: 'Auction', icon: 'fa-gavel', path: '/dashboard#auction' },
+            { title: 'Wallet', icon: 'fa-wallet', path: '/dashboard#wallet' },
+            { title: 'Reports', icon: 'fa-file-alt', path: '/dashboard#reports' },
             { title: 'Manager Panel', icon: 'fa-user-tie', path: '/dashboard/manager' },
-            { title: 'Analyst Panel', icon: 'fa-chart-pie', path: '/dashboard/analyst' },
-            { title: 'Players', icon: 'fa-users' },
-            { title: 'Auction', icon: 'fa-gavel' },
-            { title: 'Wallet', icon: 'fa-wallet' },
-            { title: 'Reports', icon: 'fa-file-alt' },
-            { title: 'Settings', icon: 'fa-cog' }
+            { title: 'Analyst Panel', icon: 'fa-chart-pie', path: '/dashboard/analyst' }
         ];
     } else if (role === 'team_manager') {
         items = [
             { title: 'Dashboard', icon: 'fa-home', path: '/dashboard/manager' },
-            { title: 'Players', icon: 'fa-users' },
-            { title: 'Auction', icon: 'fa-gavel' },
-            { title: 'Squad', icon: 'fa-shield-alt' },
-            { title: 'Reports', icon: 'fa-file-alt' }
+            { title: 'Players', icon: 'fa-users', path: '/dashboard/manager#players' },
+            { title: 'Auction', icon: 'fa-gavel', path: '/dashboard/manager#auction' },
+            { title: 'Squad', icon: 'fa-shield-alt', path: '/dashboard/manager#squad' },
+            { title: 'Reports', icon: 'fa-file-alt', path: '/dashboard/manager#reports' }
         ];
     } else if (role === 'team_analyst') {
         items = [
             { title: 'Dashboard', icon: 'fa-home', path: '/dashboard/analyst' },
-            { title: 'Analytics', icon: 'fa-chart-line' },
-            { title: 'Performance', icon: 'fa-bolt' },
-            { title: 'Reports', icon: 'fa-file-alt' },
-            { title: 'Predictions', icon: 'fa-brain' }
+            { title: 'Analytics', icon: 'fa-chart-line', path: '/dashboard/analyst#analytics' },
+            { title: 'Performance', icon: 'fa-bolt', path: '/dashboard/analyst#performance' },
+            { title: 'Reports', icon: 'fa-file-alt', path: '/dashboard/analyst#reports' },
+            { title: 'Predictions', icon: 'fa-brain', path: '/dashboard/analyst#predictions' }
         ];
     }
 
-    let html = '';
+    let html = '<div style="flex: 1; overflow-y: auto;">';
     items.forEach(item => {
         const isActive = (item.path && item.path === currentPath) ? 'active' : '';
         if (item.path) {
@@ -149,7 +154,20 @@ function renderSidebar(role, currentPath) {
             html += `<a href="#" class="sidebar-item" onclick="return false;"><i class="fas ${item.icon}"></i> <span>${item.title}</span></a>`;
         }
     });
+    html += '</div>';
+    
+    html += `
+    <div class="sidebar-footer" style="margin-top: auto; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05);">
+        <a href="#" class="sidebar-item" onclick="logout(); return false;" style="color: #ef4444;">
+            <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+        </a>
+    </div>
+    `;
 
+    sidebar.style.display = 'flex';
+    sidebar.style.flexDirection = 'column';
+    sidebar.style.justifyContent = 'space-between';
+    sidebar.style.overflowY = 'hidden';
     sidebar.innerHTML = html;
 
     // Attach SPA routing listeners
@@ -160,6 +178,9 @@ function renderSidebar(role, currentPath) {
             window.history.pushState({}, '', newPath);
             renderSidebar(role, newPath);
             renderPanels(role, newPath);
+            
+            // Dispatch a custom event to notify scripts (like team-owner-dashboard.js) of the view change
+            window.dispatchEvent(new CustomEvent('viewChanged', { detail: { path: newPath } }));
         });
     });
 }

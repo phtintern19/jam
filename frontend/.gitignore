@@ -1,0 +1,3 @@
+# Keep default ignores; uploads are user-generated
+uploads/
+profile_images/

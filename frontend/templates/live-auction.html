@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Auction Room - JamRig</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/saas-theme.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --timer-color: var(--accent-cyan);
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+        }
+
+        /* Layout */
+        .auction-dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Header */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1rem 2rem;
+        }
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-badge {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .status-badge.connecting {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border-color: rgba(245, 158, 11, 0.4);
+        }
+        .status-badge.disconnected {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        /* Teams Section */
+        .teams-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .teams-grid {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+        }
+        .teams-grid::-webkit-scrollbar { height: 8px; }
+        .teams-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        .teams-grid::-webkit-scrollbar-thumb { background: var(--accent-purple); border-radius: 4px; }
+
+        .team-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 1.5rem;
+            min-width: 250px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .team-card.is-leader {
+            background: rgba(6, 182, 212, 0.1);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+        }
+        .team-card.flash {
+            animation: flashGreen 0.5s ease-out;
+        }
+        @keyframes flashGreen {
+            0% { background: rgba(16, 185, 129, 0.5); transform: scale(1.1); }
+            100% { background: rgba(30, 41, 59, 0.7); transform: scale(1); }
+        }
+        .team-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: 1rem;
+        }
+        .team-name { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+        .team-stats { font-size: 0.875rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+        
+        .btn-bid {
+            width: 100%;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-purple) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn-bid:hover:not(:disabled) { transform: translateY(-2px); }
+        .btn-bid:disabled { background: #475569; cursor: not-allowed; }
+
+        /* Main Content area: Player + Queue */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+        }
+        @media(max-width: 1024px) {
+            .main-content { grid-template-columns: 1fr; }
+        }
+
+        /* Player Focus Card */
+        .player-focus-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 2.5rem;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        .player-focus-card img {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--accent-purple);
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
+        }
+        .player-name {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .player-role { color: var(--accent-cyan); font-weight: 600; font-size: 1.1rem; }
+        
+        .timer-display {
+            font-size: 4rem;
+            font-weight: 900;
+            color: var(--timer-color);
+            margin: 1rem 0;
+            text-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+        }
+        .timer-display.danger { color: var(--danger-color); text-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+        .timer-display.warning { color: var(--warning-color); }
+        
+        .bid-info {
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        .current-bid { font-size: 3rem; font-weight: 800; color: #fff; line-height: 1; }
+        .bid-leader { color: var(--accent-cyan); font-weight: 600; margin-top: 0.5rem; font-size: 1.2rem; }
+        
+        .player-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            background: rgba(0,0,0,0.2);
+            padding: 1rem;
+            border-radius: 12px;
+        }
+        .stat-item { display: flex; flex-direction: column; }
+        .stat-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; }
+        .stat-value { font-size: 1.2rem; font-weight: 700; color: #fff; }
+
+        /* Player Queue */
+        .player-queue {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            max-height: 800px;
+        }
+        .queue-list {
+            margin-top: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding-right: 0.5rem;
+        }
+        .queue-list::-webkit-scrollbar { width: 6px; }
+        .queue-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .queue-list::-webkit-scrollbar-thumb { background: var(--accent-purple); border-radius: 3px; }
+        
+        .queue-item {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .queue-item.active {
+            border-color: var(--accent-cyan);
+            background: rgba(6, 182, 212, 0.1);
+        }
+        .queue-item img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .queue-item-info { flex: 1; min-width: 0; }
+        .queue-item-name { font-weight: 700; color: #fff; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .queue-item-role { font-size: 0.8rem; color: var(--text-muted); }
+        .queue-item-price { font-weight: 600; color: var(--accent-cyan); font-size: 0.9rem; margin-top: 2px;}
+        .queue-item-status {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        .status-sold { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .status-upcoming { background: rgba(255, 255, 255, 0.1); color: #94a3b8; }
+        
+        /* Admin Panel */
+        .admin-panel {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--danger-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: none;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        .admin-panel.active { display: flex; }
+        
+        .empty-state {
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="saas-background"></div>
+    <div class="saas-noise"></div>
+
+    <div class="auction-dashboard">
+        <!-- Header -->
+        <header class="header-bar">
+            <div class="header-title">
+                <i class="fas fa-gavel text-purple-400"></i>
+                <span id="eventNameHeader">Live Auction Room</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="auctionStatusBadge" class="status-badge connecting">
+                    <i class="fas fa-circle" style="font-size: 8px;"></i> <span id="auctionStatusText">CONNECTING...</span>
+                </span>
+                <button class="btn-outline-premium text-sm py-1 px-4" onclick="goBack()">Exit</button>
+            </div>
+        </header>
+
+        <!-- Teams Section -->
+        <section class="teams-section">
+            <h3 class="section-title">Registered Teams</h3>
+            <div class="teams-grid" id="teamsContainer">
+                <div class="empty-state">Loading teams...</div>
+            </div>
+        </section>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left: Current Player -->
+            <div class="auction-center">
+                <div class="player-focus-card" id="playerFocusCard">
+                    <!-- Overlay for empty state -->
+                    <div id="lobbyOverlay" class="absolute inset-0 bg-slate-900/95 backdrop-blur flex flex-col items-center justify-center rounded-3xl z-50">
+                        <i class="fas fa-hourglass-half text-4xl text-cyan-400 mb-4"></i>
+                        <h2 id="lobbyOverlayText" class="text-2xl font-bold text-white">Connecting...</h2>
+                    </div>
+
+                    <div id="playerContent" style="display: none;">
+                        <div class="uppercase tracking-widest text-xs font-bold text-slate-400 mb-4">Now up for auction</div>
+                        <img id="playerImage" src="/static/images/default-avatar.png" alt="Player">
+                        <h2 id="playerName" class="player-name">Player Name</h2>
+                        <p id="playerRole" class="player-role">Role • Category</p>
+                        
+                        <div class="timer-display" id="bidTimer">--</div>
+                        <div class="text-slate-400 text-xs font-bold tracking-widest uppercase mb-4" id="bidTimerLabel"></div>
+                        
+                        <div id="firstBidderInfo" class="mb-4 text-sm font-bold text-slate-300" style="display:none;">
+                            FIRST BIDDER <br/>
+                            <span id="firstBidderTeam" class="text-green-400 text-lg">🟢 Team Name</span>
+                        </div>
+                        
+                        <div class="bid-info">
+                            <div class="text-slate-400 text-sm font-bold uppercase mb-1">Current Bid</div>
+                            <div class="current-bid" id="currentBid">₹0</div>
+                            <div class="bid-leader" id="bidLeader">Waiting for bids...</div>
+                        </div>
+
+                        <div class="player-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Base Price</span>
+                                <span class="stat-value" id="playerBasePrice">₹0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Age</span>
+                                <span class="stat-value" id="playerAge">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Controls -->
+                <div class="admin-panel" id="adminPanel">
+                    <button id="btnStartAuction" class="btn-premium" onclick="startAuction()"><i class="fas fa-play"></i> Start</button>
+                    <button id="btnPauseAuction" class="btn-outline-premium" onclick="pauseAuction()" style="display:none;"><i class="fas fa-pause"></i> Pause</button>
+                    <button id="btnResumeAuction" class="btn-premium" onclick="resumeAuction()" style="display:none;"><i class="fas fa-play"></i> Resume</button>
+                    <button id="btnStopAuction" class="btn-outline-premium" onclick="stopAuction()" style="display:none; border-color: #ef4444; color: #ef4444;"><i class="fas fa-stop"></i> Stop</button>
+                    <button id="btnNextPlayer" class="btn-outline-premium" onclick="nextPlayer()" style="display:none;"><i class="fas fa-forward"></i> Next Player</button>
+                    <button id="btnMarkSold" class="btn-premium" style="background: #10b981; display:none;" onclick="markSold()"><i class="fas fa-gavel"></i> Mark Sold</button>
+                    <button id="btnMarkUnsold" class="btn-outline-premium" style="border-color: #ef4444; color: #ef4444; display:none;" onclick="markUnsold()"><i class="fas fa-times"></i> Unsold</button>
+                </div>
+            </div>
+
+            <!-- Right: Upcoming Players -->
+            <div class="player-queue">
+                <h3 class="section-title text-sm">Auction Queue</h3>
+                <div class="queue-list" id="playerQueueContainer">
+                    <div class="empty-state">Loading players...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="/js/live-auction.js?v=2"></script>
+</body>
+</html>

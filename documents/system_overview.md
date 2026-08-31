@@ -1,6 +1,6 @@
-# BidZone: Sports Auction Platform Overview
+# JamRig: Sports Auction Platform Overview
 
-BidZone is a comprehensive web-based platform designed to manage and execute sports auctions. It provides a seamless experience for administrators to manage events, for players to showcase their skills fixed across multiple sports, and for team owners to participate in real-time auctions to build their dream squads.
+JamRig is a comprehensive web-based platform designed to manage and execute sports auctions. It provides a seamless experience for administrators to manage events, for players to showcase their skills fixed across multiple sports, and for team owners to participate in real-time auctions to build their dream squads.
 
 ## 1. Homepage (The Landing Page)
 The homepage serves as the entry point for all users, featuring a modern and dynamic design:
@@ -59,7 +59,7 @@ The strategic hub for building a championship-winning team:
 
 ## 5. Technical Core (Backend & Real-time)
 The platform is powered by a robust backend architecture:
-- **API (FastAPI)**: High-performance, asynchronous endpoints for all frontend interactions.
+- **API (Flask / WSGI)**: cPanel Passenger-compatible endpoints for all frontend interactions.
 - **Database (SQLAlchemy/MySQL)**: Relational schema managing Users, Players, Teams, Events, Auctions, Bids, and Activity Logs.
 - **Real-time Engine**: Auction logic handles bid increments, timer countdowns, and automatic winner selection.
 - **Security**: 

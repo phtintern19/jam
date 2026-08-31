@@ -1,84 +1,81 @@
 # JAMRIG - Sports Player Auction Platform
 
-JAMRIG is a web application for managing and participating in live sports player auctions. It combines a responsive HTML, CSS, and JavaScript frontend with a Python Flask backend, SQLAlchemy data layer, and database-backed user and auction workflows.
-
-## Features
-
-- Responsive interface for desktop, tablet, and mobile browsers
-- Auction pages with player details, bidding interactions, and countdowns
-- Dashboards and workflows for administrators, team owners, and players
-- User registration, authentication, and role-based navigation
-- Sports ratings and player management
-- Database-backed application using SQLAlchemy
-- cPanel Passenger WSGI entry point for deployment
-
-The frontend also includes the platform sections described in the original design: navigation and authentication buttons, hero and live-auction previews, animated statistics, a four-step "How It Works" section, registration prompts, and a footer with platform and support links. The original design notes describe simulated live updates and planned real-time integrations; availability depends on the deployed application configuration.
+JAMRIG is a web application for managing and participating in live sports player auctions. It combines a responsive HTML, CSS, and JavaScript frontend with a Python Flask application, SQLAlchemy data layer, and database-backed user and auction workflows. The Flask app serves the frontend.
 
 ## Project Structure
 
 ```text
 .
-├── backend/              # Flask application, database, and setup utilities
-│   ├── app.py            # Application entry point
-│   ├── database.py       # SQLAlchemy engine and session configuration
-│   ├── models.py         # Database models
-│   ├── requirements.txt  # Python dependencies
-│   └── passenger_wsgi.py # cPanel Passenger entry point
-├── documents/            # System and deployment documentation
-└── frontend/             # HTML templates, stylesheets, and JavaScript
-    ├── css/
-    ├── js/
-    └── templates/
+|-- backend/                 # Flask application and database utilities
+|   |-- app.py               # Flask application object
+|   |-- passenger_wsgi.py    # cPanel Passenger entry point
+|   |-- auction_engine.py
+|   |-- database.py
+|   |-- models.py
+|   |-- requirements.txt
+|   `-- .env.example         # Safe configuration template; copy to .env
+|-- documents/               # Architecture and deployment documentation
+`-- frontend/                # HTML pages, templates, styles, and scripts
+    |-- css/
+    |-- js/
+    |-- index.html
+    `-- templates/
 ```
+
+## Features
+
+- Responsive design for desktop, tablet, and mobile browsers
+- Live sports auction events with timed bidding, player details, and countdowns
+- Admin, player, and team-owner dashboards with role-based navigation
+- User registration, session authentication, activity logs, and notifications
+- Player management, sports ratings, and profile image uploads
+- Navigation, hero and auction previews, statistics, a How It Works section, and footer links
+- cPanel Passenger deployment support
+
+The original frontend design also describes simulated live updates, modal interactions, animated statistics, and planned real-time integrations. Actual functionality depends on the deployed application configuration.
 
 ## Technology Stack
 
-- **Frontend:** HTML5, CSS3 (Flexbox, Grid, and animations), and JavaScript (ES6+)
+- **Frontend:** HTML5, CSS3 (Flexbox, Grid, and animations), JavaScript (ES6+)
 - **Backend:** Python and Flask
-- **Data:** SQLAlchemy with SQLite or a configured MySQL database
-- **Supporting libraries:** Pydantic, python-dotenv, python-jose, Passlib, and PyMySQL (see `backend/requirements.txt`)
+- **Data:** SQLAlchemy with SQLite or configured MySQL
+- **Libraries:** see `backend/requirements.txt` (includes Pydantic, python-dotenv, python-jose, Passlib, and PyMySQL)
 - **UI assets:** Font Awesome and Google Fonts (Inter)
 
-## Getting Started
+## Local Development
 
-### Backend
+Use Python 3. From the project directory, create and activate a virtual environment:
 
-Use Python 3. Install dependencies from the backend directory:
-
-```bash
+```powershell
 cd backend
 python -m venv .venv
-```
-
-Activate the virtual environment (Windows: `.venv\Scripts\activate`; macOS/Linux: `source .venv/bin/activate`), then run:
-
-```bash
+.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
+Copy-Item .env.example .env
 ```
 
-Configure database and application settings in a local `backend/.env` file as needed. Do not commit secrets or credentials. The application settings support a `DATABASE_URL`; the default in the code is a local SQLite database, while deployments can configure MySQL. Start the development server with:
+Edit `backend/.env` for your local database and application settings. For local MySQL-less testing, set `USE_SQLITE=true`. Never commit `.env` files, passwords, or credentials. Start the app from `backend/`:
 
-```bash
+```powershell
 python app.py
 ```
 
-The Passenger entry point for cPanel is `backend/passenger_wsgi.py`.
+The development server address is configured by the application. Open the running app in a browser; frontend pages are served through Flask. The original static prototype can also be opened directly from `frontend/` for UI-only review.
 
-### Frontend
+## cPanel Passenger Deployment
 
-Open the appropriate HTML page under `frontend/templates/` in a browser, or serve the frontend through the backend/deployment configuration. The initial prototype was vanilla HTML/CSS/JavaScript and required no frontend build step. Backend-dependent features require a running and configured API.
+Keep `backend/` and `frontend/` as sibling directories. Set the cPanel Python application's root to `backend/` and use `passenger_wsgi.py` as its entry point.
 
-## Browser Support
+1. Create a MySQL database and user in cPanel.
+2. Upload the project with `backend/` and `frontend/` as siblings.
+3. Create `backend/.env` from `.env.example`, and set the database credentials and a strong `SECRET_KEY`.
+4. Install dependencies in the application's virtual environment with `pip install -r requirements.txt`.
+5. Ensure the configured profile upload directory is writable by the application user.
+6. Keep `ENABLE_SETUP_ROUTES=false` in production. Create the first admin with `python create_admin.py` over SSH.
+7. Configure SMTP settings if password-reset OTP email is required, and restart the app after changing `.env`.
 
-The interface targets current versions of Chrome, Firefox, Safari, and Edge.
+Auction progression uses request-scoped ticks for Passenger compatibility. An optional background thread is controlled by `ENABLE_AUCTION_ENGINE_THREAD`. See `documents/` for the system overview and deployment/conversion guide.
 
-## Documentation
+## Browser Support and Design
 
-Deployment and architecture notes are available in `documents/`, including the Flask conversion guide and system overview.
-
-## Design Principles
-
-- **Usability:** clear navigation and calls to action
-- **Performance:** responsive layouts and efficient page interactions
-- **Accessibility:** semantic markup and readable contrast
-- **Maintainability:** separated frontend assets and backend modules
+The interface targets current Chrome, Firefox, Safari, and Edge. The project emphasizes clear navigation, responsive performance, semantic markup, readable contrast, and separation of frontend assets from backend modules.

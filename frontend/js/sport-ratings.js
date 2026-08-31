@@ -33,7 +33,7 @@ async function loadSportRatingsForEvent(eventId) {
         inputsContainer.innerHTML = '';
 
         // Create rating input for each sport
-        sports.forEach(sport => {
+        for (const sport of sports) {
             const ratingDiv = document.createElement('div');
             ratingDiv.className = 'form-group';
             ratingDiv.style.marginBottom = '1rem';
@@ -60,7 +60,70 @@ async function loadSportRatingsForEvent(eventId) {
             `;
 
             inputsContainer.appendChild(ratingDiv);
-        });
+            
+            // --- CRICKET SPORT MASTER INTEGRATION ---
+            if (sport.name.toLowerCase() === 'cricket') {
+                try {
+                    const masterRes = await fetch(`/api/sports/${sport.sport_id}`);
+                    if (masterRes.ok) {
+                        const masterData = await masterRes.json();
+                        if (masterData.success && masterData.sport) {
+                            
+                            // 1. Render Role Dropdown
+                            if (masterData.sport.roles_config && masterData.sport.roles_config.length > 0) {
+                                const roleDiv = document.createElement('div');
+                                roleDiv.className = 'form-group';
+                                roleDiv.style.marginBottom = '1rem';
+                                
+                                let selectHtml = `<select id="profile_${sport.name}_role" data-sport="${sport.name}" data-attr="role" class="form-input sport-profile-input" required style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0;">`;
+                                selectHtml += `<option value="">Select Primary Role</option>`;
+                                masterData.sport.roles_config.forEach(role => {
+                                    selectHtml += `<option value="${role}">${role}</option>`;
+                                });
+                                selectHtml += `</select>`;
+                                
+                                roleDiv.innerHTML = `
+                                    <label for="profile_${sport.name}_role" style="color: #e2e8f0; margin-bottom: 0.5rem; display: block;">
+                                        ${sport.name} Role *
+                                    </label>
+                                    ${selectHtml}
+                                `;
+                                inputsContainer.appendChild(roleDiv);
+                            }
+
+                            // 2. Render Attributes Schema (Batting Style, Bowling Style)
+                            if (masterData.sport.attributes_schema) {
+                                const schema = masterData.sport.attributes_schema;
+                                for (const [attrName, options] of Object.entries(schema)) {
+                                    const attrDiv = document.createElement('div');
+                                    attrDiv.className = 'form-group';
+                                    attrDiv.style.marginBottom = '1rem';
+                                    
+                                    const niceName = attrName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                    
+                                    let selectHtml = `<select id="profile_${sport.name}_${attrName}" data-sport="${sport.name}" data-attr="${attrName}" class="form-input sport-profile-input" required style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0;">`;
+                                    selectHtml += `<option value="">Select ${niceName}</option>`;
+                                    options.forEach(opt => {
+                                        selectHtml += `<option value="${opt}">${opt}</option>`;
+                                    });
+                                    selectHtml += `</select>`;
+                                    
+                                    attrDiv.innerHTML = `
+                                        <label for="profile_${sport.name}_${attrName}" style="color: #e2e8f0; margin-bottom: 0.5rem; display: block;">
+                                            ${sport.name} ${niceName} *
+                                        </label>
+                                        ${selectHtml}
+                                    `;
+                                    inputsContainer.appendChild(attrDiv);
+                                }
+                            }
+                        }
+                    }
+                } catch(e) {
+                    console.error("Failed to load sport master attributes schema", e);
+                }
+            }
+        }
 
         // Show the container
         container.style.display = 'block';

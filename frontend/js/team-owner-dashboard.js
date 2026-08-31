@@ -95,7 +95,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Start auction timer if running
     startAuctionTimer();
+
+    // Start presence heartbeat
+    startHeartbeat();
+    
+    // Initial view rendering based on hash
+    setTimeout(() => {
+        switchView(window.location.hash || '#dashboard');
+    }, 100);
 });
+
+// --- PRESENCE SYSTEM ---
+let heartbeatInterval = null;
+
+async function sendHeartbeat() {
+    try {
+        await fetch('/api/presence/heartbeat', {
+            method: 'POST',
+            credentials: 'include'
+        });
+    } catch (err) {
+        console.error('Heartbeat failed:', err);
+    }
+}
+
+function startHeartbeat() {
+    // Send immediately on load
+    sendHeartbeat();
+    // Then every 15 seconds
+    if (!heartbeatInterval) {
+        heartbeatInterval = setInterval(sendHeartbeat, 15000);
+    }
+}
+
+window.addEventListener('beforeunload', () => {
+    // Attempt to notify server of offline status during unload
+    navigator.sendBeacon('/api/presence/offline');
+});
+// ------------------------
 
 // Helper: write to admin activity log in localStorage (shared with admin dashboard)
 function adminLogActivity(action, details) {
@@ -142,6 +179,145 @@ function adminLogActivity(action, details) {
 // Sample team owner credentials
 // Mock data removed - replaced with API calls
 // const sampleTeamOwners = ...
+
+// --- VIEW LOADERS ---
+
+async function loadPlayersView() {
+    try {
+        const response = await fetch('/api/team-owner/squad');
+        if (!response.ok) throw new Error('Failed to load squad');
+        const data = await response.json();
+        
+        const container = document.getElementById('playersFullList');
+        if (!data.squad || data.squad.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <i class="fas fa-users empty-icon" style="font-size: 3rem;"></i>
+                    <p>You haven't acquired any players yet.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = data.squad.map(player => `
+            <div class="glass-card" style="padding: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--accent-blue); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                        ${player.avatar ? `<img src="${player.avatar}" style="width: 100%; height: 100%; object-fit: cover;">` : `<i class="fas fa-user" style="color: white; font-size: 1.5rem;"></i>`}
+                    </div>
+                    <div>
+                        <h4 style="margin: 0; color: white;">${player.name}</h4>
+                        <span class="badge" style="background: rgba(255,255,255,0.1); color: #94a3b8; font-size: 0.75rem; margin-top: 0.25rem; display: inline-block;">${player.category}</span>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between;">
+                    <div style="color: #94a3b8; font-size: 0.875rem;">Purchased For</div>
+                    <div style="color: #10b981; font-weight: bold;">₹${player.price.toLocaleString()}</div>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (err) {
+        console.error('Error loading players:', err);
+    }
+}
+
+async function loadWalletView() {
+    try {
+        const response = await fetch('/api/team-owner/wallet');
+        if (!response.ok) throw new Error('Failed to load wallet');
+        const data = await response.json();
+        
+        document.getElementById('walletTotalBudget').textContent = `₹${data.total_budget.toLocaleString()}`;
+        document.getElementById('walletSpent').textContent = `₹${data.spent.toLocaleString()}`;
+        document.getElementById('walletAvailable').textContent = `₹${data.available.toLocaleString()}`;
+        
+        const list = document.getElementById('transactionHistoryList');
+        if (!data.transactions || data.transactions.length === 0) {
+            list.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-receipt empty-icon" style="font-size: 2rem;"></i>
+                    <p>No transactions yet.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        list.innerHTML = data.transactions.map(tx => `
+            <div class="list-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <div>
+                    <div style="color: white; font-weight: 500;">${tx.description}: ${tx.player}</div>
+                    <div style="color: #94a3b8; font-size: 0.875rem; margin-top: 0.25rem;">
+                        <i class="fas fa-calendar-alt"></i> ${new Date(tx.date).toLocaleDateString()} | ${tx.event}
+                    </div>
+                </div>
+                <div style="color: #ef4444; font-weight: bold;">-₹${tx.amount.toLocaleString()}</div>
+            </div>
+        `).join('');
+    } catch (err) {
+        console.error('Error loading wallet:', err);
+    }
+}
+
+async function loadReportsView() {
+    try {
+        const response = await fetch('/api/team-owner/reports');
+        if (!response.ok) throw new Error('Failed to load reports');
+        const data = await response.json();
+        
+        // Auction Summary
+        document.getElementById('reportAuctionSummary').innerHTML = `
+            <div style="display: flex; justify-content: space-between;"><span>Total Auctions Participated:</span> <strong>${data.auction_summary.total_auctions}</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span>Players Purchased:</span> <strong>${data.auction_summary.players_purchased}</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span>Remaining Purse:</span> <strong style="color: #10b981;">₹${data.auction_summary.remaining_purse.toLocaleString()}</strong></div>
+        `;
+        
+        // Spending Summary
+        document.getElementById('reportSpendingSummary').innerHTML = `
+            <div style="display: flex; justify-content: space-between;"><span>Total Spent:</span> <strong style="color: #ef4444;">₹${data.spending_summary.total.toLocaleString()}</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span>Avg. Player Price:</span> <strong>₹${data.spending_summary.avg_per_player.toLocaleString(undefined, {maximumFractionDigits: 2})}</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span>Highest Purchase:</span> <strong>₹${data.auction_summary.highest_purchase.toLocaleString()}</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span>Lowest Purchase:</span> <strong>₹${data.auction_summary.lowest_purchase.toLocaleString()}</strong></div>
+        `;
+        
+        // Auction History Table
+        const historyContainer = document.getElementById('reportAuctionHistory');
+        if (!data.auction_history || data.auction_history.length === 0) {
+            historyContainer.innerHTML = '<div class="empty-state"><p>No auction history available.</p></div>';
+        } else {
+            let tableHTML = `
+                <table style="width: 100%; text-align: left; border-collapse: collapse; color: white;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <th style="padding: 1rem;">Event Name</th>
+                            <th style="padding: 1rem;">Date</th>
+                            <th style="padding: 1rem;">Players Bought</th>
+                            <th style="padding: 1rem;">Amount Spent</th>
+                            <th style="padding: 1rem;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            data.auction_history.forEach(row => {
+                tableHTML += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 1rem;">${row.event_name}</td>
+                        <td style="padding: 1rem; color: #94a3b8;">${new Date(row.date).toLocaleDateString()}</td>
+                        <td style="padding: 1rem;">${row.players_purchased}</td>
+                        <td style="padding: 1rem; color: #ef4444;">₹${row.amount_spent.toLocaleString()}</td>
+                        <td style="padding: 1rem;"><span class="badge" style="background: rgba(255,255,255,0.1);">${row.status}</span></td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `</tbody></table>`;
+            historyContainer.innerHTML = tableHTML;
+        }
+    } catch (err) {
+        console.error('Error loading reports:', err);
+    }
+}
 
 // Set initial auction status in localStorage if not already set
 if (!localStorage.getItem('currentAuctionStatus')) {
@@ -202,16 +378,21 @@ async function loadTeamOwnerData(teamId = null) {
 
                 if (data.my_teams.length > 1) {
                     teamSelector.style.display = 'block';
-                    teamSelector.innerHTML = '<option value="">Select Event</option>';
-                    data.my_teams.forEach(team => {
-                        const option = document.createElement('option');
-                        option.value = team.team_id;
-                        option.textContent = `${team.event_title} (${team.team_name})`;
-                        if (currentTeamId == team.team_id) {
-                            option.selected = true;
-                        }
-                        teamSelector.appendChild(option);
-                    });
+                    
+                    const teamsHash = JSON.stringify(data.my_teams);
+                    if (window.lastTeamsHash !== teamsHash) {
+                        window.lastTeamsHash = teamsHash;
+                        teamSelector.innerHTML = '<option value="">Select Event</option>';
+                        data.my_teams.forEach(team => {
+                            const option = document.createElement('option');
+                            option.value = team.team_id;
+                            option.textContent = `${team.event_title} (${team.team_name})`;
+                            if (currentTeamId == team.team_id) {
+                                option.selected = true;
+                            }
+                            teamSelector.appendChild(option);
+                        });
+                    }
                 } else {
                     teamSelector.style.display = 'none';
                 }
@@ -223,22 +404,61 @@ async function loadTeamOwnerData(teamId = null) {
             // Update wallet balance
             document.getElementById('walletAmount').textContent = `₹${data.wallet_balance.toLocaleString()}`;
 
+            // Update stats
+            const squadSizeEl = document.getElementById('squadSize');
+            if (squadSizeEl) squadSizeEl.textContent = data.squad_size !== undefined ? data.squad_size : (data.squad ? data.squad.length : 0);
+            
+            const liveAuctionsEl = document.getElementById('liveAuctions');
+            if (liveAuctionsEl) liveAuctionsEl.textContent = data.live_auctions_count !== undefined ? data.live_auctions_count : 0;
+            
+            const activeBidsEl = document.getElementById('activeBids');
+            if (activeBidsEl) activeBidsEl.textContent = data.active_bids_count !== undefined ? data.active_bids_count : 0;
+            
+            // Manager Stats
+            const managerAvailablePlayersEl = document.getElementById('managerAvailablePlayers');
+            if (managerAvailablePlayersEl && (data.participants || data.participating_players)) {
+                const parts = data.participants || data.participating_players;
+                managerAvailablePlayersEl.textContent = parts.length;
+            }
+            
+            const managerUpcomingMatchesEl = document.getElementById('managerUpcomingMatches');
+            if (managerUpcomingMatchesEl && data.upcoming_events !== undefined) {
+                managerUpcomingMatchesEl.textContent = data.upcoming_events.length;
+            }
+
+            // Trigger squad update
+            renderSquad(data.squad);
+            
+            // Trigger participants update
+            renderParticipants(data.participants || data.participating_players);
+            
+            // Trigger upcoming events update
+            renderUpcomingEvents(data.upcoming_events);
+
             // Store current team owner data
             sessionStorage.setItem('teamName', data.team_name);
             sessionStorage.setItem('walletBalance', data.wallet_balance);
             sessionStorage.setItem('squadData', JSON.stringify(data.squad));
-
-            // Trigger squad update
-            renderSquad(data.squad);
 
             // Handle auction status
             if (data.active_auction) {
                 if (data.active_auction.status === 'RUNNING') {
                     document.querySelector('.live-auction-container').style.display = 'block';
                     document.getElementById('auction-countdown-overlay').style.display = 'none';
-                    // Clear countdown timer when live
+                    // Update countdown timer when live
                     const timerEl = document.getElementById('countdownTimer');
-                    if (timerEl) {
+                    if (timerEl && data.active_auction.current_player && typeof data.active_auction.current_player.time_left !== 'undefined') {
+                        timerEl.style.display = 'block';
+                        const timeLeft = data.active_auction.current_player.time_left;
+                        timerEl.textContent = formatTime(Math.ceil(timeLeft));
+                        if (timeLeft < 5) {
+                            timerEl.style.color = '#ef4444';
+                            timerEl.style.animation = 'pulse 1s infinite';
+                        } else {
+                            timerEl.style.color = '#4F46E5';
+                            timerEl.style.animation = 'none';
+                        }
+                    } else if (timerEl) {
                         timerEl.style.display = 'none';
                         timerEl.textContent = '';
                     }
@@ -265,6 +485,9 @@ async function loadTeamOwnerData(teamId = null) {
 
                     const startTime = new Date(data.active_auction.start_time).getTime();
                     startCountdown(startTime);
+                } else if (data.active_auction.status === 'LOBBY' || data.active_auction.status === 'lobby') {
+                    localStorage.setItem('currentAuctionStatus', 'LOBBY');
+                    // Removed continuous initializeAuction call to prevent interval duplication
                 } else {
                     document.querySelector('.live-auction-container').style.display = 'block';
                     document.getElementById('auction-countdown-overlay').style.display = 'none'; // Hide overlay
@@ -291,7 +514,10 @@ async function loadTeamOwnerData(teamId = null) {
             console.error('Failed to load team owner dashboard data');
             if (response.status === 401 || response.status === 403) {
                 // Handle auth error
-                window.location.href = 'index.html';
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                sessionStorage.clear();
+                window.location.href = '/index.html';
             }
         }
     } catch (error) {
@@ -440,9 +666,14 @@ function loadSquad() {
     }
 }
 
+let lastSquadHash = null;
 function renderSquad(squad) {
     const squadList = document.getElementById('squadList');
     if (!squadList) return;
+
+    const squadHash = JSON.stringify(squad || []);
+    if (squadHash === lastSquadHash) return;
+    lastSquadHash = squadHash;
 
     squadList.innerHTML = '';
 
@@ -473,10 +704,15 @@ function renderSquad(squad) {
     }
 }
 
+let lastParticipantsHash = null;
 // Render participating players list
 function renderParticipants(participants) {
     const participantsList = document.getElementById('participantsList');
     if (!participantsList) return;
+
+    const partHash = JSON.stringify(participants || []);
+    if (partHash === lastParticipantsHash) return;
+    lastParticipantsHash = partHash;
 
     participantsList.innerHTML = '';
 
@@ -506,11 +742,55 @@ function renderParticipants(participants) {
     }
 }
 
+let lastUpcomingHash = null;
+function renderUpcomingEvents(events) {
+    const eventsList = document.getElementById('upcomingEventsList');
+    if (!eventsList) return;
+    
+    const eventsHash = JSON.stringify(events || []);
+    if (eventsHash === lastUpcomingHash) return;
+    lastUpcomingHash = eventsHash;
+    
+    eventsList.innerHTML = '';
+    
+    if (events && events.length > 0) {
+        events.forEach(ev => {
+            const item = document.createElement('div');
+            item.className = 'list-item';
+            
+            // Format dates
+            let startDateStr = 'TBD';
+            if (ev.start_date) {
+                const d = new Date(ev.start_date);
+                startDateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            }
+            
+            let iconClass = 'fa-calendar-check';
+            let iconColor = 'var(--accent-purple)';
+            let iconBg = 'rgba(139, 92, 246, 0.1)';
+            
+            item.innerHTML = `
+                <div class="avatar-circle" style="background: ${iconBg}; color: ${iconColor}; width: 40px; height: 40px; font-size: 1rem;"><i class="fas ${iconClass}"></i></div>
+                <div class="item-details">
+                    <div class="item-name">${ev.title}</div>
+                    <div class="item-meta"><span>${startDateStr}</span></div>
+                </div>
+            `;
+            eventsList.appendChild(item);
+        });
+    } else {
+        eventsList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-calendar-times empty-icon" style="font-size: 2rem;"></i>
+                <p>No upcoming events.</p>
+            </div>
+        `;
+    }
+}
+
 // Initialize auction display
 function initializeAuction() {
-    fetchAuctionStatus();
-    // Poll every 3 seconds for updates
-    setInterval(fetchAuctionStatus, 3000);
+    // Polling is strictly handled by startAuctionTimer().
 }
 
 // Fetch current auction status from backend
@@ -529,14 +809,41 @@ async function fetchAuctionStatus() {
         if (response.ok) {
             const data = await response.json();
 
-            // 1. Update Wallet Balance Live
+            // 1. Update Wallet Balance and Stats Live
             if (data.wallet_balance !== undefined) {
                 const walletEl = document.getElementById('walletAmount');
                 if (walletEl) {
                     walletEl.textContent = `₹${data.wallet_balance.toLocaleString()}`;
                 }
-                // Update session storage too
                 sessionStorage.setItem('walletBalance', data.wallet_balance);
+            }
+            
+            const squadSizeEl = document.getElementById('squadSize');
+            if (squadSizeEl && data.squad_size !== undefined) {
+                squadSizeEl.textContent = data.squad_size;
+            }
+            
+            const liveAuctionsEl = document.getElementById('liveAuctions');
+            if (liveAuctionsEl && data.live_auctions_count !== undefined) {
+                liveAuctionsEl.textContent = data.live_auctions_count;
+            }
+            
+            const activeBidsEl = document.getElementById('activeBids');
+            if (activeBidsEl && data.active_bids_count !== undefined) {
+                activeBidsEl.textContent = data.active_bids_count;
+            }
+            
+            // Manager Stats
+            const managerAvailablePlayersEl = document.getElementById('managerAvailablePlayers');
+            if (managerAvailablePlayersEl && data.participating_players) {
+                // Determine available players by subtracting squad size or just total participants.
+                // Assuming data.participants returns everyone, or maybe just available ones depending on backend.
+                managerAvailablePlayersEl.textContent = data.participating_players.length;
+            }
+            
+            const managerUpcomingMatchesEl = document.getElementById('managerUpcomingMatches');
+            if (managerUpcomingMatchesEl && data.upcoming_events !== undefined) {
+                managerUpcomingMatchesEl.textContent = data.upcoming_events.length;
             }
 
             // 2. Handle Auction Status
@@ -629,17 +936,28 @@ function updateAuctionDisplay() {
         case 'PAUSED':
             statusText = 'Auction Paused';
             statusClass = 'status-paused';
-            countdownTimer.style.display = 'none';
-            break;
-        case 'ENDED':
-            statusText = 'Auction Ended';
-            statusClass = 'status-ended';
-            countdownTimer.style.display = 'none';
             break;
     }
+    const auctionStatusEl = document.getElementById('auctionStatus');
+    const dedicatedAuctionStatus = document.getElementById('dedicatedAuctionStatus');
+    const currentEventTitle = document.getElementById('currentEventTitle');
+    const dedicatedEventTitle = document.getElementById('dedicatedEventTitle');
 
-    auctionStatus.textContent = statusText;
-    auctionStatus.className = `auction-status ${statusClass}`;
+    if (auctionStatus) {
+        auctionStatus.textContent = currentAuction.status;
+        auctionStatus.className = `auction-status status-${currentAuction.status.toLowerCase().replace('_', '-')}`;
+    }
+    if (dedicatedAuctionStatus) {
+        dedicatedAuctionStatus.textContent = currentAuction.status;
+        dedicatedAuctionStatus.className = `auction-status status-${currentAuction.status.toLowerCase().replace('_', '-')}`;
+    }
+
+    if (currentEventTitle && window.currentEventName) {
+        currentEventTitle.textContent = window.currentEventName;
+    }
+    if (dedicatedEventTitle && window.currentEventName) {
+        dedicatedEventTitle.textContent = window.currentEventName;
+    }
 
     // Update countdown timer
     if (currentAuction.status === 'RUNNING') {
@@ -647,36 +965,40 @@ function updateAuctionDisplay() {
     }
 
     // Update content based on auction state
+    let contentHTML = '';
     if (currentAuction.status === 'NOT_STARTED' || currentAuction.status === 'ENDED') {
-        auctionContent.innerHTML = `
+        contentHTML = `
             <div class="waiting-message">
                 ${currentAuction.status === 'NOT_STARTED'
                 ? 'Waiting for auction to start...'
                 : 'The auction has concluded.'}
             </div>
         `;
+        document.getElementById('auctionContent').innerHTML = contentHTML;
+        document.getElementById('dedicatedAuctionContent').innerHTML = contentHTML;
     } else if (currentAuction.status === 'RUNNING' && currentAuction.currentPlayer) {
         displayPlayerCard();
     } else {
-        auctionContent.innerHTML = `
+        contentHTML = `
             <div class="waiting-message">
                 No player is currently being auctioned.
             </div>
         `;
+        document.getElementById('auctionContent').innerHTML = contentHTML;
+        document.getElementById('dedicatedAuctionContent').innerHTML = contentHTML;
     }
 }
 
 // Display current player card
 function displayPlayerCard() {
-    const auctionContent = document.getElementById('auctionContent');
     const player = currentAuction.currentPlayer;
     const walletBalance = parseInt(sessionStorage.getItem('walletBalance')) || 0;
 
-    // Calculate stats (mocking Wins/Losses removed, using DB fallback 0)
+    // Calculate stats
     const wins = player.stats && player.stats.wins ? player.stats.wins : 0;
     const losses = player.stats && player.stats.losses ? player.stats.losses : 0;
 
-    auctionContent.innerHTML = `
+    const htmlContent = `
         <div class="player-card-premium" style="background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; align-items: center; max-width: 400px; margin: 0 auto;">
             <div class="player-header" style="text-align: center; margin-bottom: 1.5rem; width: 100%;">
                 <div class="player-avatar-large" style="width: 100px; height: 100px; border-radius: 50%; background: #f3f4f6; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #4f46e5;">
@@ -716,24 +1038,28 @@ function displayPlayerCard() {
                 </div>
             </div>
 
-            <!-- Bidding Controls moved to wrapper but we can inject them here or keep separate -->
              <div class="custom-bid-section" style="width: 100%;">
-                 <input type="range" min="${currentAuction.currentBid || player.basePrice}" max="${(currentAuction.currentBid || player.basePrice) * 2}" value="${currentAuction.currentBid || player.basePrice}" class="slider" id="bidSlider" oninput="updateSliderValue(this.value)" style="width: 100%; margin-bottom: 1rem;">
-                 <div class="slider-value" id="sliderValue" style="text-align: center; font-size: 1.25rem; font-weight: 700; color: #4f46e5; margin-bottom: 1rem;">₹${(currentAuction.currentBid || player.basePrice).toLocaleString()}</div>
+                 <input type="range" min="${currentAuction.currentBid || player.basePrice}" max="${(currentAuction.currentBid || player.basePrice) * 2}" value="${currentAuction.currentBid || player.basePrice}" class="slider" oninput="updateSliderValue(this.value)" style="width: 100%; margin-bottom: 1rem;">
+                 <div class="slider-value" style="text-align: center; font-size: 1.25rem; font-weight: 700; color: #4f46e5; margin-bottom: 1rem;">₹${(currentAuction.currentBid || player.basePrice).toLocaleString()}</div>
                  <button class="place-bid-btn" onclick="placeCustomBid()" style="width: 100%; padding: 0.875rem; background: #4f46e5; color: white; border: none; border-radius: 0.5rem; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s;">
                     Place Bid
                  </button>
             </div>
         </div>
     `;
+    
+    const auctionContent = document.getElementById('auctionContent');
+    const dedicatedAuctionContent = document.getElementById('dedicatedAuctionContent');
+    
+    if (auctionContent) auctionContent.innerHTML = htmlContent;
+    if (dedicatedAuctionContent) dedicatedAuctionContent.innerHTML = htmlContent;
 }
 
 // Update slider value display
 function updateSliderValue(val) {
-    const sliderValue = document.getElementById('sliderValue');
-    if (sliderValue) {
-        sliderValue.textContent = `₹${parseInt(val).toLocaleString()}`;
-    }
+    document.querySelectorAll('.slider-value').forEach(el => {
+        el.textContent = `₹${parseInt(val).toLocaleString()}`;
+    });
 }
 
 // Place quick bid
@@ -920,8 +1246,94 @@ function simulateNextPlayer() {
     updateAuctionDisplay();
 }
 
+// --- VIEW SWITCHING LOGIC ---
+window.switchView = function(hashOrPath) {
+    if (!hashOrPath) hashOrPath = '#dashboard';
+    
+    // Extract hash part
+    let viewName = 'dashboard';
+    if (hashOrPath.includes('#')) {
+        viewName = hashOrPath.split('#')[1];
+    }
+    
+    // Handle Role Panels (Manager/Analyst)
+    let isRolePanel = false;
+    let targetPanel = null;
+    if (hashOrPath.includes('/dashboard/manager')) {
+        isRolePanel = true;
+        targetPanel = document.getElementById('manager-panel');
+    } else if (hashOrPath.includes('/dashboard/analyst')) {
+        isRolePanel = true;
+        targetPanel = document.getElementById('analyst-panel');
+    }
+    
+    const validViews = ['dashboard', 'players', 'auction', 'wallet', 'reports', 'squad', 'analytics', 'performance', 'predictions'];
+    if (!validViews.includes(viewName)) {
+        viewName = 'dashboard';
+    }
+    
+    // Squad alias to players
+    if (viewName === 'squad') viewName = 'players';
+    
+    // Hide all view sections
+    document.querySelectorAll('.view-section').forEach(el => {
+        el.classList.remove('active-view');
+    });
+    
+    // Show target view
+    const targetView = document.getElementById(`view-${viewName}`);
+    if (targetView) {
+        targetView.classList.add('active-view');
+        
+        // Synchronize sidebar active state
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.classList.remove('active');
+            const path = item.getAttribute('data-path');
+            if (path) {
+                if (path.includes('#' + viewName)) {
+                    item.classList.add('active');
+                } else if (viewName === 'dashboard' && (path.endsWith('#dashboard') || path === '/dashboard' || path === '/dashboard/manager' || path === '/dashboard/analyst')) {
+                    item.classList.add('active');
+                }
+            }
+        });
+        
+        // Trigger specific loads based on view
+        if (viewName === 'players') {
+            loadPlayersView();
+        } else if (viewName === 'wallet') {
+            loadWalletView();
+        } else if (viewName === 'reports') {
+            loadReportsView();
+        } else if (viewName === 'auction') {
+            // Already updated via polling, but could force refresh
+        }
+        
+        // Scroll smoothly to the target section, accounting for the header
+        setTimeout(() => {
+            const elementToScrollTo = isRolePanel ? targetPanel : targetView;
+            if (elementToScrollTo) {
+                const headerOffset = 80;
+                const elementPosition = elementToScrollTo.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                window.scrollTo({
+                     top: offsetPosition,
+                     behavior: "smooth"
+                });
+            }
+        }, 50);
+    }
+};
+
 // Setup event listeners
 function setupEventListeners() {
+    // Listen for custom viewChanged event from rbac-router.js
+    window.addEventListener('viewChanged', (e) => {
+        if (e.detail && e.detail.path) {
+            switchView(e.detail.path);
+        }
+    });
+
     // Contact support functionality
     // Contact support functionality
     window.contactSupport = function () {
@@ -1061,8 +1473,10 @@ function setupEventListeners() {
 }
 
 // Start auction polling (removed client-side simulation)
+let dashboardPollInterval = null;
 function startAuctionTimer() {
-    setInterval(() => {
+    if (dashboardPollInterval) clearInterval(dashboardPollInterval);
+    dashboardPollInterval = setInterval(() => {
         if (currentTeamId) {
             loadTeamOwnerData(currentTeamId); // Poll the backend to get actual state
         }
@@ -1240,9 +1654,13 @@ function startCountdown(startTime) {
             if (statusElement) statusElement.textContent = 'Live!';
             if (timerElement) timerElement.textContent = '00:00:00';
 
-            // Reload to fetch live auction data
+            // Dynamically fetch live auction data instead of reloading the entire page
             setTimeout(() => {
-                window.location.reload();
+                if (typeof fetchAuctionStatus === 'function') {
+                    fetchAuctionStatus();
+                } else if (typeof loadAuctionData === 'function') {
+                    loadAuctionData();
+                }
             }, 2000);
             return;
         }
@@ -1275,7 +1693,7 @@ function applyRolePermissions(user) {
         // Add a visual indicator of their role
         const headerTitle = document.querySelector('.header h2') || document.querySelector('.header .nav-logo span');
         if (headerTitle) {
-            headerTitle.textContent = 'BidZone - Team Analyst Dashboard';
+            headerTitle.textContent = 'JamRig - Team Analyst Dashboard';
         }
     } 
     // Manager has bidding rights but maybe not wallet access
@@ -1285,7 +1703,135 @@ function applyRolePermissions(user) {
         
         const headerTitle = document.querySelector('.header h2') || document.querySelector('.header .nav-logo span');
         if (headerTitle) {
-            headerTitle.textContent = 'BidZone - Team Manager Dashboard';
+            headerTitle.textContent = 'JamRig - Team Manager Dashboard';
         }
     }
 }
+
+// --- SOCKET.IO & LOBBY (PHASE 3 + LIVE BIDDING PHASE 4) ---
+let socket;
+
+function initializeLobbySocket(auctionId, teamId) {
+    if (!socket) {
+        socket = io({ transports: ['polling'], upgrade: false }); // Connects to the host using polling only
+        
+        socket.on('connect', () => {
+            console.log('Connected to WebSocket for Lobby/Auction');
+            socket.emit('join_lobby', {
+                auction_id: auctionId,
+                team_id: teamId
+            });
+        });
+        
+        socket.on('team_status_update', (data) => {
+            console.log('Team status update:', data);
+            if (data.team_id == teamId && data.status === 'READY') {
+                const btn = document.getElementById('btn-team-ready');
+                if (btn) {
+                    btn.textContent = 'Ready! Waiting for Admin...';
+                    btn.classList.add('disabled');
+                    btn.disabled = true;
+                }
+            }
+        });
+
+        socket.on('auction_update', (data) => {
+            console.log('Auction update:', data);
+            if (data.status === 'RUNNING') {
+                // Transition from lobby to live auction UI
+                const lobbyContainer = document.getElementById('auction-lobby-container');
+                if (lobbyContainer) lobbyContainer.style.display = 'none';
+                
+                const liveContainer = document.querySelector('.live-auction-container');
+                if (liveContainer) liveContainer.style.display = 'block';
+                
+                if (data.current_player) {
+                    const nameEl = document.getElementById('currentPlayerName') || document.querySelector('.player-info h3');
+                    if (nameEl) nameEl.textContent = data.current_player.name;
+                    
+                    const roleEl = document.getElementById('currentPlayerRole') || document.querySelector('.player-info p');
+                    if (roleEl) roleEl.textContent = `${data.current_player.role} • ${data.current_player.category}`;
+                    
+                    const bidAmountEl = document.getElementById('currentBidAmount') || document.getElementById('currentBid');
+                    if (bidAmountEl) bidAmountEl.textContent = `₹${data.current_bid || data.current_player.base_price}`;
+                    
+                    const imgEl = document.getElementById('currentPlayerImage') || document.querySelector('.player-photo-lg');
+                    if (imgEl) imgEl.src = data.current_player.photo || '/static/images/default-avatar.png';
+                }
+                
+                const timerEl = document.getElementById('countdownTimer');
+                if (timerEl) timerEl.textContent = data.time_left;
+            } else if (data.status === 'PAUSED') {
+                const timerEl = document.getElementById('countdownTimer');
+                if (timerEl) timerEl.textContent = 'PAUSED';
+            } else if (data.status === 'COMPLETED') {
+                const timerEl = document.getElementById('countdownTimer');
+                if (timerEl) timerEl.textContent = 'COMPLETED';
+            }
+        });
+
+        socket.on('bid_placed', (data) => {
+            console.log('Bid placed:', data);
+            const bidAmountEl = document.getElementById('currentBidAmount') || document.getElementById('currentBid');
+            if (bidAmountEl) bidAmountEl.textContent = `₹${data.amount}`;
+            
+            const timerEl = document.getElementById('countdownTimer');
+            if (timerEl) timerEl.textContent = data.time_left;
+        });
+    }
+}
+
+window.placeBid = function(amount) {
+    const userStr = localStorage.getItem('user');
+    if (!userStr || !socket) return;
+    const user = JSON.parse(userStr);
+    
+    const teamSelector = document.getElementById('teamSelector');
+    const auctionId = teamSelector ? teamSelector.value : localStorage.getItem('currentAuctionId');
+    
+    if (auctionId && user.team_id) {
+        socket.emit('place_bid', {
+            auction_id: parseInt(auctionId),
+            team_id: user.team_id,
+            amount: amount
+        });
+    }
+};
+
+window.markTeamReady = function() {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return;
+    const user = JSON.parse(userStr);
+    
+    const teamSelector = document.getElementById('teamSelector');
+    const auctionId = teamSelector ? teamSelector.value : null;
+    
+    const finalAuctionId = auctionId || localStorage.getItem('currentAuctionId');
+    if (socket && finalAuctionId && user.team_id) {
+        socket.emit('team_ready', {
+            auction_id: parseInt(finalAuctionId),
+            team_id: user.team_id
+        });
+    }
+};
+
+const originalInitAuction = window.initializeAuction || function(){};
+window.initializeAuction = async function() {
+    const currentAuctionStatus = localStorage.getItem('currentAuctionStatus');
+    if (currentAuctionStatus === 'LOBBY' || currentAuctionStatus === 'lobby') {
+        const liveContainer = document.querySelector('.live-auction-container');
+        if (liveContainer) liveContainer.style.display = 'none';
+        
+        const lobbyContainer = document.getElementById('auction-lobby-container');
+        if (lobbyContainer) lobbyContainer.style.display = 'block';
+        
+        const user = JSON.parse(localStorage.getItem('user'));
+        const teamSelector = document.getElementById('teamSelector');
+        const auctionId = teamSelector ? teamSelector.value : localStorage.getItem('currentAuctionId');
+        if (auctionId && user && user.team_id) {
+            initializeLobbySocket(auctionId, user.team_id);
+        }
+    } else {
+        originalInitAuction();
+    }
+};

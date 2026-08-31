@@ -1,3 +1,10 @@
+// --- SIDEBAR MANAGEMENT ---
+function toggleSidebar() {
+    const sidebar = document.getElementById('adminSidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('sidebar-open');
+    }
+}
 
 // --- THEME MANAGEMENT ---
 function toggleTheme() {
@@ -48,13 +55,36 @@ let currentViewEventId = null;
 let playerSortByEventId = false;
 let playerEventIdSortAscending = true;
 
+// --- CENTRALIZED API CONFIGURATION & DIAGNOSTICS ---
+const API_BASE_URL = window.API_BASE_URL || '';
+
+async function apiFetch(endpoint, options = {}) {
+    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+    try {
+        const response = await fetch(url, options);
+        return response;
+    } catch (error) {
+        if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+            console.error(`[API Network/CORS Error] Failed to reach ${url}. 
+            This usually means:
+            1. The backend server is down or unreachable.
+            2. You are loading the HTML via file:/// instead of a web server.
+            3. A CORS policy blocked the request (e.g. credentials mismatch).
+            4. Mixed content was blocked (HTTPS to HTTP).`, error);
+        } else {
+            console.error(`[API Error] Error calling ${url}:`, error);
+        }
+        throw error;
+    }
+}
+
 // Players will be fetched from API
 let samplePlayers = [];
 
 
 async function loadDashboardStats() {
     try {
-        const response = await fetch('/api/dashboard/admin/stats');
+        const response = await apiFetch('/api/dashboard/admin/stats');
         if (response.ok) {
             const stats = await response.json();
             // Update the reports section cards if they exist
@@ -66,6 +96,8 @@ async function loadDashboardStats() {
             if (elTeams) elTeams.textContent = stats.total_teams || 0;
             if (elPlayers) elPlayers.textContent = stats.total_players || 0;
             if (elSold) elSold.textContent = stats.purchased_players || 0;
+        } else {
+            console.error(`[API HTTP Error] loadDashboardStats failed with status: ${response.status}`);
         }
     } catch (error) {
         console.error('Error loading dashboard stats:', error);
@@ -84,8 +116,9 @@ async function loadEvents() {
     eventsGrid.innerHTML = '<div style="color: #94a3b8; text-align: center; grid-column: 1/-1;">Loading events...</div>';
 
     try {
-        const response = await fetch('/events/');
+        const response = await apiFetch('/api/events/?_t=' + new Date().getTime());
         if (!response.ok) {
+            console.error(`[API HTTP Error] loadEvents failed with status: ${response.status}`);
             throw new Error(`Failed to fetch events (Status: ${response.status})`);
         }
         
@@ -196,7 +229,7 @@ function createEventCard(event) {
             <div class="event-stats" style="display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid var(--border-color, #e2e8f0); margin-bottom: 1.5rem;">
                 <div class="stat" style="text-align: left;">
                     <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Registered Teams</div>
-                    <div style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary, #0f172a);">${event.registered_players_count || 0}</div>
+                    <div style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary, #0f172a);">${event.registered_teams_count || 0}</div>
                 </div>
                 <div class="stat" style="text-align: right;">
                     <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Auction Status</div>
@@ -205,16 +238,13 @@ function createEventCard(event) {
             </div>
 
             <div class="event-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                <button class="btn btn-outline-primary" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background: transparent; cursor: pointer; transition: all 0.2s;" onclick="generateLiveLink('${event.event_id}')">
-                    <i class="fas fa-eye"></i> View
-                </button>
                 <button class="btn btn-outline-indigo" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background: transparent; cursor: pointer; transition: all 0.2s;" onclick="editEvent('${event.event_id}')">
                     <i class="fas fa-edit"></i> Edit
                 </button>
-                <button class="btn btn-outline-success" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background: transparent; cursor: pointer; transition: all 0.2s; grid-column: span 2;" onclick="window.location.href='/admin-auction.html?id=${event.event_id}'">
-                    <i class="fas fa-gavel"></i> Manage Auction
+                <button class="btn btn-outline-success" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background: transparent; cursor: pointer; transition: all 0.2s;" onclick="openAuctionPrepModal('${event.event_id}')">
+                    <i class="fas fa-gavel"></i> Start Auction
                 </button>
-                <button class="btn btn-outline-secondary" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background: transparent; cursor: pointer; transition: all 0.2s;" onclick="viewEventRegistrations('${event.event_id}', '${event.title.replace(/'/g, "\\'")}')">
+                <button class="btn btn-outline-secondary" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background: transparent; cursor: pointer; transition: all 0.2s;" onclick="viewEventTeams('${event.event_id}', '${event.title.replace(/'/g, "\\'")}')">
                     <i class="fas fa-users"></i> Teams
                 </button>
                 <button class="btn btn-outline-danger" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background: transparent; cursor: pointer; transition: all 0.2s; color: #ef4444;" onclick="deleteEvent('${event.event_id}')">
@@ -254,8 +284,9 @@ function openCreateEventModal() {
     document.querySelector('#editEventModal .modal-header h2').textContent = 'Create New Event';
     document.querySelector('#editEventModal .modal-subtitle').textContent = 'Fill in the details below to create a new auction event.';
 
-    // Load sports checkboxes
-    loadSportsCheckboxes();
+    // Clear sport id selection
+    let sportIdSelect = document.getElementById('editSportId');
+    if (sportIdSelect) sportIdSelect.value = '';
 
     // Default bid time to 20 seconds
     const defaultEditBid = document.getElementById('editBidTime');
@@ -320,9 +351,17 @@ function editEvent(eventId) {
     document.getElementById('editPriceGold').value = basePrices.gold || '';
     document.getElementById('editPriceSilver').value = basePrices.silver || '';
 
-    // Load sports checkboxes with current selections
-    const sportNames = event.sports ? event.sports.map(s => s.name) : [];
-    loadSportsCheckboxes(sportNames);
+    // Select the correct sport in the dropdown
+    let sportIdSelect = document.getElementById('editSportId');
+    if (sportIdSelect) {
+        // If event has sports attached via the old event_sports table, grab the first one.
+        // For new events, event.sport_id would be ideal but we use event.sports for backward compatibility.
+        if (event.sports && event.sports.length > 0) {
+            sportIdSelect.value = event.sports[0].sport_id;
+        } else {
+            sportIdSelect.value = '';
+        }
+    }
 
     // Populate bid time selection
     const bidTime = event.bid_time_limit || 20;
@@ -343,77 +382,7 @@ function editEvent(eventId) {
     document.getElementById('editEventForm').dataset.mode = 'edit';
 }
 
-// Load sports checkboxes with delete functionality
-function loadSportsCheckboxes(selectedSports = []) {
-    const container = document.getElementById('editSportsCheckboxes');
-    container.innerHTML = '';
 
-    // Add existing sports checkboxes
-    selectedSports.forEach((sport, index) => {
-        const sportItem = document.createElement('div');
-        sportItem.className = 'sport-item';
-        sportItem.style.display = 'flex';
-        sportItem.style.alignItems = 'center';
-        sportItem.style.marginBottom = '0.5rem';
-        sportItem.style.gap = '0.5rem';
-
-        sportItem.innerHTML = `
-            <input type="hidden" name="sports[]" value="${sport}">
-            <span style="flex: 1;">${sport}</span>
-            <button type="button" class="delete-sport-btn" data-sport="${sport}" style="color: #ef4444; background: none; border: none; cursor: pointer;">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-
-        container.appendChild(sportItem);
-    });
-
-    // Add event listeners to delete buttons
-    document.querySelectorAll('.delete-sport-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const sportName = this.getAttribute('data-sport');
-            // Log the sport deletion
-            if (typeof logActivity === 'function') {
-                logActivity('Sport Removed', `Sport: ${sportName}`, 'admin');
-            }
-            this.closest('.sport-item').remove();
-        });
-    });
-}
-
-// Add new sport
-function addNewSport() {
-    const sportName = prompt('Enter the name of the new sport:');
-    if (!sportName) return;
-
-    // Log the add sport action
-    if (typeof logActivity === 'function') {
-        logActivity('New Sport Added', `Sport: ${sportName}`, 'admin');
-    }
-
-    const container = document.getElementById('editSportsCheckboxes');
-    const sportItem = document.createElement('div');
-    sportItem.className = 'sport-item';
-    sportItem.style.display = 'flex';
-    sportItem.style.alignItems = 'center';
-    sportItem.style.marginBottom = '0.5rem';
-    sportItem.style.gap = '0.5rem';
-
-    sportItem.innerHTML = `
-        <input type="hidden" name="sports[]" value="${sportName}">
-        <span style="flex: 1;">${sportName}</span>
-        <button type="button" class="delete-sport-btn" data-sport="${sportName}" style="color: #ef4444; background: none; border: none; cursor: pointer;">
-            <i class="fas fa-times"></i>
-        </button>
-    `;
-
-    container.appendChild(sportItem);
-
-    // Add event listener to the new delete button
-    sportItem.querySelector('.delete-sport-btn').addEventListener('click', function () {
-        this.closest('.sport-item').remove();
-    });
-}
 
 // Convert date string to input format
 function convertDateToInput(dateString) {
@@ -478,8 +447,7 @@ async function saveEvent() {
         start_date: new Date(`${document.getElementById('editEventDate').value}T${timeString}`).toISOString(),
         end_date: new Date(`${document.getElementById('editEventDate').value}T${timeString}`).toISOString(), // Using same date for now
         location: document.getElementById('editEventLocation').value,
-        sport_names: selectedSports,
-        sport_ids: [], // Backend now handles sport_names to find/create sports
+        sport_id: parseInt(document.getElementById('editSportId').value), // Send actual sport ID
         budget: parseFloat(document.getElementById('editMaxBudget').value),
         base_prices: {
             diamond: parseFloat(document.getElementById('editPriceDiamond').value),
@@ -494,6 +462,7 @@ async function saveEvent() {
         max_teams: document.getElementById('editMaxTeams').value ? parseInt(document.getElementById('editMaxTeams').value) : null,
         extra_info: document.getElementById('editExtraInfo').value || null
     };
+    // (Backward compatibility handled by backend API which will map sport_id into the event_sports join table if needed)
     try {
         let url = '/events/';
         let method = 'POST';
@@ -503,7 +472,7 @@ async function saveEvent() {
             method = 'PUT';
         }
 
-        const response = await fetch(url, {
+        const response = await apiFetch(url, {
             method: method,
             headers: {
                 'Content-Type': 'application/json',
@@ -564,8 +533,102 @@ function viewEventRegistrations(eventId, eventTitle) {
     // Reload data
     playerCurrentPage = 1;
     teamOwnerCurrentPage = 1;
-    loadPlayerRegistrations();
     loadTeamOwnerRegistrations();
+}
+
+let teamsModalElement = null;
+
+async function viewEventTeams(eventId, eventTitle) {
+    if (document.getElementById('teamsLoadingModal')) return; // Prevent duplicate requests
+    
+    // Create loading modal
+    teamsModalElement = document.createElement('div');
+    teamsModalElement.id = 'teamsLoadingModal';
+    teamsModalElement.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999;';
+    
+    // Make sure we use a close button with a clear label as requested
+    teamsModalElement.innerHTML = 
+        '<div class="glass-card" style="background: var(--bg-card, #ffffff); padding: 2rem; border-radius: 1rem; min-width: 400px; max-width: 90vw; max-height: 80vh; overflow-y: auto; position: relative;">' +
+            '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 1rem;">' +
+                '<div>' +
+                    '<h3 style="margin: 0; font-size: 1.25rem; font-weight: 700;">REGISTERED TEAMS</h3>' +
+                    '<div style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">' + eventTitle + '</div>' +
+                '</div>' +
+                '<button onclick="closeTeamsModal()" style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color, #e2e8f0); border-radius: 0.25rem; padding: 0.25rem 0.75rem; cursor: pointer; color: var(--text-primary, #0f172a); font-weight: 600;">&times; Close</button>' +
+            '</div>' +
+            '<div id="teamsModalContent" style="text-align: center; padding: 2rem;">' +
+                '<i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #3b82f6; margin-bottom: 1rem;"></i>' +
+                '<div>Loading registered teams...</div>' +
+            '</div>' +
+        '</div>';
+    document.body.appendChild(teamsModalElement);
+    
+    try {
+        const response = await apiFetch('/api/events/' + eventId + '/teams');
+        
+        let data = null;
+        try {
+            data = await response.json();
+        } catch (e) {
+            // Not JSON
+        }
+
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("Your session has expired. Please log in again.");
+            if (response.status === 403) throw new Error("You do not have permission to view registered teams.");
+            if (response.status === 404) throw new Error("Event not found.");
+            
+            const errorMsg = data && data.message ? data.message : "Failed to load teams. Server error " + response.status;
+            throw new Error(errorMsg);
+        }
+        
+        const contentDiv = document.getElementById('teamsModalContent');
+        if (!contentDiv) return;
+        
+        if (!data || !data.teams || data.teams.length === 0) {
+            contentDiv.innerHTML = 
+                '<div style="text-align: center; padding: 2rem;">' +
+                    '<i class="fas fa-users-slash" style="font-size: 3rem; color: #94a3b8; margin-bottom: 1rem;"></i>' +
+                    '<h4 style="margin: 0 0 0.5rem 0;">No teams registered</h4>' +
+                    '<p style="color: #64748b; margin: 0;">There are currently no teams registered for this event.</p>' +
+                '</div>';
+            return;
+        }
+        
+        let html = '<div style="display: flex; flex-direction: column; gap: 1rem; text-align: left;">';
+        data.teams.forEach(team => {
+            html += 
+                '<div style="border: 1px solid var(--border-color, #e2e8f0); border-radius: 0.5rem; padding: 1rem;">' +
+                    '<div style="font-weight: 700; font-size: 1.125rem; color: var(--text-primary, #0f172a); margin-bottom: 0.25rem;">' + team.team_name + '</div>' +
+                    '<div style="color: #64748b; font-size: 0.875rem;">' +
+                        '<div><i class="fas fa-user-tie" style="width: 16px;"></i> Owner: ' + team.owner_name + '</div>' +
+                        '<div><i class="fas fa-users" style="width: 16px;"></i> Players: ' + team.players_count + '</div>' +
+                    '</div>' +
+                '</div>';
+        });
+        html += '</div>';
+        
+        contentDiv.innerHTML = html;
+        
+    } catch (error) {
+        const contentDiv = document.getElementById('teamsModalContent');
+        if (contentDiv) {
+            contentDiv.innerHTML = 
+                '<div style="text-align: center; padding: 2rem; color: #ef4444;">' +
+                    '<i class="fas fa-exclamation-circle" style="font-size: 3rem; margin-bottom: 1rem;"></i>' +
+                    '<h4 style="margin: 0 0 0.5rem 0;">Error</h4>' +
+                    '<p style="margin: 0;">' + error.message + '</p>' +
+                '</div>';
+        }
+        console.error("Error loading teams:", error);
+    }
+}
+
+function closeTeamsModal() {
+    if (teamsModalElement) {
+        teamsModalElement.remove();
+        teamsModalElement = null;
+    }
 }
 
 
@@ -573,15 +636,23 @@ function viewEventRegistrations(eventId, eventTitle) {
 async function deleteEvent(eventId) {
     if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
         try {
-            const response = await fetch(`/events/${eventId}`, {
+            const response = await apiFetch(`/api/events/${eventId}`, {
                 method: 'DELETE'
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to delete event');
+            let data = {};
+            try {
+                data = await response.json();
+            } catch (e) {
+                // If response is not JSON
             }
 
-            alert('Event deleted successfully!');
+            if (!response.ok || data.success === false) {
+                const errorMsg = data.message || (response.status === 404 ? 'Event not found.' : 'Failed to delete event.');
+                throw new Error(errorMsg);
+            }
+
+            alert(data.message || 'Event deleted successfully!');
 
             if (typeof logActivity === 'function') {
                 logActivity('Event Deleted', `ID: ${eventId}`, 'admin');
@@ -590,7 +661,7 @@ async function deleteEvent(eventId) {
             loadEvents();
         } catch (error) {
             console.error('Error deleting event:', error);
-            showModal('Error', 'Failed to delete event. Please try again.');
+            showModal('Error', error.message || 'Failed to delete event. Please try again.');
         }
     }
 }
@@ -616,7 +687,7 @@ async function viewPlayers(eventId) {
     playersGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #64748b;">Loading players...</div>';
 
     try {
-        const response = await fetch(`/api/events/${eventId}/players`);
+        const response = await apiFetch(`/api/events/${eventId}/players`);
         if (!response.ok) throw new Error('Failed to fetch players');
         
         const players = await response.json();
@@ -708,7 +779,7 @@ function generateLiveLink(eventId) {
     const event = eventsData.find(e => e.id === eventId);
     if (!event) return;
 
-    const liveLink = `${window.location.origin}/event-details.html?id=${eventId}`;
+    const liveLink = `${window.location.origin}/templates/event-details.html?id=${eventId}`;
     alert(`Live Link Generated:\n${liveLink}`);
     if (typeof logActivity === 'function') {
         logActivity('Live Link Generated', `Event ID: ${eventId}`, 'admin');
@@ -717,7 +788,7 @@ function generateLiveLink(eventId) {
 
 // Copy link
 function copyLink(eventId) {
-    const liveLink = `${window.location.origin}/event-details.html?id=${eventId}`;
+    const liveLink = `${window.location.origin}/templates/event-details.html?id=${eventId}`;
 
     // Create a temporary input element
     const tempInput = document.createElement('input');
@@ -737,7 +808,7 @@ function copyLink(eventId) {
 async function logout() {
     if (confirm('Are you sure you want to logout?')) {
         try {
-            await fetch('/api/logout', { method: 'POST' });
+            await apiFetch('/api/logout', { method: 'POST' });
         } catch (error) {
             console.error('Error logging out:', error);
         }
@@ -1027,17 +1098,17 @@ function updateAuctionControls() {
     const resumeBtn = document.getElementById('resumeAuctionBtn');
     const endBtn = document.getElementById('endAuctionBtn');
 
-    if (!startBtn || !pauseBtn || !resumeBtn || !endBtn) return;
+    if (!pauseBtn || !resumeBtn || !endBtn) return;
 
     // Hide all buttons by default
-    startBtn.style.display = 'none';
+    if (startBtn) startBtn.style.display = 'none';
     pauseBtn.style.display = 'none';
     resumeBtn.style.display = 'none';
     endBtn.style.display = 'none';
 
     // Show buttons based on status
     if (status === 'NOT_STARTED') {
-        startBtn.style.display = 'inline-block';
+        if (startBtn) startBtn.style.display = 'inline-block';
     } else if (status === 'RUNNING') {
         pauseBtn.style.display = 'inline-block';
         endBtn.style.display = 'inline-block';
@@ -1065,8 +1136,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Set up admin bid time selection
     setupAdminBidTimeSelection();
 
-    // Set up pagination event listeners
-    setupPaginationEventListeners();
+    // Set up pagination event listeners (currently undefined)
+    // setupPaginationEventListeners();
 
     // Set initial page size from localStorage if available
     const savedPageSize = localStorage.getItem('activityLogPageSize');
@@ -1159,7 +1230,7 @@ async function loadPlayerRegistrations(page = playerCurrentPage, pageSize = play
             url += `&event_id=${currentViewEventId}`;
         }
 
-        const response = await fetch(url, {
+        const response = await apiFetch(url, {
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include'
         });
@@ -1215,7 +1286,7 @@ async function loadPlayerRegistrations(page = playerCurrentPage, pageSize = play
                     <td>${player.event_id || 'N/A'}</td>
                     <td>${formattedDate}</td>
                     <td>
-                        <button class="btn btn-outline-danger" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" onclick="deletePlayer(${player.user_id})">
+                        <button class="admin-btn-action" onclick="deletePlayer(${player.user_id})">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
@@ -1300,7 +1371,7 @@ function sortPlayersByEventId() {
 // Populate event filter dropdown
 async function populateEventFilterDropdown() {
     try {
-        const response = await fetch('/api/events', {
+        const response = await apiFetch('/api/events', {
             headers: { 'Content-Type': 'application/json' }
         });
 
@@ -1398,10 +1469,17 @@ async function loadTeamOwnerRegistrations(page = teamOwnerCurrentPage, pageSize 
         if (currentViewEventId) {
             url += `&event_id=${currentViewEventId}`;
         }
+        
+        // Add cache-busting timestamp to prevent browser from returning stale list after deletion
+        url += (url.includes('?') ? '&' : '?') + `_t=${new Date().getTime()}`;
 
-        const response = await fetch(url, {
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
+        const response = await apiFetch(url, {
+            headers: { 
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache, no-store, must-revalidate'
+            },
+            credentials: 'include',
+            cache: 'no-store'
         });
 
         if (response.status === 401) {
@@ -1429,6 +1507,7 @@ async function loadTeamOwnerRegistrations(page = teamOwnerCurrentPage, pageSize 
             tbody.innerHTML = '';
             teamOwners.forEach(owner => {
                 const row = document.createElement('tr');
+                row.id = `team-owner-row-${owner.user_id}`;
                 const status = owner.is_active ? 'Active' : 'Pending';
 
                 // Format date with time
@@ -1494,16 +1573,16 @@ async function loadTeamOwnerRegistrations(page = teamOwnerCurrentPage, pageSize 
 
 // Approve User Function
 async function approveUser(userId, currentName) {
-    const password = prompt(`Create a password for ${currentName}:`, "password123");
-    if (!password) return;
+    const confirmed = confirm(`Are you sure you want to approve the registration for ${currentName}?`);
+    if (!confirmed) return;
 
     try {
-        const response = await fetch(`/api/admin/users/${userId}/approve`, {
+        const response = await apiFetch(`/api/admin/users/${userId}/approve`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ password: password })
+            body: JSON.stringify({}) // password is now optional; keeps the one set during registration
         });
 
         if (!response.ok) {
@@ -1523,7 +1602,7 @@ async function approveUser(userId, currentName) {
 async function deletePlayer(userId) {
     if (!confirm('Are you sure you want to delete this player? This action cannot be undone.')) return;
     try {
-        const response = await fetch(`/api/admin/users/${userId}/delete`, {
+        const response = await apiFetch(`/api/admin/users/${userId}/delete`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -1554,7 +1633,7 @@ async function deleteTeamOwner(userId, currentName) {
     if (!confirmed) return;
 
     try {
-        const response = await fetch(`/api/admin/users/${userId}/delete`, {
+        const response = await apiFetch(`/api/admin/users/${userId}/delete`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
@@ -1574,6 +1653,12 @@ async function deleteTeamOwner(userId, currentName) {
         }
         
         alert(message);
+        
+        const rowToRemove = document.getElementById(`team-owner-row-${userId}`);
+        if (rowToRemove) {
+            rowToRemove.remove();
+        }
+        
         loadTeamOwnerRegistrations(); // Reload list
     } catch (error) {
         console.error('Error deleting team owner:', error);
@@ -1645,104 +1730,6 @@ function initializePaginationListeners() {
     });
 }
 
-// OLD FUNCTION BELOW - TO BE REMOVED
-// Load team owner registrations
-async function OLD_loadTeamOwnerRegistrations() {
-    const tbody = document.getElementById('teamOwnerResponses');
-
-    try {
-        // Show loading state
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-2">Loading team owner registrations...</p>
-                </td>
-            </tr>
-        `;
-
-        // Authentication is handled via HTTP-only cookies
-        // No need to manually check for token in localStorage/sessionStorage
-
-        // Fetch users from the API
-        const response = await fetch('/api/users', {
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch users: ${response.statusText}`);
-        }
-
-        const users = await response.json();
-
-        // Filter for team owners
-        const teamOwners = users.filter(user => user.is_team_owner);
-
-        if (teamOwners.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="no-responses">No team owner registrations found</td>
-                </tr>
-            `;
-            return;
-        }
-
-        // Clear existing rows
-        tbody.innerHTML = '';
-
-        // Add team owner rows
-        teamOwners.forEach(owner => {
-            const row = document.createElement('tr');
-            const teamName = owner.team ? owner.team.name : 'N/A';
-
-            row.innerHTML = `
-                <td>${teamName}</td>
-                <td>${owner.full_name || 'N/A'}</td>
-                <td>${owner.email || 'N/A'}</td>
-                <td>${owner.phone || 'N/A'}</td>
-                <td>${owner.team ? (owner.team.sports || 'N/A') : 'N/A'}</td>
-                <td>${formatDate(owner.created_at || new Date().toISOString())}</td>
-            `;
-
-            tbody.appendChild(row);
-        });
-
-    } catch (error) {
-        console.error('Error loading team owner registrations:', error);
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="error-message">
-                    Error loading team owner registrations: ${error.message}
-                </td>
-            </tr>
-        `;
-    }
-}
-
-// Helper function to format date
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-
-    const options = {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    };
-
-    try {
-        return new Date(dateString).toLocaleDateString('en-US', options);
-    } catch (e) {
-        return 'Invalid date';
-    }
-}
-
-
 // Activity logging functions
 let activityLogs = JSON.parse(localStorage.getItem('adminActivityLogs') || '[]');
 let currentAdminUserId = null;
@@ -1779,38 +1766,16 @@ function logActivity(action, details, userType = null) {
     displayActivityLogs();
 }
 
-// Send activity log to server
-async function sendActivityLogToServer(logEntry) {
-    try {
-        const response = await fetch('/api/activity-logs', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                action: logEntry.action,
-                details: logEntry.details,
-                user_type: logEntry.userType || 'admin'
-            })
-        });
-
-        if (!response.ok) {
-            console.error('Failed to send activity log to server');
-        }
-    } catch (error) {
-        console.error('Error sending activity log:', error);
-    }
-}
-
 async function fetchCurrentAdmin() {
     try {
-        const response = await fetch('/api/me', {
+        const response = await apiFetch('/api/me', {
             credentials: 'include',
             headers: {
                 'Accept': 'application/json'
             }
         });
         if (!response.ok) {
+            console.error(`[API HTTP Error] fetchCurrentAdmin failed with status: ${response.status}`);
             return;
         }
         const data = await response.json();
@@ -1824,7 +1789,7 @@ async function fetchCurrentAdmin() {
 
 async function sendActivityLogToServer(logEntry) {
     try {
-        await fetch('/api/activity-logs', {
+        const response = await apiFetch('/api/activity-logs', {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -1839,21 +1804,24 @@ async function sendActivityLogToServer(logEntry) {
                 user_agent: navigator.userAgent
             })
         });
+        if (!response.ok) {
+            console.error(`[API HTTP Error] sendActivityLogToServer failed with status: ${response.status}`);
+        }
     } catch (error) {
         console.error('Failed to send activity log to server:', error);
     }
 }
 
-
 async function loadActivityLogsFromServer() {
     try {
-        const response = await fetch(`/api/activity-logs?skip=0&limit=500`, {
+        const response = await apiFetch(`/api/activity-logs?skip=0&limit=500`, {
             credentials: 'include',
             headers: {
                 'Accept': 'application/json'
             }
         });
         if (!response.ok) {
+            console.error(`[API HTTP Error] loadActivityLogsFromServer failed with status: ${response.status}`);
             return;
         }
         const data = await response.json();
@@ -1930,73 +1898,6 @@ function initializeSortAndFilter() {
     }
 }
 
-function displayActivityLogs() {
-    const tableBody = document.querySelector('#activityLogTable tbody');
-    const noLogsMessage = document.getElementById('noLogsMessage');
-
-    if (!tableBody || !noLogsMessage) return; // HTML not present on this page
-
-    tableBody.innerHTML = '';
-
-    if (activityLogs.length === 0) {
-        noLogsMessage.style.display = 'block';
-        noLogsMessage.textContent = 'No activity logs yet.';
-        return;
-    }
-
-    noLogsMessage.style.display = 'none';
-
-    // Apply filtering
-    let filteredLogs = activityLogs;
-    if (currentFilter !== 'all') {
-        filteredLogs = activityLogs.filter(log => log.userType === currentFilter);
-        if (filteredLogs.length === 0) {
-            noLogsMessage.style.display = 'block';
-            noLogsMessage.textContent = `No ${currentFilter.replace('_', ' ')} activity logs found.`;
-            return;
-        }
-    }
-
-    // Apply sorting
-    let sortedLogs = filteredLogs;
-    if (currentSortOrder === 'newest') {
-        sortedLogs = filteredLogs.slice().reverse(); // Newest first (reverse chronological)
-    } else {
-        sortedLogs = filteredLogs.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)); // Oldest first
-    }
-
-    // Calculate pagination
-    const totalItems = sortedLogs.length;
-    totalPages = Math.ceil(totalItems / pageSize);
-
-    // Ensure current page is within bounds
-    currentPage = Math.max(1, Math.min(currentPage, totalPages));
-
-    // Get current page items
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = Math.min(startIndex + pageSize, totalItems);
-    const currentItems = sortedLogs.slice(startIndex, endIndex);
-
-    // Display the logs for current page
-    if (currentItems.length === 0) {
-        noLogsMessage.style.display = 'block';
-        noLogsMessage.textContent = 'No logs to display.';
-        return;
-    }
-
-    currentItems.forEach(log => {
-        const row = document.createElement('tr');
-        const date = new Date(log.timestamp);
-        const userTypeBadge = getUserTypeBadge(log.userType);
-        row.innerHTML = `
-            <td class="activity-timestamp">${date.toLocaleDateString()} ${date.toLocaleTimeString()}</td>
-            <td class="activity-action">${userTypeBadge} ${log.action}</td>
-            <td class="activity-details">${log.details || ''}</td>
-        `;
-        tableBody.appendChild(row);
-    });
-}
-
 // Helper function to get user type badge HTML
 function getUserTypeBadge(userType) {
     const badges = {
@@ -2009,26 +1910,32 @@ function getUserTypeBadge(userType) {
 
 // Apply sort and filter
 function applySortAndFilter() {
-    currentPage = 1; // Reset to first page when changing sort or filter
-    loadActivityLogsFromServer();
+    const sortSelect = document.getElementById('sortOrder');
+    if (sortSelect) {
+        activityLogSort = sortSelect.value;
+    }
+
+    // Filter is updated by setFilter function
+
+    activityLogCurrentPage = 1; // Reset to first page
+    displayActivityLogs();
 }
-
-
-
 
 // Set filter and update UI
 function setFilter(filterType) {
-    currentFilter = filterType;
-    currentPage = 1; // Reset to first page when changing filter
+    activityLogFilter = filterType;
+    activityLogCurrentPage = 1; // Reset to first page when changing filter
 
     // Update button states
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('active');
+        if (btn.dataset.filter === filterType) {
+            btn.classList.add('active');
+        }
     });
-    document.querySelector(`[data-filter="${filterType}"]`).classList.add('active');
 
     // Apply filter using latest data from server
-    loadActivityLogsFromServer();
+    displayActivityLogs();
 }
 
 function clearActivityLog() {
@@ -2055,6 +1962,8 @@ async function displayActivityLogs() {
     const tableBody = document.querySelector('#activityLogTable tbody');
     const noLogsMessage = document.getElementById('noLogsMessage');
 
+    if (!tableBody || !noLogsMessage) return; // HTML not present on this page
+
     // Show loading state
     tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #94a3b8;">Loading activity logs...</td></tr>';
     noLogsMessage.style.display = 'none';
@@ -2069,7 +1978,7 @@ async function displayActivityLogs() {
             filter_by: activityLogFilter
         });
 
-        const response = await fetch(`/api/activity-logs?${queryParams}`);
+        const response = await apiFetch(`/api/activity-logs?${queryParams}`);
         if (!response.ok) {
             throw new Error('Failed to fetch activity logs');
         }
@@ -2082,7 +1991,6 @@ async function displayActivityLogs() {
 
         if (logs.length === 0) {
             noLogsMessage.style.display = 'block';
-            // Update pagination info even if empty
             updateActivityLogPagination();
             return;
         }
@@ -2172,47 +2080,6 @@ function changeActivityLogPageSize(size) {
     displayActivityLogs();
 }
 
-// Apply sort and filter
-function applySortAndFilter() {
-    const sortSelect = document.getElementById('sortOrder');
-    if (sortSelect) {
-        activityLogSort = sortSelect.value;
-    }
-
-    // Filter is updated by setFilter function
-
-    activityLogCurrentPage = 1; // Reset to first page
-    displayActivityLogs();
-}
-
-// Set filter
-function setFilter(filterType) {
-    activityLogFilter = filterType;
-
-    // Update active button state
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        if (btn.dataset.filter === filterType) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
-
-    activityLogCurrentPage = 1; // Reset to first page
-    displayActivityLogs();
-}
-
-// Initialize sort and filter controls
-function initializeSortAndFilter() {
-    // Set initial values from state if needed
-    const sortSelect = document.getElementById('sortOrder');
-    if (sortSelect) sortSelect.value = activityLogSort;
-
-
-    // Set initial active filter button
-    setFilter(activityLogFilter);
-}
-
 // -------------------------
 // Event Management Actions
 // -------------------------
@@ -2228,7 +2095,7 @@ async function addPlayersToEvent() {
     }
 
     try {
-        const response = await fetch(`/events/${currentEventId}/add-players`, {
+        const response = await apiFetch(`/events/${currentEventId}/add-players`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2292,7 +2159,7 @@ async function submitAddTeamOwner() {
     }
 
     try {
-        const response = await fetch(`/events/${currentEventId}/create-team-owner`, {
+        const response = await apiFetch(`/events/${currentEventId}/create-team-owner`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2328,7 +2195,7 @@ async function makeEventLive() {
     }
 
     try {
-        const response = await fetch(`/events/${currentEventId}/make-live`, {
+        const response = await apiFetch(`/events/${currentEventId}/make-live`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2367,7 +2234,7 @@ async function viewLiveAuction() {
     }
 
     try {
-        const response = await fetch(`/events/${currentEventId}/live-auction`);
+        const response = await apiFetch(`/events/${currentEventId}/live-auction`);
 
         if (!response.ok) {
             const errorData = await response.json();
@@ -2411,7 +2278,7 @@ async function viewEventPlayers() {
 
     try {
         // Fetch players for this event
-        const response = await fetch(`/api/users?user_type=player&event_id=${currentEventId}&limit=1000`, {
+        const response = await apiFetch(`/api/users?user_type=player&event_id=${currentEventId}&limit=1000`, {
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include'
         });
@@ -2494,7 +2361,7 @@ function generateSportSkillsHTML(player) {
 async function viewPlayerFullDetails(playerId) {
     try {
         // Fetch full player details
-        const response = await fetch(`/api/users/${playerId}`, {
+        const response = await apiFetch(`/api/users/${playerId}`, {
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include'
         });
@@ -2628,7 +2495,7 @@ async function viewPlayerFullDetails(playerId) {
 // View full details of a team owner
 async function viewTeamOwnerFullDetails(ownerId) {
     try {
-        const response = await fetch(`/api/users/${ownerId}`, {
+        const response = await apiFetch(`/api/users/${ownerId}`, {
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include'
         });
@@ -2786,7 +2653,7 @@ async function viewEventTeamOwners() {
 
     try {
         // Fetch team owners for this event
-        const response = await fetch(`/api/users?user_type=team_owner&event_id=${currentEventId}&limit=1000`, {
+        const response = await apiFetch(`/api/users?user_type=team_owner&event_id=${currentEventId}&limit=1000`, {
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include'
         });
@@ -2991,9 +2858,16 @@ async function markMessageRead(messageId) {
 
 async function loadSports() {
     try {
-        const response = await fetch('/api/admin/sports');
-        const sports = await response.json();
+        const response = await fetch('/api/sports');
+        const data = await response.json();
+        const sports = data.sports || data || [];
         const tbody = document.querySelector('#sportsTable tbody');
+        const sportSelect = document.getElementById('editSportId');
+        
+        if (sportSelect) {
+            sportSelect.innerHTML = '<option value="">Select a Sport...</option>';
+        }
+        
         if (!tbody) return;
         
         if (sports.length === 0) {
@@ -3003,19 +2877,230 @@ async function loadSports() {
         
         tbody.innerHTML = '';
         sports.forEach(sport => {
+            // Populate the dropdown inside the Event Creation Modal
+            if (sportSelect) {
+                const opt = document.createElement('option');
+                opt.value = sport.sport_id;
+                opt.textContent = sport.name;
+                sportSelect.appendChild(opt);
+            }
+            
             const tr = document.createElement('tr');
+            
+            // Serialize config to string safely for data attributes
+            const sportData = btoa(unescape(encodeURIComponent(JSON.stringify(sport))));
+            
             tr.innerHTML = `
                 <td>${sport.sport_id}</td>
                 <td><i class="${sport.icon_class} mr-2"></i> ${sport.name}</td>
                 <td>${sport.description || 'N/A'}</td>
                 <td>
-                    <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; color: #ef4444; border-color: #ef4444;" onclick="deleteSport(${sport.sport_id})">Delete</button>
+                    <button class="admin-btn-action" style="background: linear-gradient(135deg, #00ffff 0%, #0080ff 100%); color: black;" onclick="openConfigureSportModal('${sportData}')"><i class="fas fa-cogs"></i> Configure</button>
+                    <button class="admin-btn-action" onclick="deleteSport(${sport.sport_id})"><i class="fas fa-trash"></i> Delete</button>
                 </td>
             `;
             tbody.appendChild(tr);
         });
     } catch (e) {
         console.error('Error loading sports:', e);
+    }
+}
+
+// State to hold dynamic categories for the modal
+let currentSportCategories = [];
+
+function openConfigureSportModal(sportDataB64) {
+    try {
+        const sport = JSON.parse(decodeURIComponent(escape(atob(sportDataB64))));
+        document.getElementById('configureSportId').value = sport.sport_id;
+        
+        // Handle hidden values to preserve non-editable JSON structures
+        document.getElementById('configRolesHidden').value = sport.roles_config ? JSON.stringify(sport.roles_config) : '';
+        document.getElementById('configAttributesHidden').value = sport.attributes_schema ? JSON.stringify(sport.attributes_schema) : '';
+        document.getElementById('configRulesHidden').value = sport.default_auction_rules ? JSON.stringify(sport.default_auction_rules) : '';
+        
+        // 1. Populate Team Budget
+        const budgetInput = document.getElementById('configDefaultBudget');
+        if (sport.default_auction_rules && sport.default_auction_rules.default_budget) {
+            budgetInput.value = sport.default_auction_rules.default_budget;
+        } else {
+            budgetInput.value = ''; // Default to empty so admin sets it
+        }
+
+        // 2. Populate Player Categories
+        currentSportCategories = [];
+        if (sport.categories_config) {
+            if (Array.isArray(sport.categories_config)) {
+                // If stored as array: [{"name": "Diamond", "base_price": 50000}]
+                currentSportCategories = [...sport.categories_config];
+            } else if (typeof sport.categories_config === 'object') {
+                // If stored as dictionary: {"diamond": 50000}
+                for (const [key, value] of Object.entries(sport.categories_config)) {
+                    // Capitalize dictionary keys for display (e.g. "diamond" -> "Diamond")
+                    const displayName = key.charAt(0).toUpperCase() + key.slice(1);
+                    currentSportCategories.push({
+                        name: displayName,
+                        base_price: value
+                    });
+                }
+            }
+        }
+        
+        renderSportCategories();
+        
+        // Clear add category inputs
+        document.getElementById('newCategoryName').value = '';
+        document.getElementById('newCategoryPrice').value = '';
+        
+        document.getElementById('configureSportModal').classList.add('active');
+    } catch (e) {
+        console.error("Error opening configure sport modal:", e);
+        showModal('Error', 'Failed to load sport configuration.');
+    }
+}
+
+function renderSportCategories() {
+    const tbody = document.getElementById('configCategoriesTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (currentSportCategories.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: #94a3b8; padding: 1rem;">No categories added yet.</td></tr>';
+        return;
+    }
+    
+    currentSportCategories.forEach((cat, index) => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #1e293b';
+        tr.innerHTML = `
+            <td style="padding: 0.75rem 0;">${cat.name}</td>
+            <td style="padding: 0.75rem 0;">₹${cat.base_price.toLocaleString()}</td>
+            <td style="padding: 0.75rem 0; text-align: right;">
+                <button type="button" class="btn btn-outline-danger" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" onclick="deleteSportCategory(${index})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function addSportCategory() {
+    const nameInput = document.getElementById('newCategoryName');
+    const priceInput = document.getElementById('newCategoryPrice');
+    
+    const name = nameInput.value.trim();
+    const price = parseFloat(priceInput.value);
+    
+    if (!name) {
+        showModal('Validation Error', 'Category name is required.');
+        return;
+    }
+    
+    if (isNaN(price) || price < 0) {
+        showModal('Validation Error', 'Base price must be a valid number greater than or equal to 0.');
+        return;
+    }
+    
+    // Check for duplicates (case insensitive)
+    const exists = currentSportCategories.some(cat => cat.name.toLowerCase() === name.toLowerCase());
+    if (exists) {
+        showModal('Validation Error', `Category "${name}" already exists.`);
+        return;
+    }
+    
+    currentSportCategories.push({
+        name: name,
+        base_price: price
+    });
+    
+    renderSportCategories();
+    
+    // Clear inputs after successful add
+    nameInput.value = '';
+    priceInput.value = '';
+}
+
+function deleteSportCategory(index) {
+    if (index >= 0 && index < currentSportCategories.length) {
+        currentSportCategories.splice(index, 1);
+        renderSportCategories();
+    }
+}
+
+function closeConfigureSportModal() {
+    document.getElementById('configureSportModal').classList.remove('active');
+}
+
+async function saveSportConfiguration() {
+    const sportId = document.getElementById('configureSportId').value;
+    
+    // Validate Team Budget
+    const budgetValue = parseFloat(document.getElementById('configDefaultBudget').value);
+    if (isNaN(budgetValue) || budgetValue <= 0) {
+        showModal('Validation Error', 'Team Budget is required and must be greater than 0.');
+        return;
+    }
+    
+    // Parse JSON safely from hidden inputs (preserves backend-provided configuration)
+    const parseJSON = (id) => {
+        const val = document.getElementById(id).value.trim();
+        if (!val) return null;
+        try {
+            return JSON.parse(val);
+        } catch (e) {
+            console.error(`Invalid JSON in hidden field ${id}`, e);
+            return null;
+        }
+    };
+    
+    try {
+        const sportName = document.getElementById('configureSportNameDisplay').textContent.toLowerCase();
+        
+        // Read the preserved rules from the hidden input, or create a new object
+        let rules = parseJSON('configRulesHidden') || {};
+        // Update the specific values that the Admin has control over
+        rules.default_budget = budgetValue;
+        // Enforce the system default timer if it wasn't already set
+        if (!rules.default_timer) rules.default_timer = 20;
+        
+        let roles = parseJSON('configRolesHidden');
+        if (!roles || (Array.isArray(roles) && roles.length === 0)) {
+            roles = ["Batsman", "Bowler", "All-Rounder", "Wicket-Keeper"];
+        }
+        
+        let attributes = parseJSON('configAttributesHidden');
+        if (!attributes || Object.keys(attributes).length === 0) {
+            attributes = {
+                "batting_style": ["Right-hand bat", "Left-hand bat"],
+                "bowling_style": ["Right-arm fast", "Right-arm medium", "Right-arm spin", "Left-arm fast", "Left-arm medium", "Left-arm spin"]
+            };
+        }
+        
+        const payload = {
+            roles_config: roles,
+            attributes_schema: attributes,
+            categories_config: currentSportCategories, // Send as array of objects
+            default_auction_rules: rules
+        };
+        
+        const response = await fetch(`/api/sports/${sportId}/config`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            closeConfigureSportModal();
+            loadSports();
+            showModal('Success', 'Cricket configuration saved successfully.');
+        } else {
+            showModal('Error', data.error || 'Failed to save configuration');
+        }
+    } catch (e) {
+        showModal('Error', e.message || 'An error occurred saving configuration.');
     }
 }
 
@@ -3056,7 +3141,7 @@ async function loadTeams() {
                 <td>${t.manager_count}</td>
                 <td>${t.analyst_count}</td>
                 <td>
-                    <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; color: #3b82f6; border-color: #3b82f6;" onclick="alert('View team coming soon!')">View</button>
+                    <button class="admin-btn-action" onclick="alert('View team coming soon!')"><i class="fas fa-eye"></i> View</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -3189,22 +3274,22 @@ document.addEventListener('DOMContentLoaded', function () {
             // Hide all sections
             const tabId = this.getAttribute('data-tab');
             const sections = [
-                'dashboardSection', 'sportsSection', 'teamsSection', 
+                'dashboardSection', 'sportsSection', 'teamsSection',
                 'registrationsSection', 'teamOwnerRegistrationsSection',
                 'auctionsSection', 'reportsSection'
             ];
-            
+
             sections.forEach(secId => {
                 const el = document.getElementById(secId);
                 if (el) el.style.display = 'none';
             });
-            
+
             // Also hide the manageEventsContainer if we aren't on dashboard
             const manageEvents = document.getElementById('manageEventsContainer');
             if (manageEvents) {
                 manageEvents.style.display = (tabId === 'dashboard') ? 'block' : 'none';
             }
-            
+
             // Show selected section
             if (tabId === 'dashboard') {
                 const el = document.getElementById('dashboardSection');
@@ -3242,12 +3327,407 @@ document.addEventListener('DOMContentLoaded', function () {
     // Auto-refresh system stats every 3 seconds
     setInterval(loadSystemStats, 3000);
 
-    // Initialize messages
-    // loadMessages();
-    // Poll for new messages every 5 seconds
-    // setInterval(loadMessages, 5000);
-
     // Fetch current admin info and load activity logs
     fetchCurrentAdmin();
     loadActivityLogsFromServer();
 });
+
+// Fetch current admin information from the backend
+function fetchCurrentAdmin() {
+    fetch('/api/me')
+        .then(response => {
+            if (!response.ok) {
+                console.log('Not authenticated via API, redirecting to login');
+                window.location.replace('/');
+                throw new Error('Not authenticated');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.user_type !== 'admin') {
+                console.log('User is not an admin, redirecting to login');
+                window.location.replace('/');
+            } else {
+                console.log('Admin authenticated successfully');
+            }
+        })
+        .catch(error => {
+            console.error('Auth error in fetchCurrentAdmin:', error);
+        });
+}
+
+// --- Phase 1 & 2: Auction Preparation ---
+
+let currentPrepEventId = null;
+let auctionPrepPollingInterval = null;
+
+function closeAuctionPrepModal() {
+    const modal = document.getElementById('auctionPrepModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    if (auctionPrepPollingInterval) {
+        clearInterval(auctionPrepPollingInterval);
+        auctionPrepPollingInterval = null;
+    }
+}
+
+// Attach close event to modal close button if it exists
+document.addEventListener('DOMContentLoaded', () => {
+    // Assuming there is a close button inside the modal
+    const closeBtn = document.querySelector('#auctionPrepModal .close-modal');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeAuctionPrepModal);
+    }
+});
+
+async function openAuctionPrepModal(eventId) {
+    currentPrepEventId = eventId;
+    const modal = document.getElementById('auctionPrepModal');
+    const body = document.getElementById('auctionPrepBody');
+    const subtitle = document.getElementById('auctionPrepSubtitle');
+
+    modal.classList.add('active');
+    
+    // Add custom styling for the modal-content if needed to prevent overlap
+    const modalContent = modal.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.style.display = 'flex';
+        modalContent.style.flexDirection = 'column';
+        modalContent.style.maxHeight = '90vh';
+        modalContent.style.overflow = 'hidden';
+        modalContent.classList.add('auction-prep-modal-content');
+    }
+    
+    body.style.overflowY = 'auto';
+    body.style.flex = '1';
+    
+    body.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 0; color: var(--text-muted, #64748b);">
+            <div style="width: 50px; height: 50px; border: 3px solid rgba(59, 130, 246, 0.2); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem;"></div>
+            <div style="font-weight: 500; letter-spacing: 0.5px;">GATHERING REGISTRATION DATA...</div>
+        </div>
+        <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+    `;
+
+    // Start polling loop
+    if (auctionPrepPollingInterval) {
+        clearInterval(auctionPrepPollingInterval);
+    }
+    
+    await fetchAndRenderAuctionPrep();
+    auctionPrepPollingInterval = setInterval(fetchAndRenderAuctionPrep, 5000);
+}
+
+async function fetchAndRenderAuctionPrep() {
+    if (!currentPrepEventId) return;
+    
+    const modal = document.getElementById('auctionPrepModal');
+    if (!modal || !modal.classList.contains('active')) {
+        // Modal is closed, stop polling
+        if (auctionPrepPollingInterval) {
+            clearInterval(auctionPrepPollingInterval);
+            auctionPrepPollingInterval = null;
+        }
+        return;
+    }
+    
+    const body = document.getElementById('auctionPrepBody');
+    const subtitle = document.getElementById('auctionPrepSubtitle');
+    
+    try {
+        const response = await fetch(`/api/admin/events/${currentPrepEventId}/auction-prep`, {
+            credentials: 'include',
+            headers: { 'Accept': 'application/json' }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                if (auctionPrepPollingInterval) clearInterval(auctionPrepPollingInterval);
+                alert("Your Admin session is no longer valid.");
+                window.location.href = '/index.html';
+                return;
+            }
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.description || `Server error ${response.status}`);
+        }
+
+        const data = await response.json();
+        const isReady = data.teams_count > 0 && data.players_count > 0 && data.all_teams_active === true;
+
+        if (subtitle) {
+            subtitle.innerHTML = `Review registrations for <strong style="color: var(--text-primary, white);">${data.event.title}</strong> before starting the live auction.`;
+        }
+
+        const html = `
+            <div style="display: flex; flex-direction: column; gap: 1.5rem; padding-bottom: 1rem;">
+                
+                <!-- Stat Cards -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="prep-stat-card prep-stat-teams">
+                        <div class="prep-stat-icon"><i class="fas fa-users" style="font-size: 5rem;"></i></div>
+                        <div class="prep-stat-label">Registered Teams</div>
+                        <div class="prep-stat-value">${data.teams_count}</div>
+                    </div>
+                    
+                    <div class="prep-stat-card prep-stat-players">
+                        <div class="prep-stat-icon"><i class="fas fa-user" style="font-size: 5rem;"></i></div>
+                        <div class="prep-stat-label">Registered Players</div>
+                        <div class="prep-stat-value">${data.players_count}</div>
+                    </div>
+                </div>
+
+                <!-- Registration Lists -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                    
+                    <!-- Teams List -->
+                    <div class="prep-list-card">
+                        <div class="prep-list-header">
+                            <h3 class="prep-list-title">
+                                <span><i class="fas fa-shield-alt" style="color: var(--accent-green, #10b981); margin-right: 0.5rem;"></i> Teams</span>
+                                <span class="prep-list-count">${data.teams_count}</span>
+                            </h3>
+                        </div>
+                        <div class="prep-list-body">
+                            ${data.teams.length === 0 ? '<div class="prep-empty-msg">No teams registered</div>' :
+                              '<div style="display: flex; flex-direction: column; gap: 0.25rem;">' + data.teams.map(t => `
+                                <div class="prep-list-item">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                            <div class="prep-avatar prep-avatar-team">
+                                                ${t.team_name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div class="prep-item-title">${t.team_name}</div>
+                                                <div class="prep-item-subtitle">${t.owner || 'Unknown Owner'}</div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            ${t.active 
+                                                ? '<span style="color: #34d399; font-weight: bold; font-size: 0.85rem;">🟢 ACTIVE</span>'
+                                                : '<span style="color: #f87171; font-weight: bold; font-size: 0.85rem;">🔴 INACTIVE</span>'
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                              `).join('') + '</div>'
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Players List -->
+                    <div class="prep-list-card">
+                        <div class="prep-list-header">
+                            <h3 class="prep-list-title">
+                                <span><i class="fas fa-user-friends" style="color: var(--accent-blue, #3b82f6); margin-right: 0.5rem;"></i> Players</span>
+                                <span class="prep-list-count">${data.players_count}</span>
+                            </h3>
+                        </div>
+                        <div class="prep-list-body">
+                            ${data.players.length === 0 ? '<div class="prep-empty-msg">No players registered</div>' :
+                              '<div style="display: flex; flex-direction: column; gap: 0.25rem;">' + data.players.map(p => `
+                                <div class="prep-list-item">
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <div class="prep-avatar prep-avatar-player">
+                                            <i class="fas fa-user" style="font-size: 0.8rem;"></i>
+                                        </div>
+                                        <div>
+                                            <div class="prep-item-title">${p.name}</div>
+                                            <div class="prep-item-subtitle">Base Price: ₹${(p.base_price || 0).toLocaleString()}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                              `).join('') + '</div>'
+                            }
+                        </div>
+                    </div>
+
+                </div>
+                
+                <!-- Status Bar -->
+                ${isReady 
+                    ? `<div style="margin-top: 0.5rem; padding: 1rem; border-radius: 0.5rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); display: flex; align-items: center; gap: 1rem; color: #34d399;">
+                        <i class="fas fa-check-circle fa-lg"></i>
+                        <div>
+                            <div style="font-weight: 600;">🟢 Auction Ready to Start</div>
+                            <div style="font-size: 0.85rem; opacity: 0.8;">All registered team owners are online. The lobby is ready.</div>
+                        </div>
+                       </div>`
+                    : (data.teams_count === 0 || data.players_count === 0)
+                        ? `<div style="margin-top: 0.5rem; padding: 1rem; border-radius: 0.5rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); display: flex; align-items: center; gap: 1rem; color: #f87171;">
+                            <i class="fas fa-exclamation-triangle fa-lg"></i>
+                            <div>
+                                <div style="font-weight: 600;">Action Required</div>
+                                <div style="font-size: 0.85rem; opacity: 0.8;">You must have at least one active team and one player registered to begin the auction.</div>
+                            </div>
+                           </div>`
+                        : `<div style="margin-top: 0.5rem; padding: 1rem; border-radius: 0.5rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); display: flex; align-items: center; gap: 1rem; color: #f59e0b;">
+                            <i class="fas fa-hourglass-half fa-lg"></i>
+                            <div>
+                                <div style="font-weight: 600;">⚠ Waiting for Team Owners</div>
+                                <div style="font-size: 0.85rem; opacity: 0.8;">${data.active_team_count} of ${data.teams_count} team owners are online. All registered team owners must be online before the auction can start.</div>
+                            </div>
+                           </div>`
+                }
+            </div>
+        `;
+        
+        // Only update innerHTML if it has changed to prevent UI flickering during polling
+        if (body.innerHTML !== html) {
+            body.innerHTML = html;
+        }
+
+        const modalFooter = modal.querySelector('.modal-footer');
+        if (modalFooter) {
+            modalFooter.style.position = 'relative';
+            modalFooter.style.background = 'var(--bg-card, rgba(15, 23, 42, 0.95))';
+            modalFooter.style.borderTop = '1px solid var(--border-color, #334155)';
+            modalFooter.style.zIndex = '10';
+            modalFooter.style.padding = '1.25rem';
+        }
+
+        const proceedBtn = document.getElementById('btnProceedAuction');
+        if (!isReady) {
+            proceedBtn.disabled = true;
+            proceedBtn.style.opacity = '0.5';
+            proceedBtn.style.cursor = 'not-allowed';
+            proceedBtn.style.background = '#475569';
+            proceedBtn.title = (data.teams_count === 0 || data.players_count === 0) ? "You need at least 1 team and 1 player to start." : "All team owners must be online to proceed.";
+        } else {
+            proceedBtn.disabled = false;
+            proceedBtn.style.opacity = '1';
+            proceedBtn.style.cursor = 'pointer';
+            proceedBtn.style.background = 'linear-gradient(135deg, #00ffff 0%, #0080ff 100%)';
+            proceedBtn.style.color = '#000';
+            proceedBtn.style.boxShadow = '0 4px 15px rgba(0, 128, 255, 0.4)';
+            proceedBtn.title = "";
+        }
+
+    } catch (err) {
+        console.error(err);
+        body.innerHTML = `<div style="color: #ef4444; text-align: center; padding: 3rem 1rem;">
+            <i class="fas fa-exclamation-circle fa-3x" style="margin-bottom: 1rem; opacity: 0.8;"></i>
+            <h3 style="margin-bottom: 0.5rem;">Error Loading Data</h3>
+            <p style="font-size: 0.875rem; opacity: 0.8;">${err.message}</p>
+        </div>`;
+    }
+}
+
+async function proceedWithAuction() {
+    if (!currentPrepEventId) return;
+    const proceedBtn = document.getElementById('btnProceedAuction');
+    if (proceedBtn.disabled) return;
+    
+    proceedBtn.disabled = true;
+    proceedBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Initializing...';
+
+    // Stop polling
+    if (auctionPrepPollingInterval) {
+        clearInterval(auctionPrepPollingInterval);
+        auctionPrepPollingInterval = null;
+    }
+
+    try {
+        const response = await fetch(`/api/admin/events/${currentPrepEventId}/auction/initialize`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                alert("Your Admin session is no longer valid. This usually happens if you logged into another account (like Team Owner) in a different tab. You will be redirected to the login page.");
+                window.location.href = '/index.html';
+                return;
+            }
+            if (response.status === 409) {
+                const errData = await response.json();
+                alert(errData.message || "Cannot start auction: Team owners are offline.");
+                // Resume polling to see updates
+                auctionPrepPollingInterval = setInterval(fetchAndRenderAuctionPrep, 5000);
+                await fetchAndRenderAuctionPrep();
+                return;
+            }
+            const rawText = await response.text();
+            let errData = {};
+            try { errData = JSON.parse(rawText); } catch(e) {}
+            
+            console.error("Auction initialization failed:", {
+                status: response.status,
+                rawResponse: rawText,
+                parsedData: errData
+            });
+            
+            const errMsg = errData.message || errData.description || rawText || 'Failed to initialize auction';
+            throw new Error(`Server Error: ${errMsg}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            console.error("Auction initialization returned success: false", data);
+            throw new Error(data.message || 'Failed to initialize auction');
+        }
+
+        // Redirect to the real-time auction lobby
+        window.location.href = `/templates/live-auction.html?id=${currentPrepEventId}`;
+
+    } catch (err) {
+        console.error("Proceed with auction error:", err);
+        alert('Error: ' + err.message);
+        proceedBtn.disabled = false;
+        proceedBtn.innerHTML = 'Proceed With Auction';
+        
+        // Resume polling on error
+        if (!auctionPrepPollingInterval) {
+            auctionPrepPollingInterval = setInterval(fetchAndRenderAuctionPrep, 5000);
+        }
+    }
+}
+
+// Function to handle when an Admin selects a Sport during Event Creation
+async function handleSportSelectionChange(sportId) {
+    if (!sportId) return;
+
+    try {
+        const response = await fetch(`/api/sports/${sportId}`);
+        const data = await response.json();
+        
+        if (data.success && data.sport) {
+            const sport = data.sport;
+            
+            // Auto-fill Default Rules (Budget, Timer)
+            if (sport.default_auction_rules) {
+                const rules = sport.default_auction_rules;
+                if (rules.default_budget) document.getElementById('editMaxBudget').value = rules.default_budget;
+                if (rules.default_timer) document.getElementById('editBidTime').value = rules.default_timer;
+            }
+            
+            // Auto-fill Base Prices from Categories Config
+            if (sport.categories_config) {
+                const cats = sport.categories_config;
+                if (Array.isArray(cats)) {
+                    // It's an Array (e.g. [{"name": "Diamond", "base_price": 50000}])
+                    cats.forEach(cat => {
+                        const name = cat.name.toLowerCase();
+                        if (name === 'diamond') document.getElementById('editPriceDiamond').value = cat.base_price;
+                        if (name === 'platinum') document.getElementById('editPricePlatinum').value = cat.base_price;
+                        if (name === 'gold') document.getElementById('editPriceGold').value = cat.base_price;
+                        if (name === 'silver') document.getElementById('editPriceSilver').value = cat.base_price;
+                    });
+                } else if (typeof cats === 'object') {
+                    // It's a Dictionary (e.g. {"diamond": 50000})
+                    if (cats.diamond) document.getElementById('editPriceDiamond').value = cats.diamond;
+                    if (cats.platinum) document.getElementById('editPricePlatinum').value = cats.platinum;
+                    if (cats.gold) document.getElementById('editPriceGold').value = cats.gold;
+                    if (cats.silver) document.getElementById('editPriceSilver').value = cats.silver;
+                }
+            }
+            
+            console.log(`Auto-filled defaults for ${sport.name}`);
+        }
+    } catch (e) {
+        console.error("Failed to load sport defaults:", e);
+    }
+}

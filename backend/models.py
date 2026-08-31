@@ -101,6 +101,7 @@ class User(Base):
     created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
     updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
     last_login = Column(DateTime, index=True)
+    last_seen_at = Column(DateTime, index=True, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False, index=True)
     is_verified = Column(Boolean, default=False, nullable=False, index=True)
     verification_token = Column(String(100), unique=True, index=True)
@@ -157,7 +158,6 @@ class User(Base):
         self.reset_password_expires = datetime.utcnow() + timedelta(seconds=expires_in)
         return self.reset_password_token
 
-
 # -------------------------
 # Player
 # -------------------------
@@ -185,6 +185,7 @@ class Player(Base):
     bio = Column(Text, nullable=True)
     height_cm = Column(Integer, nullable=True)
     weight_kg = Column(DECIMAL(5, 2), nullable=True)
+    sport_profiles = Column(JSON, nullable=True)
     
     # Contact Information
     phone = Column(String(20), unique=True, nullable=True, index=True)
@@ -390,9 +391,21 @@ class Sport(Base):
     created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
     updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
 
+    roles_config = Column(JSON, nullable=True)
+    categories_config = Column(JSON, nullable=True)
+    attributes_schema = Column(JSON, nullable=True)
+    default_auction_rules = Column(JSON, nullable=True)
+
     # relationships
     skills = relationship("PlayerSkill", back_populates="sport", cascade="all, delete-orphan")
-    events = relationship("Event", secondary=event_sports, back_populates="sports")
+    events = relationship(
+        "Event", 
+        secondary=event_sports, 
+        back_populates="sports",
+        primaryjoin="Sport.sport_id==event_sports.c.sport_id",
+        secondaryjoin="Event.event_id==event_sports.c.event_id",
+        overlaps="sport"
+    )
 
 
 # -------------------------
@@ -471,13 +484,29 @@ class Event(Base):
     is_live = Column(Boolean, default=False)
     created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
     updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
+    # Cricket Configuration Additions
+    sport_id = Column(Integer, ForeignKey("sports.sport_id"), nullable=True)
+    event_config = Column(JSON, nullable=True)
     
     # Relationships
     creator_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     creator = relationship("User", back_populates="created_events", uselist=False)
     teams = relationship("Team", back_populates="event", cascade="all, delete-orphan")
     auctions = relationship("Auction", back_populates="event", cascade="all, delete-orphan")
-    sports = relationship("Sport", secondary=event_sports, back_populates="events")
+    
+    # Legacy many-to-many sports relationship
+    sports = relationship(
+        "Sport", 
+        secondary=event_sports, 
+        back_populates="events",
+        primaryjoin="Event.event_id==event_sports.c.event_id",
+        secondaryjoin="Sport.sport_id==event_sports.c.sport_id",
+        overlaps="events"
+    )
+    
+    # New Cricket Configuration Authoritative Sport relationship
+    sport = relationship("Sport", foreign_keys=[sport_id])
+    
     players = relationship("Player", secondary=player_events, back_populates="events")
     
     __table_args__ = (
@@ -553,7 +582,10 @@ class Auction(Base):
     current_player_id = Column(Integer, ForeignKey("players.player_id", ondelete="SET NULL"), nullable=True)
     current_player_bid_start = Column(DateTime, nullable=True)
     current_bid_amount = Column(DECIMAL(12, 2), default=0.00, nullable=False)
+    current_team_id = Column(Integer, ForeignKey("teams.team_id", ondelete="SET NULL"), nullable=True)
     min_bid_increment = Column(DECIMAL(12, 2), default=1.00, nullable=False)
+    bid_deadline = Column(DateTime, nullable=True)
+    paused_time_left = Column(DECIMAL(10, 2), nullable=True)
     created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
     updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
     
@@ -561,16 +593,67 @@ class Auction(Base):
     event = relationship("Event", back_populates="auctions")
     creator = relationship("User", back_populates="created_auctions")
     current_player = relationship("Player", foreign_keys=[current_player_id])
-    bids = relationship("Bid", back_populates="auction", cascade="all, delete-orphan")
+    bids = relationship("AuctionBid", back_populates="auction", cascade="all, delete-orphan")
+    auction_players = relationship("AuctionPlayer", back_populates="auction", cascade="all, delete-orphan")
+    team_statuses = relationship("AuctionTeamStatus", back_populates="auction", cascade="all, delete-orphan")
+    current_team = relationship("Team", foreign_keys=[current_team_id])
     
     __table_args__ = (
         Index('idx_auction_event', 'event_id'),
         Index('idx_auction_creator', 'creator_id'),
         Index('idx_auction_status', 'status'),
         Index('idx_auction_times', 'start_time', 'end_time'),
-        CheckConstraint("status IN ('scheduled', 'in_progress', 'completed', 'cancelled')", name='check_auction_status'),
+        CheckConstraint("status IN ('draft', 'ready', 'lobby', 'live', 'paused', 'scheduled', 'in_progress', 'completed', 'cancelled', 'NOT_STARTED', 'READY', 'RUNNING', 'PAUSED', 'STOPPED', 'COMPLETED')", name='check_auction_status'),
         CheckConstraint('end_time > start_time', name='check_auction_times')
     )
+
+
+class AuctionPlayer(Base):
+    __tablename__ = "auction_players"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    auction_id = Column(Integer, ForeignKey("auctions.auction_id", ondelete="CASCADE"), nullable=False)
+    player_id = Column(Integer, ForeignKey("players.player_id", ondelete="CASCADE"), nullable=False)
+    status = Column(String(20), default='PENDING', nullable=False)
+    base_price = Column(DECIMAL(12, 2), default=0.00)
+    final_price = Column(DECIMAL(12, 2), default=0.00)
+    sold_to_team_id = Column(Integer, ForeignKey("teams.team_id", ondelete="SET NULL"), nullable=True)
+    auction_order = Column(Integer, nullable=True)
+    started_at = Column(DateTime, nullable=True)
+    ended_at = Column(DateTime, nullable=True)
+
+    auction = relationship("Auction", back_populates="auction_players")
+    player = relationship("Player")
+    team = relationship("Team")
+
+
+class AuctionBid(Base):
+    __tablename__ = "auction_bids"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    auction_id = Column(Integer, ForeignKey("auctions.auction_id", ondelete="CASCADE"), nullable=False)
+    auction_player_id = Column(Integer, ForeignKey("auction_players.id", ondelete="CASCADE"), nullable=False)
+    team_id = Column(Integer, ForeignKey("teams.team_id", ondelete="CASCADE"), nullable=False)
+    bid_amount = Column(DECIMAL(12, 2), nullable=False)
+    created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
+    
+    auction = relationship("Auction", back_populates="bids")
+    auction_player = relationship("AuctionPlayer")
+    team = relationship("Team")
+
+
+class AuctionTeamStatus(Base):
+    __tablename__ = "auction_team_status"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    auction_id = Column(Integer, ForeignKey("auctions.auction_id", ondelete="CASCADE"), nullable=False)
+    team_id = Column(Integer, ForeignKey("teams.team_id", ondelete="CASCADE"), nullable=False)
+    status = Column(String(20), default='WAITING', nullable=False)
+    current_purse = Column(DECIMAL(12, 2), nullable=False)
+    squad_size = Column(Integer, default=0)
+
+    auction = relationship("Auction", back_populates="team_statuses")
+    team = relationship("Team")
 
 
 class Bid(Base):
@@ -585,7 +668,7 @@ class Bid(Base):
     created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
     
     # Relationships
-    auction = relationship("Auction", back_populates="bids")
+    auction = relationship("Auction")
     player = relationship("Player", back_populates="bids")
     team = relationship("Team", back_populates="bids")
     
@@ -597,15 +680,16 @@ class Bid(Base):
     )
 
 
+
 # -------------------------
 # Session Management
 # -------------------------
 class Session(Base):
     __tablename__ = "sessions"
 
-    session_id = Column(String(255), primary_key=True, autoincrement=False)
+    session_id = Column(String(64), primary_key=True, autoincrement=False)
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
-    session_token = Column(String(500), unique=True, nullable=False, index=True)
+    session_token = Column(String(128), unique=True, nullable=False, index=True)
     created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
     expires_at = Column(DateTime, nullable=False, index=True)
     is_active = Column(Boolean, default=True, server_default=text('1'), nullable=False)
@@ -675,8 +759,6 @@ class ActivityLog(Base):
         Index('idx_entity', 'entity_type', 'entity_id'),
     )
 
- 
-
 # -------------------------
 # Messages / Support
 # -------------------------
@@ -693,3 +775,19 @@ class Message(Base):
     is_read = Column(Boolean, default=False)
 
     sender = relationship("User", foreign_keys=[sender_id])
+
+# -------------------------
+# Notifications
+# -------------------------
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    notification_id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
+    type = Column(String(50), nullable=False, index=True) # e.g., 'system', 'event', 'profile'
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False, index=True)
+
+    user = relationship("User", foreign_keys=[user_id])

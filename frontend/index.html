@@ -7,7 +7,8 @@
     <script>
         // SPA Interceptor for RBAC Dashboard (No Backend Changes)
         if (window.location.pathname.startsWith('/dashboard')) {
-            fetch('/team-owner-dashboard.html')
+            document.write('<style>html { display: none !important; }</style>');
+            fetch('/templates/team-owner-dashboard.html')
                 .then(r => r.text())
                 .then(html => {
                     document.open();
@@ -16,9 +17,9 @@
                 });
         }
     </script>
-    <title>BidZone - Live Sports Player Auctions</title>
-    <link rel="stylesheet" href="/css/styles.css?v=global-v2">
-    <link rel="stylesheet" href="/css/saas-theme.css?v=1.0">
+    <title>JamRig - Live Sports Player Auctions</title>
+    <link rel="stylesheet" href="/css/styles.css?v=global-v4">
+    <link rel="stylesheet" href="/css/saas-theme.css?v=global-v4">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
@@ -29,7 +30,7 @@
             background: rgba(0, 0, 0, 0.5);
             border-radius: 0.5rem;
             border: 2px solid #00ffff;
-            box-shadow: 
+            box-shadow:
                 0 0 1px rgba(0, 255, 255, 0.04),
                 inset 0 0 2px rgba(0, 255, 255, 0.01);
         }
@@ -75,7 +76,7 @@
             background: rgba(10, 10, 10, 0.95);
             border-radius: 20px;
             overflow: hidden;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(0, 255, 255, 0.06),
                 0 0 4px rgba(0, 255, 255, 0.04);
             border: 2px solid rgba(0, 255, 255, 0.15);
@@ -87,7 +88,7 @@
 
         .ecr-card:hover {
             transform: translateY(-10px);
-            box-shadow: 
+            box-shadow:
                 0 0 15px rgba(0, 255, 0, 0.15),
                 0 0 30px rgba(0, 255, 0, 0.10);
             border-color: rgba(0, 255, 0, 0.15);
@@ -110,7 +111,7 @@
             font-weight: 800;
             margin: 0;
             line-height: 1.2;
-            text-shadow: 
+            text-shadow:
                 0 0 1px #00ffff,
                 0 0 2px #00ffff;
             letter-spacing: -0.02em;
@@ -132,7 +133,7 @@
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            box-shadow: 
+            box-shadow:
                 0 0 1px rgba(0, 255, 255, 0.06),
                 0 4px 12px rgba(0, 0, 0, 0.1);
         }
@@ -192,7 +193,7 @@
             font-size: 0.85rem;
             font-weight: 700;
             transition: all 0.2s;
-            box-shadow: 
+            box-shadow:
                 0 0 1px rgba(0, 255, 0, 0.06),
                 0 2px 4px rgba(0, 255, 0, 0.04);
             text-shadow: 0 0 1px #00ff00;
@@ -233,7 +234,7 @@
             font-size: 1.1rem;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(124, 58, 237, 0.06),
                 0 10px 20px rgba(124, 58, 237, 0.25);
         }
@@ -241,7 +242,7 @@
         .ecr-reg-btn:hover {
             background: linear-gradient(135deg, #6d28d9, #5b21b6);
             transform: scale(1.05) translateY(-2px);
-            box-shadow: 
+            box-shadow:
                 0 0 3px rgba(124, 58, 237, 0.1),
                 0 15px 30px rgba(124, 58, 237, 0.35);
         }
@@ -288,7 +289,7 @@
             border-radius: 0.75rem;
             padding: 1.5rem;
             margin-bottom: 2rem;
-            box-shadow: 
+            box-shadow:
                 0 0 10px rgba(0, 255, 255, 0.3),
                 0 0 20px rgba(0, 255, 255, 0.2);
         }
@@ -300,14 +301,14 @@
             padding: 1rem;
             margin-bottom: 1rem;
             transition: all 0.3s ease;
-            box-shadow: 
+            box-shadow:
                 0 0 5px rgba(0, 255, 255, 0.2),
                 inset 0 0 10px rgba(0, 255, 255, 0.05);
         }
 
         .player-card:hover {
             transform: translateY(-2px);
-            box-shadow: 
+            box-shadow:
                 0 0 10px rgba(0, 255, 255, 0.4),
                 0 4px 6px rgba(0, 0, 0, 0.1);
             border-color: #00ff00;
@@ -348,7 +349,7 @@
             display: inline-flex;
             align-items: center;
             margin-top: 1rem;
-            box-shadow: 
+            box-shadow:
                 0 0 10px rgba(249, 115, 22, 0.3),
                 0 0 20px rgba(249, 115, 22, 0.2);
         }
@@ -536,7 +537,7 @@
             <div class="nav-container">
                 <div class="nav-logo">
                     <i class="fas fa-trophy"></i>
-                    <span>BidZone</span>
+                    <span>JamRig</span>
                 </div>
                 <ul class="nav-menu">
                     <li><a href="#events" class="nav-link">Events</a></li>
@@ -559,14 +560,15 @@
         </nav>
     </header>
 
-    
+
     <!-- Premium SaaS Hero -->
     <section class="saas-hero">
         <div class="saas-hero-content">
             <h1 class="saas-hero-title">Build Your Dream Team Through Live Sports Auctions</h1>
             <p class="saas-hero-subtitle">
-                The ultimate professional platform for sports player auctions and team building. 
-                Discover elite talent, participate in real-time bidding wars, and construct championship-winning rosters with unparalleled precision.
+                The ultimate professional platform for sports player auctions and team building.
+                Discover elite talent, participate in real-time bidding wars, and construct championship-winning rosters
+                with unparalleled precision.
             </p>
             <div class="saas-hero-buttons">
                 <a href="#events" class="saas-btn-primary">Register Now</a>
@@ -638,7 +640,7 @@
         <div class="section-container">
             <div class="section-header">
                 <h2>Ready to Build Your Championship Team?</h2>
-                <p>Join thousands of team owners who are discovering exceptional talent through BidZone. Get exclusive
+                <p>Join thousands of team owners who are discovering exceptional talent through JamRig. Get exclusive
                     access to live auctions, player analytics, and the tools you need to build a winning team.</p>
             </div>
             <div class="cta-benefits-grid">
@@ -697,7 +699,7 @@
             <div class="footer-section">
                 <div class="footer-logo">
                     <i class="fas fa-trophy"></i>
-                    <span>BidZone</span>
+                    <span>JamRig</span>
                 </div>
                 <p>The ultimate destination for sports player auctions and team building.</p>
                 <div class="social-links">
@@ -721,8 +723,8 @@
                 <ul>
                     <li><a href="#">Help Center</a></li>
                     <li><a href="#">Contact Us</a></li>
-                    <li><a href="terms.html" target="_blank">Terms of Service</a></li>
-                    <li><a href="privacy.html" target="_blank">Privacy Policy</a></li>
+                    <li><a href="templates/terms.html" target="_blank">Terms of Service</a></li>
+                    <li><a href="templates/privacy.html" target="_blank">Privacy Policy</a></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -736,7 +738,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2024 BidZone. All rights reserved.</p>
+            <p>&copy; 2024 JamRig. All rights reserved.</p>
         </div>
     </footer>
 
@@ -748,89 +750,70 @@
             <div class="modal-header">
                 <div class="modal-logo">
                     <i class="fas fa-sign-in-alt"></i>
-                    <span>BidZone Sign In</span>
+                    <span>JamRig Sign In</span>
                 </div>
                 <h2>Welcome Back</h2>
                 <p>Sign in to your account</p>
             </div>
 
-            <style>
-                #loginModal input,
-                #loginModal select {
-                    background: #000000 !important;
-                    border: 2px solid #00ffff !important;
-                    color: #ffffff !important;
-                    caret-color: #ffffff !important;
-                }
-                #loginModal input::placeholder {
-                    color: #64748b !important;
-                }
-                #loginModal option {
-                    background: #000000 !important;
-                    color: #ffffff !important;
-                }
-                /* Override browser autofill styles */
-                #loginModal input:-webkit-autofill,
-                #loginModal input:-webkit-autofill:hover,
-                #loginModal input:-webkit-autofill:focus,
-                #loginModal input:-webkit-autofill:active {
-                    -webkit-box-shadow: 0 0 0 30px #000000 inset !important;
-                    -webkit-text-fill-color: #ffffff !important;
-                    background-color: #000000 !important;
-                    background-image: none !important;
-                    transition: background-color 5000s ease-in-out 0s;
-                }
-                #loginModal input:-internal-autofill-selected {
-                    background-color: #000000 !important;
-                }
-            </style>
 
             <!-- Login Form -->
             <form id="mainLoginForm" class="auth-form" onsubmit="return handleLogin(event)" data-staff-step="1">
                 <div class="form-group">
                     <label id="usernameLabel" for="username">Username or Email</label>
                     <input type="text" id="username" name="username" required placeholder="Enter your username or email"
-                        autocomplete="username" style="width: 100% !important; padding: 0.75rem 1rem !important; background: #000000 !important; border: 2px solid #00ffff !important; border-radius: 8px !important; color: #ffffff !important; font-size: 1rem !important; transition: all 0.3s ease !important; box-sizing: border-box !important;" />
+                        autocomplete="username" class="auth-input" />
                 </div>
 
                 <div class="form-group" id="passwordGroup">
                     <label for="password">Password</label>
                     <div style="position: relative;">
                         <input type="password" id="password" name="password" required placeholder="Enter your password"
-                            autocomplete="current-password" style="width: 100% !important; padding: 0.75rem 2.5rem 0.75rem 1rem !important; background: #000000 !important; border: 2px solid #00ffff !important; border-radius: 8px !important; color: #ffffff !important; font-size: 1rem !important; transition: all 0.3s ease !important; box-sizing: border-box !important;" />
-                        <button type="button" onclick="togglePasswordVisibility('password', this)" 
+                            autocomplete="current-password" class="auth-input password-input" />
+                        <button type="button" onclick="togglePasswordVisibility('password', this)"
+                            class="toggle-password"
                             style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #00ffff; cursor: pointer; padding: 0; font-size: 1.2rem; transition: all 0.3s;">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Staff Registration Fields (Hidden by default) -->
                 <div id="staffSetupGroup" style="display: none;">
-                    <div class="invitation-info" id="staffInvitationInfo" style="background: rgba(0,255,255,0.1); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; border: 1px solid #00ffff; color: #00ffff;">
+                    <div class="invitation-info" id="staffInvitationInfo"
+                        style="background: rgba(0,255,255,0.1); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; border: 1px solid #00ffff; color: #00ffff;">
                     </div>
                     <div class="form-group" style="position: relative;">
                         <label for="staffNewPassword">New Password *</label>
                         <div style="position: relative; display: flex; align-items: center;">
-                            <input type="password" id="staffNewPassword" name="staffNewPassword" placeholder="Create a password (min 6 chars, 1 uppercase, 1 number)"
-                                autocomplete="new-password" minlength="6" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}" title="Must contain at least one number and one uppercase and lowercase letter, and at least 6 or more characters" style="width: 100% !important; padding: 0.75rem 2.5rem 0.75rem 1rem !important; background: #000000 !important; border: 2px solid #00ffff !important; border-radius: 8px !important; color: #ffffff !important; font-size: 1rem !important; transition: all 0.3s ease !important; box-sizing: border-box !important;" />
-                            <i class="fas fa-eye toggle-password" style="position: absolute; right: 15px; cursor: pointer; color: #00ffff;" onclick="togglePasswordVisibility('staffNewPassword', this)"></i>
+                            <input type="password" id="staffNewPassword" name="staffNewPassword"
+                                placeholder="Create a password (min 6 chars, 1 uppercase, 1 number)"
+                                autocomplete="new-password" minlength="6" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}"
+                                title="Must contain at least one number and one uppercase and lowercase letter, and at least 6 or more characters"
+                                class="auth-input password-input" />
+                            <i class="fas fa-eye toggle-password"
+                                style="position: absolute; right: 15px; cursor: pointer; color: #00ffff;"
+                                onclick="togglePasswordVisibility('staffNewPassword', this)"></i>
                         </div>
-                        <small style="color: #64748b; font-size: 0.85rem;">Must contain at least one number, one uppercase letter, and be at least 6 chars.</small>
+                        <small style="color: #64748b; font-size: 0.85rem;">Must contain at least one number, one
+                            uppercase letter, and be at least 6 chars.</small>
                     </div>
                     <div class="form-group" style="position: relative;">
                         <label for="staffConfirmPassword">Confirm Password *</label>
                         <div style="position: relative; display: flex; align-items: center;">
-                            <input type="password" id="staffConfirmPassword" name="staffConfirmPassword" placeholder="Confirm your password"
-                                autocomplete="new-password" minlength="6" style="width: 100% !important; padding: 0.75rem 2.5rem 0.75rem 1rem !important; background: #000000 !important; border: 2px solid #00ffff !important; border-radius: 8px !important; color: #ffffff !important; font-size: 1rem !important; transition: all 0.3s ease !important; box-sizing: border-box !important;" />
-                            <i class="fas fa-eye toggle-password" style="position: absolute; right: 15px; cursor: pointer; color: #00ffff;" onclick="togglePasswordVisibility('staffConfirmPassword', this)"></i>
+                            <input type="password" id="staffConfirmPassword" name="staffConfirmPassword"
+                                placeholder="Confirm your password" autocomplete="new-password" minlength="6"
+                                class="auth-input password-input" />
+                            <i class="fas fa-eye toggle-password"
+                                style="position: absolute; right: 15px; cursor: pointer; color: #00ffff;"
+                                onclick="togglePasswordVisibility('staffConfirmPassword', this)"></i>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group" id="roleGroup">
                     <label for="role">Select Role</label>
-                    <select id="role" name="role" required class="form-select" onchange="handleRoleChange()" style="width: 100% !important; padding: 0.75rem !important; border: 2px solid #00ffff !important; border-radius: 0.375rem !important; font-size: 0.875rem !important; background: #000000 !important; color: #ffffff !important;">
+                    <select id="role" name="role" required class="form-select auth-input" onchange="handleRoleChange()">
                         <option value="player">Player</option>
                         <option value="team_owner">Team Owner</option>
                         <option value="team_manager">Team Manager</option>
@@ -867,7 +850,7 @@
                 <h2>Team Owner Registration</h2>
                 <p>Register your team for auctions</p>
             </div>
-            <form id="teamOwnerForm" onsubmit="return handleTeamOwnerRegistration(event)">
+            <form id="teamOwnerForm" onsubmit="event.preventDefault(); handleTeamOwnerRegistration(event);">
                 <div class="form-group">
                     <label for="ownerTeamName">Team Name *</label>
                     <input type="text" id="ownerTeamName" name="teamName" required placeholder="Enter your team name"
@@ -891,18 +874,27 @@
                 <div class="form-group" style="position: relative;">
                     <label for="ownerPassword">Password *</label>
                     <div style="position: relative; display: flex; align-items: center;">
-                        <input type="password" id="ownerPassword" name="password" required placeholder="Create a password (min 6 chars, 1 uppercase, 1 number)"
-                            autocomplete="new-password" minlength="6" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}" title="Must contain at least one number and one uppercase and lowercase letter, and at least 6 or more characters" style="padding-right: 40px; width: 100%;" />
-                        <i class="fas fa-eye toggle-password" style="position: absolute; right: 15px; cursor: pointer; color: #64748b;" onclick="togglePasswordVisibility('ownerPassword', this)"></i>
+                        <input type="password" id="ownerPassword" name="password" required
+                            placeholder="Create a password (min 6 chars, 1 uppercase, 1 number)"
+                            autocomplete="new-password" minlength="6" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}"
+                            title="Must contain at least one number and one uppercase and lowercase letter, and at least 6 or more characters"
+                            style="padding-right: 40px; width: 100%;" />
+                        <i class="fas fa-eye toggle-password"
+                            style="position: absolute; right: 15px; cursor: pointer; color: #64748b;"
+                            onclick="togglePasswordVisibility('ownerPassword', this)"></i>
                     </div>
-                    <small style="color: #64748b; font-size: 0.85rem;">Must contain at least one number, one uppercase letter, and be at least 6 chars.</small>
+                    <small style="color: #64748b; font-size: 0.85rem;">Must contain at least one number, one uppercase
+                        letter, and be at least 6 chars.</small>
                 </div>
                 <div class="form-group" style="position: relative;">
                     <label for="ownerConfirmPassword">Confirm Password *</label>
                     <div style="position: relative; display: flex; align-items: center;">
-                        <input type="password" id="ownerConfirmPassword" name="confirmPassword" required placeholder="Confirm your password"
-                            autocomplete="new-password" minlength="6" style="padding-right: 40px; width: 100%;" />
-                        <i class="fas fa-eye toggle-password" style="position: absolute; right: 15px; cursor: pointer; color: #64748b;" onclick="togglePasswordVisibility('ownerConfirmPassword', this)"></i>
+                        <input type="password" id="ownerConfirmPassword" name="confirmPassword" required
+                            placeholder="Confirm your password" autocomplete="new-password" minlength="6"
+                            style="padding-right: 40px; width: 100%;" />
+                        <i class="fas fa-eye toggle-password"
+                            style="position: absolute; right: 15px; cursor: pointer; color: #64748b;"
+                            onclick="togglePasswordVisibility('ownerConfirmPassword', this)"></i>
                     </div>
                 </div>
                 <div class="form-group">
@@ -913,8 +905,7 @@
 
                 <div class="form-group">
                     <label for="teamOwnerEvent">Select Event *</label>
-                    <select id="teamOwnerEvent" name="event_id" required class="form-select"
-                        style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.375rem; background-color: white; color: #1e293b;">
+                    <select id="teamOwnerEvent" name="event_id" required class="form-select auth-input">
                         <option value="">Select an event</option>
                     </select>
                 </div>
@@ -946,8 +937,8 @@
                     </div>
                     <div class="form-group">
                         <label for="teamManagerEmail">Team Manager Email</label>
-                        <input type="email" id="teamManagerEmail" name="teamManagerEmail" placeholder="manager@company.com"
-                            autocomplete="email" />
+                        <input type="email" id="teamManagerEmail" name="teamManagerEmail"
+                            placeholder="manager@company.com" autocomplete="email" />
                     </div>
                 </div>
 
@@ -959,8 +950,8 @@
                     </div>
                     <div class="form-group">
                         <label for="teamAnalystEmail">Team Analyst Email</label>
-                        <input type="email" id="teamAnalystEmail" name="teamAnalystEmail" placeholder="analyst@company.com"
-                            autocomplete="email" />
+                        <input type="email" id="teamAnalystEmail" name="teamAnalystEmail"
+                            placeholder="analyst@company.com" autocomplete="email" />
                     </div>
                 </div>
 
@@ -1001,7 +992,7 @@
                 <h2>Staff Registration</h2>
                 <p>Complete your registration as a team staff member</p>
             </div>
-            
+
             <!-- Step 1: Check Invitation -->
             <!-- Staff enters their email to check if they have a pending invitation from a team owner -->
             <div id="staffCheckStep">
@@ -1023,11 +1014,12 @@
             <!-- Step 2: Complete Registration -->
             <!-- After invitation is verified, staff sets username and password to activate their account -->
             <div id="staffCompleteStep" style="display: none;">
-                <div class="invitation-info" id="invitationInfo" style="background: #f0f9ff; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; border: 1px solid #bae6fd;">
+                <div class="invitation-info" id="invitationInfo"
+                    style="background: #f0f9ff; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; border: 1px solid #bae6fd;">
                     <!-- Invitation details will be populated here via JavaScript -->
                     <!-- Shows: role (manager/analyst), team owner name -->
                 </div>
-                
+
                 <form id="staffCompleteForm" onsubmit="return handleStaffCompleteRegistration(event)">
                     <div class="form-group">
                         <label for="staffUsername">Username *</label>
@@ -1037,18 +1029,27 @@
                     <div class="form-group" style="position: relative;">
                         <label for="staffPassword">Password *</label>
                         <div style="position: relative; display: flex; align-items: center;">
-                            <input type="password" id="staffPassword" name="password" required placeholder="Create a password (min 6 chars, 1 uppercase, 1 number)"
-                                autocomplete="new-password" minlength="6" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}" title="Must contain at least one number and one uppercase and lowercase letter, and at least 6 or more characters" style="padding-right: 40px; width: 100%;" />
-                            <i class="fas fa-eye toggle-password" style="position: absolute; right: 15px; cursor: pointer; color: #64748b;" onclick="togglePasswordVisibility('staffPassword', this)"></i>
+                            <input type="password" id="staffPassword" name="password" required
+                                placeholder="Create a password (min 6 chars, 1 uppercase, 1 number)"
+                                autocomplete="new-password" minlength="6" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}"
+                                title="Must contain at least one number and one uppercase and lowercase letter, and at least 6 or more characters"
+                                style="padding-right: 40px; width: 100%;" />
+                            <i class="fas fa-eye toggle-password"
+                                style="position: absolute; right: 15px; cursor: pointer; color: #64748b;"
+                                onclick="togglePasswordVisibility('staffPassword', this)"></i>
                         </div>
-                        <small style="color: #64748b; font-size: 0.85rem;">Must contain at least one number, one uppercase letter, and be at least 6 chars.</small>
+                        <small style="color: #64748b; font-size: 0.85rem;">Must contain at least one number, one
+                            uppercase letter, and be at least 6 chars.</small>
                     </div>
                     <div class="form-group" style="position: relative;">
                         <label for="staffConfirmPassword">Confirm Password *</label>
                         <div style="position: relative; display: flex; align-items: center;">
-                            <input type="password" id="staffConfirmPassword" name="confirmPassword" required placeholder="Confirm your password"
-                                autocomplete="new-password" minlength="6" style="padding-right: 40px; width: 100%;" />
-                            <i class="fas fa-eye toggle-password" style="position: absolute; right: 15px; cursor: pointer; color: #64748b;" onclick="togglePasswordVisibility('staffConfirmPassword', this)"></i>
+                            <input type="password" id="staffConfirmPassword" name="confirmPassword" required
+                                placeholder="Confirm your password" autocomplete="new-password" minlength="6"
+                                style="padding-right: 40px; width: 100%;" />
+                            <i class="fas fa-eye toggle-password"
+                                style="position: absolute; right: 15px; cursor: pointer; color: #64748b;"
+                                onclick="togglePasswordVisibility('staffConfirmPassword', this)"></i>
                         </div>
                     </div>
                     <div class="form-section">
@@ -1135,8 +1136,10 @@
                         <div class="checkbox-group">
                             <input type="checkbox" id="ownerTermsAccepted" name="ownerTermsAccepted" required />
                             <label for="ownerTermsAccepted">
-                                I agree to the <a href="terms.html" class="terms-link" target="_blank">Terms of
-                                    Service</a> and <a href="privacy.html" class="terms-link" target="_blank">Privacy
+                                I agree to the <a href="templates/terms.html" class="terms-link" target="_blank">Terms
+                                    of
+                                    Service</a> and <a href="templates/privacy.html" class="terms-link"
+                                    target="_blank">Privacy
                                     Policy</a> *
                             </label>
                         </div>
@@ -1340,7 +1343,7 @@
                     </div>
                     <div class="form-group">
                         <label for="playerGender">Gender *</label>
-                        <select id="playerGender" name="gender" required class="form-select">
+                        <select id="playerGender" name="gender" required class="form-select auth-input">
                             <option value="">Select Gender</option>
                             <option value="male">Male</option>
                             <option value="female">Female</option>
@@ -1426,7 +1429,7 @@
                             oninvalid="this.setCustomValidity('You must accept the terms and conditions')"
                             oninput="this.setCustomValidity('')" />
                         <label for="playerTerms">I agree to the
-                            <a href="/terms" target="_blank">Terms and Conditions</a> *
+                            <a href="templates/terms.html" target="_blank">Terms and Conditions</a> *
                         </label>
                     </div>
                     <div class="error-message" id="termsError"></div>
@@ -1444,21 +1447,7 @@
 
     <!-- All JavaScript is loaded from external files -->
     <script>
-        // Toggle password visibility
-        function togglePasswordVisibility(inputId, button) {
-            const input = document.getElementById(inputId);
-            const icon = button.querySelector('i');
-            
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        }
+
 
         // Set max date for DOB (must be at least 10 years old)
         function setMaxDate() {
@@ -1484,21 +1473,7 @@
             }
         }
 
-        // Toggle password visibility
-        function togglePasswordVisibility(inputId) {
-            const input = document.getElementById(inputId);
-            const icon = input.nextElementSibling.querySelector('i');
 
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        }
 
         // Validate password strength
         function validatePasswordStrength(password) {
@@ -1611,40 +1586,12 @@
 
     </script>
 
-    <!-- Main application script with cache-busting and no-cache headers -->
-    <script>
-        // Clear the browser's cache for this page
-        if ('caches' in window) {
-            caches.keys().then(function (names) {
-                for (let name of names) {
-                    caches.delete(name);
-                }
-            });
-        }
-
-        // Force a fresh load of the script with a unique query parameter
-        document.addEventListener('DOMContentLoaded', function () {
-            // Remove any existing script tags with the same source
-            document.querySelectorAll('script[src^="/js/script.js"]').forEach(function (script) {
-                script.remove();
-            });
-
-            // Create a new script tag with a unique timestamp
-            const script = document.createElement('script');
-            script.src = '/js/script.js?nocache=' + new Date().getTime();
-            script.defer = true;
-
-            // Add error handling
-            script.onerror = function () {
-                console.error('Failed to load script.js');
-            };
-
-            document.body.appendChild(script);
-        });
-    </script>
-
     <!-- Sport ratings functionality -->
     <script src="/js/sport-ratings.js"></script>
+
+    <!-- Core scripts -->
+    <script src="/js/script.js?v=22"></script>
+    <script src="/js/rbac-router.js?v=22"></script>
 </body>
 
 </html>

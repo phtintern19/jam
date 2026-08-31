@@ -1,4 +1,3 @@
-
 // --- THEME MANAGEMENT ---
 function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
@@ -28,16 +27,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 // ------------------------
 
-// Bidding Page JavaScript
-
+// --- BIDDING PAGE LOGIC ---
 let currentUser = null;
-let currentBid = 500000;
-let timerSeconds = 30;
-let timerInterval = null;
+let currentEventId = null;
+let socket = null;
+let currentBid = 0;
+let basePrice = 0;
+let remainingBudget = 0;
 
-// Initialize bidding page on load
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if user is authenticated via localStorage
+    // 1. Verify Auth
     const userStr = localStorage.getItem('user');
     if (!userStr) {
         console.log('No user found in localStorage, redirecting to login');
@@ -48,69 +47,129 @@ document.addEventListener('DOMContentLoaded', function() {
     currentUser = JSON.parse(userStr);
     console.log('Current user:', currentUser);
 
-    // Initialize timer
-    startTimer();
+    // Get Event ID from URL or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    currentEventId = urlParams.get('id') || localStorage.getItem('currentAuctionId');
 
-    // Load initial data
-    loadBiddingData();
+    if (!currentEventId) {
+        alert("No event ID provided");
+        window.location.href = '/team-owner-dashboard.html';
+        return;
+    }
 
-    // Set up bid input validation
-    setupBidInput();
+    // Initialize UI and Socket
+    loadInitialTeamData();
+    initSocket();
 });
 
-// Start countdown timer
-function startTimer() {
-    timerInterval = setInterval(() => {
-        timerSeconds--;
+function loadInitialTeamData() {
+    // In a real app, fetch the exact remaining budget and slots from the API.
+    // We will initialize them to 0 and let team_status_update fill them.
+    remainingBudget = 0;
+    updateStatsUI(0, 0, 0, 0);
+}
+
+function initSocket() {
+    socket = io({ transports: ['polling'], upgrade: false });
+
+    socket.on('connect', () => {
+        console.log('Connected to WebSocket server');
+        socket.emit('join_lobby', {
+            auction_id: currentEventId,
+            team_id: currentUser.team_id
+        });
         
-        if (timerSeconds <= 0) {
-            timerSeconds = 30; // Reset timer
-            // Simulate new bid coming in
-            simulateIncomingBid();
+        // Let admin know team is ready
+        socket.emit('team_ready', {
+            auction_id: currentEventId,
+            team_id: currentUser.team_id
+        });
+    });
+
+    socket.on('team_status_update', (data) => {
+        console.log('Team status update:', data);
+        // Assuming data includes budget details (you may need to enhance this backend payload if it doesn't)
+        // For now, if your app provides budget via API, you'd fetch it. We will use the data object if provided.
+        if (data.team_id == currentUser.team_id) {
+            remainingBudget = data.remaining_budget || 0;
+            updateStatsUI(remainingBudget, data.players_bought || 0, data.total_spent || 0, data.slots_left || 0);
         }
+    });
+
+    socket.on('auction_update', (data) => {
+        console.log('Auction update:', data);
+        if (data.status === 'RUNNING') {
+            if (data.current_player) {
+                document.getElementById('playerName').textContent = data.current_player.name;
+                document.getElementById('playerCategory').textContent = data.current_player.role || 'Unknown';
+                document.getElementById('playerRating').textContent = 'Standard';
+                document.getElementById('playerCountry').textContent = 'N/A';
+                
+                basePrice = data.current_player.base_price || 0;
+                currentBid = data.current_bid || basePrice;
+                
+                document.getElementById('currentBid').textContent = formatCurrency(currentBid);
+                document.getElementById('currentBidder').textContent = data.current_bidder_name || 'Base Price';
+                
+                const imgEl = document.querySelector('.player-image .image-placeholder');
+                if (data.current_player.photo && imgEl) {
+                    imgEl.innerHTML = `<img src="${data.current_player.photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
+                }
+            }
+            document.getElementById('timer').textContent = data.time_left || '--';
+            setupBidInput();
+        } else if (data.status === 'PAUSED' || data.status === 'COMPLETED') {
+            document.getElementById('timer').textContent = data.status;
+            document.getElementById('bidAmount').disabled = true;
+        }
+    });
+
+    socket.on('bid_placed', (data) => {
+        console.log('Bid placed:', data);
+        currentBid = data.amount;
+        document.getElementById('currentBid').textContent = formatCurrency(currentBid);
+        document.getElementById('currentBidder').textContent = `Team ${data.team_id}`; // Or fetch team name
         
-        updateTimerDisplay();
-    }, 1000);
+        document.getElementById('timer').textContent = data.time_left;
+        
+        addBidToHistory(`Team ${data.team_id}`, currentBid);
+        setupBidInput();
+        
+        if (data.team_id == currentUser.team_id) {
+            showNotification('Your bid is the highest!', 'success');
+        } else {
+            showNotification(`Team ${data.team_id} bid ${formatCurrency(currentBid)}`, 'info');
+        }
+    });
+
+    socket.on('player_sold', (data) => {
+        showNotification(`Player Sold to Team ${data.team_id} for ${formatCurrency(data.amount)}!`, 'success');
+        if (data.team_id == currentUser.team_id) {
+            remainingBudget -= data.amount;
+            updateStatsUI(remainingBudget, null, null, null);
+        }
+    });
+
+    socket.on('player_unsold', (data) => {
+        showNotification('Player was marked UNSOLD', 'info');
+    });
+
+    socket.on('error', (err) => {
+        console.error("Socket error:", err);
+        showNotification(err.msg || "Error", 'error');
+    });
 }
 
-// Update timer display
-function updateTimerDisplay() {
-    const minutes = Math.floor(timerSeconds / 60);
-    const seconds = timerSeconds % 60;
-    const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    document.getElementById('timer').textContent = display;
-    
-    // Change color when timer is low
-    const timerElement = document.getElementById('timer');
-    if (timerSeconds <= 10) {
-        timerElement.style.color = '#ff0000';
-        timerElement.style.textShadow = '0 0 10px #ff0000, 0 0 20px #ff0000';
-    } else {
-        timerElement.style.color = '#ff00ff';
-        timerElement.style.textShadow = '0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 40px #ff00ff';
-    }
-}
-
-// Load bidding data
-function loadBiddingData() {
-    // Simulate loading data from API
-    document.getElementById('currentBid').textContent = formatCurrency(currentBid);
-    document.getElementById('remainingBudget').textContent = formatCurrency(7500000);
-    document.getElementById('playersBought').textContent = '5';
-    document.getElementById('totalSpent').textContent = formatCurrency(2500000);
-    document.getElementById('slotsLeft').textContent = '10';
-}
-
-// Setup bid input validation
 function setupBidInput() {
     const bidInput = document.getElementById('bidAmount');
-    const minBid = currentBid + 10000;
+    if (!bidInput) return;
+    const minBid = currentBid > 0 ? currentBid + 10000 : basePrice;
     
     bidInput.min = minBid;
-    bidInput.placeholder = `Minimum: ${formatCurrency(minBid)}`;
+    bidInput.value = minBid;
+    bidInput.disabled = false;
 }
 
-// Place bid
 function placeBid() {
     const bidInput = document.getElementById('bidAmount');
     const bidAmount = parseInt(bidInput.value);
@@ -120,37 +179,41 @@ function placeBid() {
         return;
     }
     
-    // Update current bid
-    currentBid = bidAmount;
-    document.getElementById('currentBid').textContent = formatCurrency(currentBid);
-    document.getElementById('currentBidder').textContent = currentUser.username || 'Your Team';
-    
-    // Add to bid history
-    addBidToHistory(currentUser.username || 'Your Team', currentBid);
-    
-    // Reset timer
-    timerSeconds = 30;
-    
-    // Clear input
-    bidInput.value = '';
-    
-    // Update minimum bid
-    setupBidInput();
-    
-    // Show success message
-    showNotification('Bid placed successfully!', 'success');
+    if (socket && currentEventId && currentUser.team_id) {
+        socket.emit('place_bid', {
+            auction_id: currentEventId,
+            team_id: currentUser.team_id,
+            amount: bidAmount
+        });
+        
+        bidInput.value = '';
+    }
 }
 
-// Quick bid
 function quickBid(amount) {
     const newBid = currentBid + amount;
     document.getElementById('bidAmount').value = newBid;
     placeBid();
 }
 
-// Add bid to history
+function updateStatsUI(remBudget, pBought, tSpent, sLeft) {
+    const budgetEl = document.getElementById('remainingBudget');
+    if (budgetEl && remBudget !== null) budgetEl.textContent = formatCurrency(remBudget);
+    
+    const boughtEl = document.getElementById('playersBought');
+    if (boughtEl && pBought !== null) boughtEl.textContent = pBought;
+    
+    const spentEl = document.getElementById('totalSpent');
+    if (spentEl && tSpent !== null) spentEl.textContent = formatCurrency(tSpent);
+    
+    const slotsEl = document.getElementById('slotsLeft');
+    if (slotsEl && sLeft !== null) slotsEl.textContent = sLeft;
+}
+
 function addBidToHistory(team, amount) {
     const historyList = document.getElementById('bidHistory');
+    if (!historyList) return;
+    
     const historyItem = document.createElement('div');
     historyItem.className = 'history-item';
     historyItem.innerHTML = `
@@ -159,40 +222,17 @@ function addBidToHistory(team, amount) {
         <div class="history-time">Just now</div>
     `;
     
-    // Insert at the top
     historyList.insertBefore(historyItem, historyList.firstChild);
-    
-    // Keep only last 10 items
     while (historyList.children.length > 10) {
         historyList.removeChild(historyList.lastChild);
     }
 }
 
-// Simulate incoming bid
-function simulateIncomingBid() {
-    const teams = ['Team Alpha', 'Team Beta', 'Team Gamma', 'Team Delta', 'Team Omega'];
-    const randomTeam = teams[Math.floor(Math.random() * teams.length)];
-    const increment = [10000, 50000, 100000][Math.floor(Math.random() * 3)];
-    const newBid = currentBid + increment;
-    
-    currentBid = newBid;
-    document.getElementById('currentBid').textContent = formatCurrency(currentBid);
-    document.getElementById('currentBidder').textContent = randomTeam;
-    
-    addBidToHistory(randomTeam, currentBid);
-    setupBidInput();
-    
-    showNotification(`${randomTeam} placed a bid of ${formatCurrency(currentBid)}`, 'info');
-}
-
-// Format currency
 function formatCurrency(amount) {
-    return '$' + amount.toLocaleString();
+    return '₹' + amount.toLocaleString('en-IN');
 }
 
-// Show notification
 function showNotification(message, type) {
-    // Create notification element
     const notification = document.createElement('div');
     notification.style.cssText = `
         position: fixed;
@@ -204,13 +244,13 @@ function showNotification(message, type) {
         font-weight: bold;
         z-index: 9999;
         animation: slideIn 0.3s ease-out;
-        ${type === 'success' ? 'background: #00ff00; box-shadow: 0 0 20px #00ff00;' : 'background: #00ffff; box-shadow: 0 0 20px #00ffff;'}
+        ${type === 'success' ? 'background: #00ff00; box-shadow: 0 0 20px #00ff00;' : 
+          type === 'error' ? 'background: #ff0000; color: #ffffff; box-shadow: 0 0 20px #ff0000;' :
+          'background: #00ffff; box-shadow: 0 0 20px #00ffff;'}
     `;
     notification.textContent = message;
-    
     document.body.appendChild(notification);
     
-    // Remove after 3 seconds
     setTimeout(() => {
         notification.style.opacity = '0';
         setTimeout(() => {
@@ -219,7 +259,6 @@ function showNotification(message, type) {
     }, 3000);
 }
 
-// Logout function
 async function logout() {
     if (confirm('Are you sure you want to logout?')) {
         try {
@@ -228,29 +267,13 @@ async function logout() {
             console.error('Error logging out:', error);
         }
 
-        // Clear all session storage
         sessionStorage.clear();
-        
-        // Clear all local storage
-        localStorage.removeItem('user');
-        localStorage.removeItem('session_token');
-        localStorage.removeItem('userType');
-        localStorage.removeItem('username');
-        localStorage.removeItem('teamName');
+        localStorage.clear();
 
-        // Stop timer
-        if (timerInterval) {
-            clearInterval(timerInterval);
+        if (socket) {
+            socket.disconnect();
         }
 
-        // Redirect to home page
         window.location.replace('/');
     }
 }
-
-// Cleanup on page unload
-window.addEventListener('beforeunload', function() {
-    if (timerInterval) {
-        clearInterval(timerInterval);
-    }
-});

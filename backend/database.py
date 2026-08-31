@@ -1,59 +1,74 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
-from contextlib import contextmanager
 import logging
+from urllib.parse import quote_plus
+
+# Get absolute path to the directory containing this file
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Configure logging
 logging.basicConfig()
 logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file explicitly using absolute path
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-# Database configuration
+# Database configuration (cPanel MySQL: use panel DB_* values; never ship real passwords as defaults)
 USE_SQLITE = os.getenv("USE_SQLITE", "false").lower() == "true"
-DB_USER = os.getenv("DB_USER", "bidzone")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "bedsur123")
-DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_USER = os.getenv("DB_USER", "")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+DB_HOST = os.getenv("DB_HOST", "")
 DB_PORT = os.getenv("DB_PORT", "3306")
-DB_NAME = os.getenv("DB_NAME", "bidzone")
+DB_NAME = os.getenv("DB_NAME", "")
 
 # Create database URL dynamically from environment variables
 if USE_SQLITE:
-    SQLALCHEMY_DATABASE_URL = "sqlite:///bidzone.db"
+    SQLALCHEMY_DATABASE_URL = f"sqlite:///{os.path.join(BASE_DIR, 'bidzone.db')}"
     logger.info("Using SQLite database")
 else:
-    SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    if not all([DB_USER, DB_PASSWORD, DB_NAME]):
+        logger.error(
+            "MySQL config incomplete. Set DB_USER, DB_PASSWORD, and DB_NAME in .env "
+            "(or set USE_SQLITE=true for local/dev)."
+        )
+    # URL-encode credentials so special characters in cPanel passwords work
+    user_q = quote_plus(DB_USER)
+    pass_q = quote_plus(DB_PASSWORD)
+    SQLALCHEMY_DATABASE_URL = (
+        f"mysql+pymysql://{user_q}:{pass_q}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    )
     logger.info(f"Using MySQL database: {DB_HOST}:{DB_PORT}/{DB_NAME}")
 
-# Connection pool settings with robust defaults
-POOL_SIZE = int(os.getenv('DB_POOL_SIZE', '15'))
-MAX_OVERFLOW = int(os.getenv('DB_MAX_OVERFLOW', '25'))
-POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '45'))
-POOL_RECYCLE = int(os.getenv('DB_POOL_RECYCLE', '3600'))
+# Connection pool — conservative defaults for cPanel shared hosting
+# (large pools exhaust MySQL max_user_connections on shared plans)
+POOL_SIZE = int(os.getenv('DB_POOL_SIZE', '5'))
+MAX_OVERFLOW = int(os.getenv('DB_MAX_OVERFLOW', '10'))
+POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '30'))
+# Recycle before typical MySQL wait_timeout (often 300s on cPanel)
+POOL_RECYCLE = int(os.getenv('DB_POOL_RECYCLE', '280'))
 
 # Create SQLAlchemy engine with optimized settings
 if USE_SQLITE:
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL,
-        echo=False,                    # Disable SQL query logging
-        connect_args={"check_same_thread": False}  # SQLite specific
+        echo=False,
+        connect_args={"check_same_thread": False}
     )
 else:
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL,
-        pool_pre_ping=True,           # Check connections before using them
-        pool_recycle=3600,            # Recycle connections after 1 hour
-        pool_size=POOL_SIZE,                  # Number of connections to keep open
-        max_overflow=MAX_OVERFLOW,              # Max overflow connections
-        pool_timeout=POOL_TIMEOUT,              # Seconds to wait before giving up on getting a connection
-        echo=False,                    # Disable SQL query logging
+        pool_pre_ping=True,
+        pool_recycle=POOL_RECYCLE,
+        pool_size=POOL_SIZE,
+        max_overflow=MAX_OVERFLOW,
+        pool_timeout=POOL_TIMEOUT,
+        echo=False,
         connect_args={
-            'connect_timeout': 10,    # Connection timeout in seconds
+            'connect_timeout': 10,
         }
     )
 
@@ -62,14 +77,14 @@ SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine,
-    expire_on_commit=False  # Prevents session expiration after commit
+    expire_on_commit=False
 )
 
 # Base class for models
 Base = declarative_base()
 
 def get_db():
-    """Dependency for FastAPI to get DB session with proper cleanup"""
+    """Yield a DB session with proper cleanup (WSGI / Flask compatible)."""
     db = SessionLocal()
     try:
         yield db
@@ -97,6 +112,3 @@ def drop_db():
     except Exception as e:
         logger.error(f"Error dropping database: {e}")
         return False
-
-# Initialize database tables when this module is imported
-# init_db()  # Uncomment if you want to auto-create tables on import
