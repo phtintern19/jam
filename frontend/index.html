@@ -5,17 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-        // SPA Interceptor for RBAC Dashboard (No Backend Changes)
-        if (window.location.pathname.startsWith('/dashboard')) {
-            document.write('<style>html { display: none !important; }</style>');
-            fetch('/templates/team-owner-dashboard.html')
-                .then(r => r.text())
-                .then(html => {
-                    document.open();
-                    document.write(html);
-                    document.close();
-                });
-        }
+        // === EARLY SESSION GUARD ===
+        // Always log out when landing on the homepage.
+        // The session cookie is HttpOnly so JS can't read it directly.
+        // This guarantees: pressing Back always logs you out.
+        // We use a synchronous XMLHttpRequest to ensure logout completes before
+        // the rest of the page scripts run.
+        (function() {
+            try {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/logout', false); // false = synchronous
+                xhr.withCredentials = true;
+                xhr.send();
+            } catch(e) {}
+            // Always wipe front-end storage on homepage visit
+            sessionStorage.clear();
+        })();
     </script>
     <title>JamRig - Live Sports Player Auctions</title>
     <link rel="stylesheet" href="/css/styles.css?v=global-v4">
@@ -535,7 +540,7 @@
     <header class="header">
         <nav class="navbar">
             <div class="nav-container">
-                <div class="nav-logo">
+                <div class="nav-logo" onclick="window.location.href='/index.html'" style="cursor: pointer;">
                     <i class="fas fa-trophy"></i>
                     <span>JamRig</span>
                 </div>
@@ -545,11 +550,13 @@
                     <li><a href="#about-teams" class="nav-link">About Teams</a></li>
                     <li><a href="#contact" class="nav-link">Contact</a></li>
                 </ul>
-                <div class="nav-buttons" style="display: flex; align-items: center;">
+                <div class="nav-buttons" id="navAuthContainer"
+                    style="display: flex; align-items: center; gap: 0.75rem;">
                     <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle Light/Dark Mode">
                         <i class="theme-icon fas fa-moon"></i>
                     </button>
-                    <button class="saas-btn-primary" onclick="return showAuthModal('login')">Sign In</button>
+                    <button class="saas-btn-primary" id="signInNavBtn" onclick="return showAuthModal('login')">Sign
+                        In</button>
                 </div>
                 <div class="hamburger">
                     <span></span>
@@ -562,7 +569,82 @@
 
 
     <!-- Premium SaaS Hero -->
-    <section class="saas-hero">
+    <style>
+        .saas-hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 4rem 5%;
+        }
+
+        .hero-images-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            position: relative;
+        }
+
+        .hero-img {
+            border-radius: 24px;
+            width: 100%;
+            object-fit: cover;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s ease;
+        }
+
+        .hero-img:hover {
+            transform: scale(1.02);
+        }
+
+        .hero-glow-1,
+        .hero-glow-2 {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        .hero-glow-1 {
+            top: -20%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: #3b82f6;
+        }
+
+        .hero-glow-2 {
+            bottom: -20%;
+            left: -10%;
+            width: 300px;
+            height: 300px;
+            background: #8b5cf6;
+        }
+
+        @media (max-width: 968px) {
+            .saas-hero-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+                gap: 3rem;
+            }
+
+            .saas-hero-content {
+                margin: 0 auto;
+            }
+
+            .saas-hero-buttons {
+                justify-content: center;
+            }
+
+            .hero-images-wrapper {
+                margin-top: 2rem;
+            }
+        }
+    </style>
+    <section class="saas-hero saas-hero-grid">
         <div class="saas-hero-content">
             <h1 class="saas-hero-title">Build Your Dream Team Through Live Sports Auctions</h1>
             <p class="saas-hero-subtitle">
@@ -573,6 +655,23 @@
             <div class="saas-hero-buttons">
                 <a href="#events" class="saas-btn-primary">Register Now</a>
                 <a href="#how-it-works" class="saas-btn-secondary">Explore Platform</a>
+            </div>
+        </div>
+
+        <div class="hero-images-wrapper">
+            <div class="hero-glow-1"></div>
+            <div class="hero-glow-2"></div>
+            <!-- Cricket / General Stadium -->
+            <img src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=600&q=80"
+                alt="Stadium Atmosphere" class="hero-img" style="height: 400px; transform: translateY(2rem);">
+
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- Basketball -->
+                <img src="https://images.unsplash.com/photo-1504450758481-7338eba7524a?auto=format&fit=crop&w=600&q=80"
+                    alt="Basketball Action" class="hero-img" style="height: 220px;">
+                <!-- Football/Soccer -->
+                <img src="https://images.unsplash.com/photo-1517466787929-bc90951d0974?auto=format&fit=crop&w=600&q=80"
+                    alt="Football Action" class="hero-img" style="height: 180px;">
             </div>
         </div>
     </section>
@@ -956,12 +1055,13 @@
                 </div>
 
                 <div class="form-group checkbox-group">
-                    <input type="checkbox" id="ownerTerms" required>
-                    <label for="ownerTerms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy
-                            Policy</a> *</label>
+                    <input type="checkbox" id="ownerTerms" name="terms" required disabled
+                        onchange="document.getElementById('ownerSubmitBtn').disabled = !this.checked;">
+                    <label for="ownerTerms">I agree to the <a href="javascript:void(0)"
+                            onclick="openTermsModal('owner')">Team Owner Terms & Conditions</a> *</label>
                 </div>
                 <div class="form-section">
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="ownerSubmitBtn" disabled>
                         <i class="fas fa-user-plus"></i>
                         Register Team
                     </button>
@@ -1412,11 +1512,8 @@
                 <div id="sportRatingsContainer" style="display: none;">
                     <div class="form-section-header" style="margin-top: 1.5rem; margin-bottom: 1rem;">
                         <h4 style="color: #f97316; margin: 0; font-size: 1.1rem;">
-                            <i class="fas fa-star"></i> Rate Your Skills
+                            <i class="fas fa-running"></i> Sport Information
                         </h4>
-                        <p style="color: #94a3b8; margin: 0.5rem 0 0 0; font-size: 0.9rem;">
-                            Rate your skill level for each sport (0-10, where 0 = No experience, 10 = Expert)
-                        </p>
                     </div>
                     <div id="sportRatingsInputs" class="sport-ratings-grid">
                         <!-- Dynamic sport rating inputs will be inserted here -->
@@ -1425,18 +1522,20 @@
 
                 <div class="form-options">
                     <div class="checkbox-group">
-                        <input type="checkbox" id="playerTerms" name="terms" required
+                        <input type="checkbox" id="playerTerms" name="terms" required disabled
                             oninvalid="this.setCustomValidity('You must accept the terms and conditions')"
-                            oninput="this.setCustomValidity('')" />
+                            oninput="this.setCustomValidity('')"
+                            onchange="document.getElementById('playerSubmitBtn').disabled = !this.checked;" />
                         <label for="playerTerms">I agree to the
-                            <a href="templates/terms.html" target="_blank">Terms and Conditions</a> *
+                            <a href="javascript:void(0)" onclick="openTermsModal('player')">Player Terms and
+                                Conditions</a> *
                         </label>
                     </div>
                     <div class="error-message" id="termsError"></div>
                 </div>
 
                 <div class="form-section">
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="playerSubmitBtn" disabled>
                         <i class="fas fa-user-plus"></i>
                         Register as Player
                     </button>
@@ -1586,12 +1685,135 @@
 
     </script>
 
+    <!-- Terms and Conditions Modals -->
+    <div id="playerTermsModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-modal" onclick="closeTermsModal('player')">&times;</span>
+            <div class="modal-header">
+                <h2>Player Terms & Conditions</h2>
+            </div>
+            <div id="playerTermsBody" class="modal-body"
+                style="max-height: 200px; overflow-y: auto; padding: 1rem; color: #fff; line-height: 1.6;"
+                onscroll="checkTermsScroll('player')">
+                <ul style="list-style-type: disc; padding-left: 1.5rem;">
+                    <li>Player registration information must be accurate.</li>
+                    <li>Player agrees to participate in the selected event according to JamRig/event rules.</li>
+                    <li>Player understands that registration does not guarantee selection or auction sale.</li>
+                    <li>Player agrees that submitted cricket/player information may be used for evaluation,
+                        categorization and auction preparation.</li>
+                    <li>Player agrees to follow auction and event rules.</li>
+                    <li>Player must not provide false statistics, experience or qualifications.</li>
+                    <li>Player understands that category/evaluation may be determined from the configured event/sport
+                        evaluation rules.</li>
+                    <li>Player agrees to comply with organizers' decisions regarding eligibility and event
+                        participation.</li>
+                    <li>Any event-specific rules shown during registration also apply.</li>
+                </ul>
+            </div>
+            <div class="modal-footer" style="margin-top: 1rem; text-align: right;">
+                <button type="button" id="playerAcceptTermsBtn" class="btn btn-primary" onclick="acceptTerms('player')"
+                    disabled>I Have Read the Terms</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ownerTermsModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-modal" onclick="closeTermsModal('owner')">&times;</span>
+            <div class="modal-header">
+                <h2>Team Owner Terms & Conditions</h2>
+            </div>
+            <div id="ownerTermsBody" class="modal-body"
+                style="max-height: 200px; overflow-y: auto; padding: 1rem; color: #fff; line-height: 1.6;"
+                onscroll="checkTermsScroll('owner')">
+                <ul style="list-style-type: disc; padding-left: 1.5rem;">
+                    <li>Team Owner information must be accurate.</li>
+                    <li>Team Owner is responsible for the registered team.</li>
+                    <li>Team Owner agrees to comply with event and auction rules.</li>
+                    <li>Team Owner is responsible for team participation and management.</li>
+                    <li>Team Owner understands team capacity limits.</li>
+                    <li>Team Owner is responsible for auction/budget obligations applicable to the event.</li>
+                    <li>Team Owner must use JamRig responsibly.</li>
+                    <li>Team Owner must not manipulate bids, registrations or auction data.</li>
+                    <li>Team Owner agrees to comply with organizer decisions.</li>
+                    <li>Any event-specific rules shown during registration also apply.</li>
+                </ul>
+            </div>
+            <div class="modal-footer" style="margin-top: 1rem; text-align: right;">
+                <button type="button" id="ownerAcceptTermsBtn" class="btn btn-primary" onclick="acceptTerms('owner')"
+                    disabled>I Have Read the Terms</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let playerTermsViewed = false;
+        let ownerTermsViewed = false;
+
+        function checkTermsScroll(type) {
+            const body = document.getElementById(type + 'TermsBody');
+            const btn = document.getElementById(type + 'AcceptTermsBtn');
+            // Tolerance of 10 pixels for rounding
+            if (body.scrollTop + body.clientHeight >= body.scrollHeight - 10) {
+                btn.disabled = false;
+            }
+        }
+
+        function openTermsModal(type) {
+            document.getElementById(type + 'TermsModal').style.display = 'flex';
+
+            const body = document.getElementById(type + 'TermsBody');
+            const btn = document.getElementById(type + 'AcceptTermsBtn');
+
+            // If already viewed (accepted), we can leave button enabled
+            if (type === 'player' && playerTermsViewed) {
+                btn.disabled = false;
+                return;
+            }
+            if (type === 'owner' && ownerTermsViewed) {
+                btn.disabled = false;
+                return;
+            }
+
+            // Start disabled
+            btn.disabled = true;
+
+            // Wait for DOM to render to check if scrollable
+            setTimeout(() => {
+                if (body.scrollHeight <= body.clientHeight + 10) {
+                    btn.disabled = false;
+                }
+            }, 50);
+        }
+
+        function closeTermsModal(type) {
+            // Only close, do not accept or unlock anything
+            document.getElementById(type + 'TermsModal').style.display = 'none';
+        }
+
+        function acceptTerms(type) {
+            if (type === 'player') {
+                playerTermsViewed = true;
+                const checkbox = document.getElementById('playerTerms');
+                checkbox.disabled = false;
+                // Leave it unchecked, user must manually check it
+            }
+            if (type === 'owner') {
+                ownerTermsViewed = true;
+                const checkbox = document.getElementById('ownerTerms');
+                checkbox.disabled = false;
+                // Leave it unchecked, user must manually check it
+            }
+            closeTermsModal(type);
+        }
+    </script>
+
     <!-- Sport ratings functionality -->
     <script src="/js/sport-ratings.js"></script>
 
     <!-- Core scripts -->
-    <script src="/js/script.js?v=22"></script>
-    <script src="/js/rbac-router.js?v=22"></script>
+    <script src="/js/script.js?v=25"></script>
+    <script src="/js/rbac-router.js?v=25"></script>
 </body>
 
 </html>

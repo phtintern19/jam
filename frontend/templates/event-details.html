@@ -337,7 +337,7 @@
     <header class="header">
         <nav class="navbar">
             <div class="nav-container">
-                <div class="nav-logo">
+                <div class="nav-logo" onclick="window.location.href='/index.html'" style="cursor: pointer;">
                     <i class="fas fa-trophy"></i>
                     <span>JamRig</span>
                 </div>
@@ -347,9 +347,9 @@
                     <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
                     <li><a href="#contact" class="nav-link">Contact</a></li>
                 </ul>
-                <div class="nav-buttons">
-                    <a href="/login" class="btn btn-outline">Login</a>
-                    <a href="/register" class="btn btn-primary">Register</a>
+                <div class="nav-buttons" id="navAuthContainer" style="display: flex; align-items: center; gap: 0.75rem;">
+                    <a href="/" class="btn btn-outline">Login</a>
+                    <a href="/" class="btn btn-primary">Register</a>
                 </div>
             </div>
         </nav>
@@ -683,6 +683,7 @@
             }
         }
     </script>
+    <script src="/js/script.js"></script>
 </body>
 
 </html>

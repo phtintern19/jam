@@ -56,20 +56,44 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
 
     // 1. Auth & Session Check
-    const userStr = localStorage.getItem('user');
-    const token = localStorage.getItem('session_token');
+    const userStr = sessionStorage.getItem('user');
+    const token = sessionStorage.getItem('session_token');
     
     if (!userStr || !token) {
-        window.location.href = '/';
+        window.location.replace('/');
         return;
     }
 
     const user = JSON.parse(userStr);
     if (user.user_type !== 'player') {
         alert('Access denied - player only.');
-        window.location.href = '/';
+        window.location.replace('/');
         return;
     }
+
+    // Verify session with the backend single source of truth
+    fetch('/api/me')
+        .then(res => {
+            if (!res.ok) throw new Error('Unauthenticated');
+            return res.json();
+        })
+        .then(data => {
+            const role = (data.user && data.user.user_type) ? data.user.user_type : data.user_type;
+            if (!data.authenticated || role !== 'player') {
+                sessionStorage.removeItem('user');
+                sessionStorage.removeItem('session_token');
+                sessionStorage.clear();
+                window.location.replace('/');
+            } else if (data.user) {
+                sessionStorage.setItem('user', JSON.stringify(data.user));
+            }
+        })
+        .catch(() => {
+            sessionStorage.removeItem('user');
+            sessionStorage.removeItem('session_token');
+            sessionStorage.clear();
+            window.location.replace('/');
+        });
 
     // Initialize UI
     setupNavigation();
@@ -121,7 +145,7 @@ function setupMobileToggle() {
 // --- API INTEGRATION ---
 async function loadPlayerData() {
     try {
-        const token = localStorage.getItem('session_token');
+        const token = sessionStorage.getItem('session_token');
         const response = await fetch('/api/player/dashboard', {
             headers: { 
                 'Accept': 'application/json',
@@ -161,7 +185,7 @@ async function loadSkillsData(userId) {
 
 async function loadUpcomingEvents() {
     try {
-        const token = localStorage.getItem('session_token');
+        const token = sessionStorage.getItem('session_token');
         const response = await fetch('/api/player/events/upcoming', {
             headers: { 
                 'Accept': 'application/json',
@@ -384,8 +408,8 @@ async function handleProfileSubmit(e) {
     };
     
     try {
-        const token = localStorage.getItem('session_token');
-        const user = JSON.parse(localStorage.getItem('user'));
+        const token = sessionStorage.getItem('session_token');
+        const user = JSON.parse(sessionStorage.getItem('user'));
         
         // Attempting to update via a generic users endpoint or player endpoint
         const response = await fetch(`/api/users/${user.user_id}`, {
@@ -419,7 +443,7 @@ async function handleSkillsSubmit(e) {
     };
     
     try {
-        const token = localStorage.getItem('session_token');
+        const token = sessionStorage.getItem('session_token');
         const response = await fetch('/api/player/skills', {
             method: 'PUT',
             headers: {
@@ -432,7 +456,7 @@ async function handleSkillsSubmit(e) {
         if (response.ok) {
             alert('Skills updated successfully!');
             closeModal('skillsModal');
-            const user = JSON.parse(localStorage.getItem('user'));
+            const user = JSON.parse(sessionStorage.getItem('user'));
             loadSkillsData(user.user_id); // Refresh
         } else {
             alert('Failed to update skills.');
@@ -454,7 +478,7 @@ async function handleAchievementsSubmit(e) {
     };
     
     try {
-        const token = localStorage.getItem('session_token');
+        const token = sessionStorage.getItem('session_token');
         const response = await fetch('/api/player/achievements', {
             method: 'PUT',
             headers: {
@@ -558,7 +582,7 @@ if(saveCropBtn) {
             formData.append('image', blob, 'avatar.jpg');
             
             try {
-                const token = localStorage.getItem('session_token');
+                const token = sessionStorage.getItem('session_token');
                 const response = await fetch('/api/player/upload-image', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
@@ -572,11 +596,11 @@ if(saveCropBtn) {
                     document.getElementById('topbarAvatar').src = nocacheUrl;
                     updateAvatarVisibility(data.image_url);
                     
-                    const userStr = localStorage.getItem('user');
+                    const userStr = sessionStorage.getItem('user');
                     if(userStr) {
                         const userObj = JSON.parse(userStr);
                         userObj.avatar = data.image_url;
-                        localStorage.setItem('user', JSON.stringify(userObj));
+                        sessionStorage.setItem('user', JSON.stringify(userObj));
                     }
                     closeModal('cropModal');
                 } else {
@@ -598,7 +622,7 @@ async function removeProfilePhoto() {
     if(!confirm('Are you sure you want to remove your profile photo?')) return;
     
     try {
-        const token = localStorage.getItem('session_token');
+        const token = sessionStorage.getItem('session_token');
         const response = await fetch('/api/player/remove-image', {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
@@ -613,11 +637,11 @@ async function removeProfilePhoto() {
             document.getElementById('topbarAvatar').src = defaultUrl;
             updateAvatarVisibility('');
             
-            const userStr = localStorage.getItem('user');
+            const userStr = sessionStorage.getItem('user');
             if(userStr) {
                 const userObj = JSON.parse(userStr);
                 userObj.avatar = null;
-                localStorage.setItem('user', JSON.stringify(userObj));
+                sessionStorage.setItem('user', JSON.stringify(userObj));
             }
         } else {
             alert(data.message || 'Failed to remove image.');
@@ -632,7 +656,7 @@ async function removeProfilePhoto() {
 // --- AUTH LOGIC ---
 async function logout() {
     try {
-        const token = localStorage.getItem('session_token');
+        const token = sessionStorage.getItem('session_token');
         await fetch('/api/logout', { 
             method: 'POST',
             headers: {

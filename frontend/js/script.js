@@ -32,7 +32,7 @@ initTheme();
 // Global Avatar Update
 document.addEventListener('DOMContentLoaded', () => {
     try {
-        const userStr = localStorage.getItem('user');
+        const userStr = sessionStorage.getItem('user');
         if (userStr) {
             const userObj = JSON.parse(userStr);
             if (userObj.avatar) {
@@ -52,7 +52,7 @@ let notificationsInterval;
 
 document.addEventListener('DOMContentLoaded', () => {
     // Check if user is logged in
-    const userStr = localStorage.getItem('user');
+    const userStr = sessionStorage.getItem('user');
     if (userStr) {
         // Start polling for notifications
         fetchUnreadCount();
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function fetchUnreadCount() {
     try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!token) return;
 
         const response = await fetch('/api/notifications/unread-count', {
@@ -136,7 +136,7 @@ async function loadNotifications() {
     list.innerHTML = '<div class="notifications-empty">Loading...</div>';
 
     try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch('/api/notifications?limit=10', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -171,7 +171,7 @@ async function loadNotifications() {
 
 async function markNotificationRead(id) {
     try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         await fetch(`/api/notifications/${id}/read`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}` }
@@ -190,7 +190,7 @@ async function markNotificationRead(id) {
 
 async function markAllNotificationsRead() {
     try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         await fetch(`/api/notifications/read-all`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}` }
@@ -209,7 +209,7 @@ async function markAllNotificationsRead() {
 async function deleteNotification(event, id) {
     event.stopPropagation();
     try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`/api/notifications/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
@@ -349,8 +349,14 @@ function renderHomePageEvents(events) {
         card.className = 'ecr-card';
         card.setAttribute('data-aos', 'fade-up');
 
+        const hasStarted = new Date() > date;
+
         let statusText = 'Upcoming';
-        if (event.is_live) statusText = 'Live Now';
+        if (event.is_live) {
+            statusText = 'Live Now';
+        } else if (hasStarted) {
+            statusText = 'Event Ended';
+        }
 
         let sportsHtml = '';
         if (event.sports && event.sports.length > 0) {
@@ -365,6 +371,10 @@ function renderHomePageEvents(events) {
         }
 
         const registrationFee = event.registration_fee ? `₹${event.registration_fee.toLocaleString()}` : 'Free';
+
+        // Check deadline
+        const deadline = event.registration_deadline ? new Date(event.registration_deadline) : null;
+        const isDeadlinePassed = deadline && new Date() > deadline;
 
         card.innerHTML = `
             <div class="saas-card-badge">${statusText}</div>
@@ -402,8 +412,12 @@ function renderHomePageEvents(events) {
                 </div>
             </div>
             
-            <div class="saas-card-footer">
-                <button class="saas-btn-primary w-full" onclick="showEventDetails(${event.event_id})">View Details</button>
+            <div class="saas-card-footer" style="display: flex; gap: 0.75rem;">
+                <button class="saas-btn-secondary w-full" onclick="showEventDetails(${event.event_id})">Details</button>
+                ${(isDeadlinePassed || hasStarted)
+                ? `<button class="saas-btn-primary w-full" style="opacity: 0.5; cursor: not-allowed;" disabled>${hasStarted ? 'Event Ended' : 'Registration Closed'}</button>`
+                : `<button class="saas-btn-primary w-full" onclick="handleRegisterClick(event, ${event.event_id})">Register as Player</button>`
+            }
             </div>
         `;
 
@@ -582,7 +596,7 @@ window.showEventDetails = function (eventId) {
         <div class="event-details-footer">
             ${isDeadlinePassed
             ? `<div class="deadline-passed-badge"><i class="fas fa-exclamation-circle"></i> Registration Deadline Passed</div>`
-            : `<button class="register-btn-main" onclick="closeModal('eventDetailsModal'); handleRegisterClick(event, ${event.event_id})">Register Now</button>`
+            : ''
         }
             <button class="back-btn" onclick="closeModal('eventDetailsModal')">Back to Events</button>
         </div>
@@ -857,51 +871,65 @@ window.handleRegisterClick = async function (event, eventId) {
 
                     if (sports && sports.length > 0) {
                         for (const sport of sports) {
-                            const ratingItem = document.createElement('div');
-                            ratingItem.className = 'sport-rating-item';
-                            ratingItem.innerHTML = `
-                                <div class="rating-label">
-                                    <span class="sport-name"><i class="${sport.icon_class || 'fas fa-trophy'}"></i> ${sport.name}</span>
-                                    <span class="rating-value" id="rating-val-${sport.sport_id}">0</span>
-                                </div>
-                                <input type="range" 
-                                    class="sport-rating-input" 
-                                    id="rating-${sport.sport_id}" 
-                                    data-sport-id="${sport.sport_id}" 
-                                    data-sport-name="${sport.name}"
-                                    min="0" max="10" value="0" step="1"
-                                    oninput="document.getElementById('rating-val-${sport.sport_id}').textContent = this.value">
-                                <div class="rating-scale">
-                                    <span>No Exp</span>
-                                    <span>Expert</span>
-                                </div>
-                            `;
-                            ratingsInputs.appendChild(ratingItem);
+                            const isCricket = sport.name.toLowerCase() === 'cricket';
+
+                            if (!isCricket) {
+                                // Keep the slider for other sports
+                                const ratingItem = document.createElement('div');
+                                ratingItem.className = 'sport-rating-item';
+                                ratingItem.innerHTML = `
+                                    <div class="rating-label">
+                                        <span class="sport-name"><i class="${sport.icon_class || 'fas fa-trophy'}"></i> ${sport.name}</span>
+                                        <span class="rating-value" id="rating-val-${sport.sport_id}">0</span>
+                                    </div>
+                                    <input type="range" 
+                                        class="sport-rating-input" 
+                                        id="rating-${sport.sport_id}" 
+                                        data-sport-id="${sport.sport_id}" 
+                                        data-sport-name="${sport.name}"
+                                        min="0" max="10" value="0" step="1"
+                                        oninput="document.getElementById('rating-val-${sport.sport_id}').textContent = this.value">
+                                    <div class="rating-scale">
+                                        <span>No Exp</span>
+                                        <span>Expert</span>
+                                    </div>
+                                `;
+                                ratingsInputs.appendChild(ratingItem);
+                            }
 
                             // --- CRICKET SPORT MASTER INTEGRATION ---
-                            if (sport.name.toLowerCase() === 'cricket') {
+                            if (isCricket) {
+                                // Add a header for Cricket
+                                const headerDiv = document.createElement('div');
+                                headerDiv.style.marginTop = '1rem';
+                                headerDiv.style.marginBottom = '1rem';
+                                headerDiv.style.borderBottom = '1px solid #334155';
+                                headerDiv.style.paddingBottom = '0.5rem';
+                                headerDiv.innerHTML = `<h5 style="color: #38bdf8; margin: 0; font-size: 1.05rem;"><i class="fas fa-cricket-bat-ball"></i> Cricket Information</h5>`;
+                                ratingsInputs.appendChild(headerDiv);
+
                                 try {
                                     const masterRes = await fetch(`/api/sports/${sport.sport_id}`);
                                     if (masterRes.ok) {
                                         const masterData = await masterRes.json();
                                         if (masterData.success && masterData.sport) {
-                                            
+
                                             // 1. Render Role Dropdown
                                             if (masterData.sport.roles_config && masterData.sport.roles_config.length > 0) {
                                                 const roleDiv = document.createElement('div');
                                                 roleDiv.className = 'form-group';
-                                                roleDiv.style.marginTop = '1.5rem';
-                                                
-                                                let selectHtml = `<select id="profile_${sport.name}_role" data-sport="${sport.name}" data-attr="role" class="form-input sport-profile-input" required style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0; font-size: 1rem; margin-top: 0.5rem;">`;
-                                                selectHtml += `<option value="" style="background-color: #0f172a; color: #e2e8f0;">Select Primary Role</option>`;
+                                                roleDiv.style.marginTop = '1rem';
+
+                                                let selectHtml = `<select id="profile_${sport.name}_role" data-sport="${sport.name}" data-attr="role" class="form-input sport-profile-input" required>`;
+                                                selectHtml += `<option value="">Select Primary Role</option>`;
                                                 masterData.sport.roles_config.forEach(role => {
-                                                    selectHtml += `<option value="${role}" style="background-color: #0f172a; color: #e2e8f0;">${role}</option>`;
+                                                    selectHtml += `<option value="${role}">${role}</option>`;
                                                 });
                                                 selectHtml += `</select>`;
-                                                
+
                                                 roleDiv.innerHTML = `
-                                                    <label for="profile_${sport.name}_role" style="color: #e2e8f0; font-weight: bold;">
-                                                        ${sport.name} Role *
+                                                    <label for="profile_${sport.name}_role">
+                                                        Playing Role *
                                                     </label>
                                                     ${selectHtml}
                                                 `;
@@ -915,19 +943,19 @@ window.handleRegisterClick = async function (event, eventId) {
                                                     const attrDiv = document.createElement('div');
                                                     attrDiv.className = 'form-group';
                                                     attrDiv.style.marginTop = '1rem';
-                                                    
+
                                                     const niceName = attrName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                                                    
-                                                    let selectHtml = `<select id="profile_${sport.name}_${attrName}" data-sport="${sport.name}" data-attr="${attrName}" class="form-input sport-profile-input" required style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0; font-size: 1rem; margin-top: 0.5rem;">`;
-                                                    selectHtml += `<option value="" style="background-color: #0f172a; color: #e2e8f0;">Select ${niceName}</option>`;
+
+                                                    let selectHtml = `<select id="profile_${sport.name}_${attrName}" data-sport="${sport.name}" data-attr="${attrName}" class="form-input sport-profile-input" required>`;
+                                                    selectHtml += `<option value="">Select ${niceName}</option>`;
                                                     options.forEach(opt => {
-                                                        selectHtml += `<option value="${opt}" style="background-color: #0f172a; color: #e2e8f0;">${opt}</option>`;
+                                                        selectHtml += `<option value="${opt}">${opt}</option>`;
                                                     });
                                                     selectHtml += `</select>`;
-                                                    
+
                                                     attrDiv.innerHTML = `
-                                                        <label for="profile_${sport.name}_${attrName}" style="color: #e2e8f0; font-weight: bold;">
-                                                            ${sport.name} ${niceName} *
+                                                        <label for="profile_${sport.name}_${attrName}">
+                                                            ${niceName} *
                                                         </label>
                                                         ${selectHtml}
                                                     `;
@@ -939,6 +967,58 @@ window.handleRegisterClick = async function (event, eventId) {
                                 } catch (e) {
                                     console.error("Failed to load sport master attributes schema", e);
                                 }
+
+                                // 3. Add Factual Information Fields
+                                const isBadminton = sport.name.toLowerCase() === 'badminton';
+                                const factualFields = isBadminton 
+                                    ? [
+                                        { id: 'matches_played', label: 'Matches Played', type: 'number', min: '0' },
+                                        { id: 'win_rate', label: 'Win Rate (%)', type: 'number', min: '0' },
+                                        { id: 'tournaments_won', label: 'Tournaments Won', type: 'number', min: '0' },
+                                        { id: 'years_experience', label: 'Years of Experience', type: 'number', min: '0' }
+                                    ]
+                                    : [
+                                        { id: 'matches_played', label: 'Matches Played', type: 'number', min: '0' },
+                                        { id: 'runs', label: 'Runs', type: 'number', min: '0' },
+                                        { id: 'wickets', label: 'Wickets', type: 'number', min: '0' },
+                                        { id: 'years_experience', label: 'Years of Experience', type: 'number', min: '0' }
+                                    ];
+
+                                factualFields.forEach(field => {
+                                    const fieldDiv = document.createElement('div');
+                                    fieldDiv.className = 'form-group';
+                                    fieldDiv.style.marginTop = '1rem';
+                                    fieldDiv.innerHTML = `
+                                        <label for="profile_${sport.name}_${field.id}">
+                                            ${field.label} *
+                                        </label>
+                                        <input type="${field.type}" id="profile_${sport.name}_${field.id}" 
+                                               data-sport="${sport.name}" data-attr="${field.id}" 
+                                               class="form-input sport-profile-input" min="${field.min}" required 
+                                               placeholder="Enter ${field.label.toLowerCase()}">
+                                    `;
+                                    ratingsInputs.appendChild(fieldDiv);
+                                });
+
+                                // 4. Add Highest Level Played Dropdown
+                                const levelDiv = document.createElement('div');
+                                levelDiv.className = 'form-group';
+                                levelDiv.style.marginTop = '1rem';
+                                levelDiv.innerHTML = `
+                                    <label for="profile_${sport.name}_highest_level">
+                                        Highest Level Played *
+                                    </label>
+                                    <select id="profile_${sport.name}_highest_level" data-sport="${sport.name}" data-attr="highest_level" class="form-input sport-profile-input" required>
+                                        <option value="">Select Level</option>
+                                        <option value="Local">Local / Club</option>
+                                        <option value="District">District</option>
+                                        <option value="State">State</option>
+                                        <option value="National">National</option>
+                                        <option value="Professional">Professional</option>
+                                        <option value="International">International</option>
+                                    </select>
+                                `;
+                                ratingsInputs.appendChild(levelDiv);
                             }
                         }
                     } else {
@@ -1124,11 +1204,9 @@ async function handleLogin(event) {
                 const data = await res.json();
 
                 if (data.success) {
-                    if (data.session_token) {
-                        document.cookie = `session_token=${data.session_token}; path=/; max-age=86400`;
-                    }
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    window.location.href = data.redirect_to || '/templates/team-owner-dashboard.html';
+                    // Backend already set the HttpOnly session cookie — no JS cookie needed.
+                    sessionStorage.setItem('user', JSON.stringify(data.user));
+                    window.location.assign(data.redirect_to || '/templates/team-owner-dashboard.html');
                 } else {
                     showModal('Error', data.message || 'Registration failed.');
                     btn.innerHTML = '<i class="fas fa-check"></i><span>Complete Setup</span>';
@@ -1177,12 +1255,17 @@ async function handleLogin(event) {
             if (!response.ok) {
                 return response.text().then(text => {
                     console.error('Error response:', text);
+                    let errorMsg = 'Login failed';
                     try {
                         const data = JSON.parse(text);
-                        throw new Error(data.detail || 'Login failed');
+                        // Extract message without throwing inside the try block
+                        errorMsg = data.message || data.detail || data.error || 'Login failed';
                     } catch (e) {
-                        throw new Error(text || 'Login failed');
+                        // Fallback if the response isn't valid JSON
+                        errorMsg = text || 'Login failed';
                     }
+                    // Throw the error outside the catch block
+                    throw new Error(errorMsg);
                 });
             }
             return response.json();
@@ -1194,9 +1277,8 @@ async function handleLogin(event) {
             console.log('User type:', data.user?.user_type);
 
             if (data.success) {
-                // Store user info in localStorage
-                localStorage.setItem('user', JSON.stringify(data.user));
-                localStorage.setItem('session_token', data.session_token);
+                // Store user info for UI (role display, nav, etc.) — auth is via HttpOnly cookie set by backend.
+                sessionStorage.setItem('user', JSON.stringify(data.user));
 
                 // Redirect to the unified dashboard via canonical URL
                 let redirectPath = data.redirect_to || '/templates/player-dashboard.html';
@@ -1204,7 +1286,7 @@ async function handleLogin(event) {
 
                 // Small delay to ensure localStorage is set
                 setTimeout(() => {
-                    window.location.href = redirectPath;
+                    window.location.assign(redirectPath);
                 }, 100);
             } else {
                 showModal('Error', data.message || 'Login failed');
@@ -1271,17 +1353,11 @@ function handleSuccessfulLogin(user, rememberMe) {
     sessionStorage.setItem('email', user.email);
 
     if (rememberMe) {
-        // Store in localStorage for persistent login
-        localStorage.setItem('user_type', user.user_type);
-        localStorage.setItem('username', user.username);
-        localStorage.setItem('user_id', user.user_id);
-        localStorage.setItem('email', user.email);
+        // rememberMe preference stored, but auth still uses sessionStorage only
+        // (persistent login is intentionally disabled for security)
+        console.log('Remember me noted, but session remains tab-scoped for security');
     } else {
-        // Clear any existing persistent data
-        localStorage.removeItem('user_type');
-        localStorage.removeItem('username');
-        localStorage.removeItem('user_id');
-        localStorage.removeItem('email');
+        // Nothing persistent to clear
     }
 
     console.log('Session storage after login:', {
@@ -1332,7 +1408,7 @@ function handleSuccessfulLogin(user, rememberMe) {
         const dashboard = dashboards[user.user_type];
         if (dashboard) {
             console.log(`Redirecting to ${user.user_type} dashboard...`);
-            window.location.href = dashboard;
+            window.location.assign(dashboard);
         } else {
             console.error('Unknown user type:', user.user_type);
             showModal('Error', `Unknown user type: ${user.user_type}. Please contact support.`);
@@ -1346,27 +1422,6 @@ function checkAuth(requiredRole = null) {
     const userType = sessionStorage.getItem('user_type');
 
     if (!isAuthenticated) {
-        // Try to restore from localStorage if available
-        const savedUserType = localStorage.getItem('user_type');
-        const savedUsername = localStorage.getItem('username');
-        const savedUserId = localStorage.getItem('user_id');
-
-        if (savedUserType && savedUsername && savedUserId) {
-            // Restore session from localStorage
-            sessionStorage.setItem('isAuthenticated', 'true');
-            sessionStorage.setItem('user_type', savedUserType);
-            sessionStorage.setItem('username', savedUsername);
-            sessionStorage.setItem('user_id', savedUserId);
-
-            console.log('Session restored from localStorage');
-
-            // If we have a required role, check against it
-            if (requiredRole && savedUserType !== requiredRole) {
-                console.warn(`User does not have required role: ${requiredRole}`);
-                return false;
-            }
-            return true;
-        }
         return false;
     }
 
@@ -1416,13 +1471,10 @@ function logout() {
             sessionStorage.removeItem('username');
             sessionStorage.removeItem('user_id');
             sessionStorage.removeItem('email');
+            sessionStorage.removeItem('user');
+            sessionStorage.removeItem('session_token');
 
-            localStorage.removeItem('user_type');
-            localStorage.removeItem('username');
-            localStorage.removeItem('user_id');
-            localStorage.removeItem('email');
-
-            window.location.href = '/index.html';
+            window.location.replace('/index.html');
         });
 }
 
@@ -1646,13 +1698,13 @@ async function handleTeamOwnerRegistration(event) {
     }
 
     const submitButton = form.querySelector('button[type="submit"]');
-    
+
     // Prevent double submissions from rapid clicks or multiple events
     if (form.dataset.isSubmitting === 'true' || (submitButton && submitButton.disabled)) {
         return false;
     }
     form.dataset.isSubmitting = 'true';
-    
+
     const originalButtonText = submitButton ? submitButton.innerHTML : '<i class="fas fa-user-plus"></i> Register Team';
 
     try {
@@ -1728,7 +1780,8 @@ async function handleTeamOwnerRegistration(event) {
         // Combine both data objects
         const registrationData = {
             user_data: userData,
-            team_owner_data: teamOwnerData
+            team_owner_data: teamOwnerData,
+            terms_accepted: form.querySelector('#ownerTerms').checked
         };
 
         // Send the request to the backend
@@ -1787,11 +1840,13 @@ async function handleTeamOwnerRegistration(event) {
         // Reset form
         form.reset();
 
-        // Close modal after a delay
-        setTimeout(() => {
-            closeAllModals();
-        }, 2000);
+        // Refresh events to show updated registered counts
+        if (typeof fetchEvents === 'function') {
+            fetchEvents();
+        }
 
+        // The modal will stay open until the user manually closes it, 
+        // allowing them to read important staff invitation info.
     } catch (error) {
         console.error('Registration error:', error);
         showModal('Registration Error', error.message || 'An error occurred during registration. Please try again.');
@@ -1928,10 +1983,7 @@ async function handleStaffCompleteRegistration(event) {
             throw new Error(data.message || data.detail || 'Registration failed');
         }
 
-        // Store session token in cookie for authentication
-        if (data.session_token) {
-            document.cookie = `session_token=${data.session_token}; path=/; max-age=86400`;
-        }
+        // Backend already set the HttpOnly session cookie on registration — no JS cookie needed.
 
         // Show success message
         showModal('Registration Successful', 'Your registration has been completed! You can now log in.');
@@ -1947,11 +1999,11 @@ async function handleStaffCompleteRegistration(event) {
             // Redirect to appropriate dashboard based on user type
             // Both manager and analyst currently use team-owner-dashboard
             if (data.user.user_type === 'team_manager') {
-                window.location.href = '/templates/team-owner-dashboard.html';
+                window.location.replace('/templates/team-owner-dashboard.html');
             } else if (data.user.user_type === 'team_analyst') {
-                window.location.href = '/templates/team-owner-dashboard.html';
+                window.location.replace('/templates/team-owner-dashboard.html');
             } else {
-                window.location.href = '/templates/team-owner-dashboard.html';
+                window.location.replace('/templates/team-owner-dashboard.html');
             }
         }, 2000);
 
@@ -2303,7 +2355,8 @@ async function handlePlayerRegistration(event) {
             bio,
             height_cm: height,
             weight_kg: weight,
-            eventId: eventId
+            eventId: eventId,
+            terms_accepted: document.getElementById('playerTerms').checked
         };
 
         // Collect sport ratings
@@ -2333,15 +2386,26 @@ async function handlePlayerRegistration(event) {
         // Collect sport profiles (Cricket dynamic attributes)
         const sportProfileInputs = document.querySelectorAll('.sport-profile-input');
         const sportProfiles = {};
-        
+
         sportProfileInputs.forEach(input => {
             const attr = input.dataset.attr;
             const val = input.value;
-            if (val) {
-                sportProfiles[attr] = val;
+            const sportName = input.dataset.sport ? input.dataset.sport.toLowerCase() : null;
+
+            if (val && sportName) {
+                if (!sportProfiles[sportName]) {
+                    sportProfiles[sportName] = {};
+                }
+
+                // Parse numeric fields if applicable
+                if (input.type === 'number') {
+                    sportProfiles[sportName][attr] = parseInt(val, 10);
+                } else {
+                    sportProfiles[sportName][attr] = val;
+                }
             }
         });
-        
+
         if (Object.keys(sportProfiles).length > 0) {
             requestData.sportProfiles = sportProfiles;
         }
@@ -2390,6 +2454,11 @@ async function handlePlayerRegistration(event) {
         // Close the modal and reset the form
         closeModal('playerRegistrationModal');
         form.reset();
+
+        // Refresh events to show updated registered counts
+        if (typeof fetchEvents === 'function') {
+            fetchEvents();
+        }
 
     } catch (error) {
         console.error('Registration error:', error);
@@ -2567,38 +2636,76 @@ function registerForEvent(event, eventId) {
     }
 }
 
-// Validate session on page load
+// Validate session on page load and synchronize landing navbar
 function validateSessionOnLoad() {
-    // Only check if we think we're logged in
-    if (sessionStorage.getItem('isAuthenticated') === 'true') {
-        fetch('/api/session/validate')
-            .then(response => {
-                if (!response.ok) {
-                    // Session invalid/expired
-                    console.warn('Session expired or invalid');
-                    // Clear local state but don't redirect immediately to avoid loops if on public pages
-                    sessionStorage.removeItem('isAuthenticated');
-                    sessionStorage.removeItem('user_type');
-                    sessionStorage.removeItem('username');
-                    sessionStorage.removeItem('user_id');
-                    sessionStorage.removeItem('email');
+    // Skip the network call if there's clearly no session to validate —
+    // this prevents a pointless 401 in the console for unauthenticated visitors.
+    const hasSession = sessionStorage.getItem('isAuthenticated') === 'true' ||
+                       sessionStorage.getItem('user') ||
+                       sessionStorage.getItem('session_token');
 
-                    // If on a dashboard page, redirect to home
-                    if (window.location.pathname.includes('dashboard')) {
-                        window.location.href = '/index.html';
-                    }
-                } else {
-                    console.log('Session validated successfully');
-                }
-            })
-            .catch(err => {
-                console.error('Error validating session:', err);
-            });
+    if (!hasSession) {
+        // No stored session data — user is definitely not logged in, nothing to validate.
+        return;
     }
+
+    fetch('/api/me')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Not authenticated');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.authenticated && data.user) {
+                console.log('Session validated successfully:', data.user.username);
+                sessionStorage.setItem('isAuthenticated', 'true');
+                sessionStorage.setItem('user_type', data.user.user_type);
+                sessionStorage.setItem('username', data.user.username);
+                sessionStorage.setItem('user_id', data.user.user_id);
+                sessionStorage.setItem('user', JSON.stringify(data.user));
+
+                // If authenticated user navigates back to index, log them out automatically
+                const path = window.location.pathname;
+                if (path === '/' || path === '/index.html') {
+                    console.log('Authenticated user on public page, logging out automatically');
+                    sessionStorage.clear();
+                    fetch('/api/logout', { method: 'POST' }).catch(e => console.log(e));
+                    return;
+                }
+            } else {
+                throw new Error('Not authenticated');
+            }
+        })
+        .catch(err => {
+            // Only clear storage if previously thought authenticated
+            if (sessionStorage.getItem('isAuthenticated') === 'true' || sessionStorage.getItem('user')) {
+                console.log('Session expired or inactive');
+                sessionStorage.removeItem('isAuthenticated');
+                sessionStorage.removeItem('user_type');
+                sessionStorage.removeItem('username');
+                sessionStorage.removeItem('user_id');
+                sessionStorage.removeItem('email');
+                sessionStorage.removeItem('user');
+                sessionStorage.removeItem('session_token');
+
+                // If on a protected dashboard page, redirect to home
+                if (window.location.pathname.includes('dashboard') && !window.location.pathname.includes('index.html')) {
+                    window.location.replace('/index.html');
+                }
+            }
+        });
 }
 
 // Run validation on load
 document.addEventListener('DOMContentLoaded', validateSessionOnLoad);
+
+// Run validation when navigating via browser back/forward cache (bfcache)
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+        validateSessionOnLoad();
+    }
+});
 
 // Toggle password visibility robustly
 window.togglePasswordVisibility = function (inputId, elementClicked = null) {

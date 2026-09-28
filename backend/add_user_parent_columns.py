@@ -15,8 +15,12 @@ def add_user_parent_columns():
     try:
         with engine.connect() as conn:
             # Check if columns already exist
-            result = conn.execute(text("SHOW COLUMNS FROM users"))
-            existing_columns = [row[0] for row in result]
+            if engine.dialect.name == 'sqlite':
+                result = conn.execute(text("PRAGMA table_info(users)"))
+                existing_columns = [row[1] for row in result]
+            else:
+                result = conn.execute(text("SHOW COLUMNS FROM users"))
+                existing_columns = [row[0] for row in result]
             print(f"Existing columns: {existing_columns}")
             
             # List of columns to add
@@ -36,23 +40,24 @@ def add_user_parent_columns():
                 else:
                     print(f"⊘ Column already exists: {column_name}")
             
-            # Add foreign key constraint for parent_user_id if not exists
-            if 'parent_user_id' in existing_columns or any(col[0] == 'parent_user_id' for col in columns_to_add):
-                try:
-                    print("Adding foreign key constraint for parent_user_id...")
-                    conn.execute(text("""
-                        ALTER TABLE users 
-                        ADD CONSTRAINT fk_user_parent 
-                        FOREIGN KEY (parent_user_id) REFERENCES users(user_id) 
-                        ON DELETE CASCADE
-                    """))
-                    conn.commit()
-                    print("✓ Foreign key constraint added")
-                except Exception as e:
-                    if "Duplicate foreign key constraint" in str(e) or "already exists" in str(e):
-                        print("⊘ Foreign key constraint already exists")
-                    else:
-                        print(f"⚠ Warning adding foreign key: {e}")
+            # Add foreign key constraint for parent_user_id if not exists (MySQL only)
+            if engine.dialect.name != 'sqlite':
+                if 'parent_user_id' in existing_columns or any(col[0] == 'parent_user_id' for col in columns_to_add):
+                    try:
+                        print("Adding foreign key constraint for parent_user_id...")
+                        conn.execute(text("""
+                            ALTER TABLE users 
+                            ADD CONSTRAINT fk_user_parent 
+                            FOREIGN KEY (parent_user_id) REFERENCES users(user_id) 
+                            ON DELETE CASCADE
+                        """))
+                        conn.commit()
+                        print("✓ Foreign key constraint added")
+                    except Exception as e:
+                        if "Duplicate foreign key constraint" in str(e) or "already exists" in str(e):
+                            print("⊘ Foreign key constraint already exists")
+                        else:
+                            print(f"⚠ Warning adding foreign key: {e}")
             
             # Add index for parent_user_id if not exists
             try:

@@ -194,7 +194,11 @@ def internal_error(error):
 
 @app.after_request
 def add_cache_control(response):
-    if request.path.startswith('/api/'):
+    if request.path.startswith('/js/') or request.path.startswith('/css/') or request.path.startswith('/templates/') or request.path.endswith('.html') or request.path.startswith('/dashboard'):
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    elif request.path.startswith('/api/'):
         # Only apply caching logic to successful GET requests
         if request.method == 'GET' and response.status_code == 200:
             # Highly dynamic endpoints (Events, Auctions) get strictly no cache
@@ -318,6 +322,26 @@ def get_current_user():
     finally:
         db.close()
 
+def resolve_team_owner(user, db=None):
+    """
+    Resolve the Team Owner for a given user (who might be an owner, manager, or analyst).
+    Returns the User object representing the team owner, or None if invalid.
+    """
+    if user.user_type.value == 'team_owner':
+        return user
+    elif user.user_type.value in ['team_manager', 'team_analyst']:
+        # They must have a parent user who is a team owner
+        if not user.parent_user_id:
+            return None
+            
+        parent = user.parent_user
+        if not parent and db:
+            parent = db.query(models.User).filter(models.User.user_id == user.parent_user_id).first()
+            
+        if parent and parent.user_type.value == 'team_owner':
+            return parent
+    return None
+
 # Password hashing
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -362,11 +386,16 @@ if ENABLE_SETUP_ROUTES:
         return "Failed to create admin user. Check the server logs."
 
 @app.route('/dashboard')
-@app.route('/dashboard/manager')
-@app.route('/dashboard/analyst')
-def serve_dashboard_routes():
-    # Serve the unified dashboard for all team staff roles
+def serve_owner_dashboard():
     return send_from_directory(TEMPLATES_DIR, 'team-owner-dashboard.html')
+
+@app.route('/dashboard/manager')
+def serve_manager_dashboard():
+    return send_from_directory(TEMPLATES_DIR, 'team-manager-dashboard.html')
+
+@app.route('/dashboard/analyst')
+def serve_analyst_dashboard():
+    return send_from_directory(TEMPLATES_DIR, 'team-analyst-dashboard.html')
 
 @app.route('/templates/<path:filename>')
 def serve_templates(filename):
@@ -515,8 +544,22 @@ def get_user_full_details(user_id: int):
                 "bestPlayerAwards": getattr(player, "best_player_awards", 0),
                 "proContracts": getattr(player, "professional_contracts", 0),
                 "stateChampion": "Yes" if getattr(player, "state_level_champion", False) else "No",
-                "internationalExp": "Yes" if getattr(player, "international_experience", False) else "No"
+                "internationalExp": "Yes" if getattr(player, "international_experience", False) else "No",
+                "sport_profiles": player.sport_profiles
             })
+            
+            # Check for event_id in query parameters to include event-specific data
+            event_id = request.args.get('event_id', type=int)
+            if event_id:
+                pe = db.execute(
+                    models.player_events.select().where(
+                        models.player_events.c.player_id == player.player_id,
+                        models.player_events.c.event_id == event_id
+                    )
+                ).first()
+                if pe:
+                    user_data["evaluation_score"] = float(pe.evaluation_score) if pe.evaluation_score is not None else None
+                    user_data["category"] = pe.category
 
         # Calculate a simple avgRating for the UI based on non-null ratings
         if "cricket_rating" in user_data:
@@ -554,11 +597,8 @@ def get_team_owner_dashboard():
                 abort(403, description="Only team owners and staff can access this dashboard")
             
             # Get team owner profile
-            if user_type_str in ['team_manager', 'team_analyst']:
-                parent_user = db.query(models.User).filter(models.User.user_id == current_user.parent_user_id).first()
-                team_owner = parent_user.team_owner if parent_user else None
-            else:
-                team_owner = current_user.team_owner
+            owner_user = resolve_team_owner(current_user, db)
+            team_owner = owner_user.team_owner if owner_user else None
                 
             if not team_owner:
                 # Should not happen if registered correctly, but handle gracefully
@@ -627,7 +667,7 @@ def get_team_owner_dashboard():
                         "category": "Standard", # Default or logic to determine
                         "avatar": player.profile_image_url or "",
                         "price": price,
-                        "rating": 8.0 # Placeholder or fetch
+                        "rating": player.cricket_rating or 0
                     })
                     
             # Check for active auction or scheduled event for this team's event
@@ -642,7 +682,7 @@ def get_team_owner_dashboard():
                             "id": player.player_id,
                             "name": player.full_name,
                             "avatar": player.profile_image_url or "",
-                            "rating": 8.0 # Placeholder
+                            "rating": player.cricket_rating or 0
                         })
 
                 auction = db.query(models.Auction).filter(
@@ -666,7 +706,7 @@ def get_team_owner_dashboard():
                              "sport": "Cricket", 
                              "category": "Standard", 
                              "basePrice": float(auction.current_bid_amount), 
-                             "rating": 8.5,
+                             "rating": auction.current_player.cricket_rating or 0,
                              "time_left": time_left,
                              "bid_start": auction.current_player_bid_start.isoformat() if auction.current_player_bid_start else None
                          }
@@ -763,11 +803,8 @@ def get_team_owner_squad():
             if user_type_str not in ['team_owner', 'team_manager', 'team_analyst']:
                 abort(403, description="Unauthorized")
                 
-            if user_type_str in ['team_manager', 'team_analyst']:
-                parent_user = db.query(models.User).filter(models.User.user_id == current_user.parent_user_id).first()
-                team_owner = parent_user.team_owner if parent_user else None
-            else:
-                team_owner = current_user.team_owner
+            owner_user = resolve_team_owner(current_user, db)
+            team_owner = owner_user.team_owner if owner_user else None
                 
             if not team_owner: abort(404, description="Team Owner not found")
             
@@ -810,6 +847,82 @@ def get_team_owner_squad():
     except HTTPException: raise
     except Exception as e: abort(500, description=str(e))
 
+@app.route("/api/team-owner/auction-pool")
+def get_team_owner_auction_pool():
+    try:
+        current_user = get_current_user()
+        db = SessionLocal()
+        try:
+            current_user = db.merge(current_user)
+            user_type_str = current_user.user_type.value if hasattr(current_user.user_type, 'value') else str(current_user.user_type)
+            if user_type_str not in ['team_owner', 'team_manager', 'team_analyst']:
+                abort(403, description="Unauthorized")
+                
+            owner_user = resolve_team_owner(current_user, db)
+            team_owner = owner_user.team_owner if owner_user else None
+                
+            if not team_owner: abort(404, description="Team Owner not found")
+            
+            team_id = request.args.get('team_id', type=int)
+            if team_id:
+                team = next((t for t in team_owner.teams if t.team_id == team_id), None)
+            else:
+                team = team_owner.teams[0] if team_owner.teams else None
+                
+            if not team: abort(404, description="Team not found")
+            
+            # Fetch all players registered for this team's event
+            # Using the player_events association table since models.PlayerEvent does not exist
+            player_records = db.query(
+                models.Player,
+                models.player_events.c.category,
+                models.player_events.c.evaluation_score
+            ).join(
+                models.player_events,
+                models.Player.player_id == models.player_events.c.player_id
+            ).filter(
+                models.player_events.c.event_id == team.event_id
+            ).all()
+            
+            pool_data = []
+            for record in player_records:
+                player = record.Player
+                category = record.category
+                evaluation_score = record.evaluation_score
+                
+                # Use default dummy stats if sport_profiles is empty
+                stats = player.sport_profiles or {}
+                
+                # Some dummy stats for visualization if real stats are missing
+                if not stats:
+                    stats = {
+                        "runs": 450,
+                        "strike_rate": 135.5,
+                        "average": 35.2,
+                        "wickets": 12,
+                        "economy": 7.8,
+                        "highest_score": 88
+                    }
+
+                # role and base_price don't exist on Player or player_events directly in this context
+                # default to standard values
+                pool_data.append({
+                    "id": player.player_id,
+                    "name": player.full_name,
+                    "role": "Player",
+                    "category": category or "Uncategorized",
+                    "base_price": resolve_category_base_price(team.event, category, player),
+                    "evaluation_score": float(evaluation_score) if evaluation_score else 0,
+                    "stats": stats,
+                    "avatar": player.profile_image_url or ""
+                })
+                
+            return jsonify({"pool": pool_data})
+        finally:
+            db.close()
+    except HTTPException: raise
+    except Exception as e: abort(500, description=str(e))
+
 @app.route("/api/team-owner/wallet")
 def get_team_owner_wallet():
     try:
@@ -821,11 +934,8 @@ def get_team_owner_wallet():
             if user_type_str not in ['team_owner', 'team_manager', 'team_analyst']:
                 abort(403, description="Unauthorized")
                 
-            if user_type_str in ['team_manager', 'team_analyst']:
-                parent_user = db.query(models.User).filter(models.User.user_id == current_user.parent_user_id).first()
-                team_owner = parent_user.team_owner if parent_user else None
-            else:
-                team_owner = current_user.team_owner
+            owner_user = resolve_team_owner(current_user, db)
+            team_owner = owner_user.team_owner if owner_user else None
                 
             if not team_owner: abort(404, description="Team Owner not found")
             
@@ -880,11 +990,8 @@ def get_team_owner_reports():
             if user_type_str not in ['team_owner', 'team_manager', 'team_analyst']:
                 abort(403, description="Unauthorized")
                 
-            if user_type_str in ['team_manager', 'team_analyst']:
-                parent_user = db.query(models.User).filter(models.User.user_id == current_user.parent_user_id).first()
-                team_owner = parent_user.team_owner if parent_user else None
-            else:
-                team_owner = current_user.team_owner
+            owner_user = resolve_team_owner(current_user, db)
+            team_owner = owner_user.team_owner if owner_user else None
                 
             if not team_owner: abort(404, description="Team Owner not found")
             
@@ -1046,29 +1153,23 @@ def auction_preparation(event_id: int):
             
         all_teams_active = (inactive_count == 0 and len(teams) > 0)
 
-        # Safely parse base prices
-        base_price_val = 0
-        if isinstance(event.base_prices, dict):
-            base_price_val = event.base_prices.get('Standard', 0)
-        elif isinstance(event.base_prices, str):
-            import json
-            try:
-                bp_dict = json.loads(event.base_prices)
-                base_price_val = bp_dict.get('Standard', 0)
-            except:
-                pass
-
         # Get players registered
-        players = db.query(models.Player).join(models.player_events).filter(
+        players = db.query(models.Player, models.player_events.c.category).join(
+            models.player_events,
+            models.Player.player_id == models.player_events.c.player_id
+        ).filter(
             models.player_events.c.event_id == event_id
         ).all()
-        players_data = [{
-            "player_id": p.player_id,
-            "name": f"{p.first_name} {p.last_name}",
-            "role": p.cricket_rating, # Placeholder for role
-            "base_price": base_price_val
-        } for p in players]
-
+        
+        players_data = []
+        for p, category in players:
+            players_data.append({
+                "player_id": p.player_id,
+                "name": f"{p.first_name} {p.last_name}",
+                "role": p.cricket_rating, # Placeholder for role
+                "category": category,
+                "base_price": resolve_category_base_price(event, category, p)
+            })
         return jsonify({
             "status": "success",
             "event": {
@@ -1087,6 +1188,39 @@ def auction_preparation(event_id: int):
     finally:
         db.close()
 
+def resolve_category_base_price(event, category, player=None):
+    """
+    Phase 6: Safely resolve the base price for a player based on their category.
+    Handles case-insensitive matching and legacy fallbacks.
+    """
+    # Safely get the event base prices dictionary
+    base_prices = event.base_prices
+    if not isinstance(base_prices, dict):
+        if isinstance(base_prices, str):
+            try:
+                import json
+                base_prices = json.loads(base_prices)
+            except:
+                base_prices = {}
+        else:
+            base_prices = {}
+            
+    # If category is provided, try case-insensitive match
+    if category:
+        cat_lower = category.lower()
+        for key, price in base_prices.items():
+            if key.lower() == cat_lower:
+                return float(price)
+                
+    # Legacy fallback: use 'Standard' if available
+    for key, price in base_prices.items():
+        if key.lower() == 'standard':
+            return float(price)
+            
+    if player and player.average_bid_amount:
+        return float(player.average_bid_amount)
+        
+    return 10000.0
 
 @app.route("/api/admin/events/<int:event_id>/auction/initialize", methods=['POST'])
 def initialize_auction(event_id: int):
@@ -1162,14 +1296,17 @@ def initialize_auction(event_id: int):
             db.flush()
 
             # Create Auction Players
-            players = db.query(models.Player).join(models.player_events).filter(
+            players_data = db.query(models.Player, models.player_events.c.category).join(
+                models.player_events,
+                models.Player.player_id == models.player_events.c.player_id
+            ).filter(
                 models.player_events.c.event_id == event_id,
                 models.Player.is_active == True
             ).all()
-            
-            base_price = event.base_prices.get('Standard', 1000000) if event.base_prices else 1000000
 
-            for idx, p in enumerate(players):
+            for idx, (p, category) in enumerate(players_data):
+                base_price = resolve_category_base_price(event, category)
+                
                 ap = models.AuctionPlayer(
                     auction_id=auction.auction_id,
                     player_id=p.player_id,
@@ -1381,14 +1518,16 @@ def place_bid(event_id: int, player_id: int):
         db.begin()
         
         # Check if user is a team owner or authorized staff
-        owner_user_id = current_user.user_id
-        if str(current_user.user_type) == "UserType.team_manager" or current_user.user_type.name == "team_manager":
-            if not current_user.parent_user_id:
-                abort(403, description="Manager account is not associated with any Team Owner")
-            owner_user_id = current_user.parent_user_id
+        user_type_str = current_user.user_type.value if hasattr(current_user.user_type, 'value') else str(current_user.user_type)
+        if user_type_str == 'team_analyst':
+            abort(403, description="Analysts are not allowed to place bids")
+            
+        owner_user = resolve_team_owner(current_user, db)
+        if not owner_user or not owner_user.team_owner:
+            abort(403, description="Only team owners and their managers can place bids")
             
         team_owner = db.query(models.TeamOwner).filter(
-            models.TeamOwner.user_id == owner_user_id
+            models.TeamOwner.user_id == owner_user.user_id
         ).with_for_update().first()
         
         if not team_owner:
@@ -1730,19 +1869,32 @@ def staff_complete_registration():
         session_token = create_session(str(user.user_id), db)
         
         # Return same payload as login
-        return jsonify({
+        user_role = user.user_type.value if hasattr(user.user_type, 'value') else user.user_type
+        response_data = {
             "success": True,
             "message": "Registration completed successfully",
             "session_token": session_token,
-            "redirect_to": "/templates/team-owner-dashboard.html",
+            "redirect_to": get_redirect_path(user_role),
             "user": {
                 "id": user.user_id,
                 "username": user.username,
                 "email": user.email,
-                "user_type": user.user_type.value if hasattr(user.user_type, 'value') else user.user_type,
-                "role": user.user_type.value if hasattr(user.user_type, 'value') else user.user_type
+                "user_type": user_role,
+                "role": user_role
             }
-        })
+        }
+        
+        response = make_response(jsonify(response_data))
+        response.set_cookie(
+            key=SESSION_COOKIE_NAME,
+            value=session_token,
+            httponly=True,
+            secure=app.config['SESSION_COOKIE_SECURE'],
+            max_age=settings.session_expire_minutes * 60,
+            samesite="Lax",
+            path="/"
+        )
+        return response
     finally:
         db.close()
 
@@ -1859,7 +2011,8 @@ def login():
             httponly=True,
             secure=is_production,
             max_age=settings.session_expire_minutes * 60,
-            samesite="Lax"
+            samesite="Lax",
+            path="/"
         )
         return response
 
@@ -1879,9 +2032,9 @@ def get_redirect_path(role: str) -> str:
     """Get the redirect path based on user role."""
     redirect_map = {
         'admin': '/templates/admin-dashboard.html',
-        'team_manager': '/dashboard/manager',
-        'team_analyst': '/dashboard/analyst',
-        'team_owner': '/dashboard',
+        'team_manager': '/templates/team-manager-dashboard.html',
+        'team_analyst': '/templates/team-analyst-dashboard.html',
+        'team_owner': '/templates/team-owner-dashboard.html',
         'player': '/templates/player-dashboard.html',
         'user': '/templates/player-dashboard.html'
     }
@@ -1915,7 +2068,6 @@ def team_owner_login():
         ).first()
         
         if not user or not user.verify_password(password):
-            print(f"Failed team owner login attempt for user: {username} from IP: {client_ip}")
             abort(401, description="Incorrect email/username or password")
         
         # Check if user is a team owner
@@ -1956,7 +2108,7 @@ def team_owner_login():
                 user_agent=request.headers.get("user-agent"),
             )
         except Exception as log_err:
-            print(f"Failed to log team owner login activity: {log_err}")
+            print(f"Failed to log activity: {log_err}")
 
         response_data = {
             "status": "success", 
@@ -1988,7 +2140,8 @@ def team_owner_login():
             httponly=True,
             secure=app.config['SESSION_COOKIE_SECURE'],
             max_age=settings.session_expire_minutes * 60,
-            samesite="Lax"
+            samesite="Lax",
+            path="/"
         )
         return response
         
@@ -2008,8 +2161,6 @@ def team_owner_login():
             f.write(f"Type: {type(e).__name__}\n")
             f.write(traceback.format_exc())
         
-        print(f"Team owner login error: {error_msg}")
-        print(f"Team owner login error type: {type(e).__name__}")
         
         abort(500, description=error_msg)
     finally:
@@ -2087,7 +2238,7 @@ def read_users():
                 # Get the first event the player is registered for
                 if user.player.events:
                     user_dict["event_id"] = user.player.events[0].event_id
-                
+                    
                 # Add player profile details
                 user_dict.update({
                     "first_name": user.player.first_name,
@@ -2103,7 +2254,20 @@ def read_users():
                     "pincode": user.player.pincode,
                     "height_cm": user.player.height_cm,
                     "weight_kg": user.player.weight_kg,
+                    "sport_profiles": user.player.sport_profiles
                 })
+                
+                # If queried for a specific event, get the score and category
+                if event_id:
+                    pe = db.execute(
+                        models.player_events.select().where(
+                            models.player_events.c.player_id == user.player.player_id,
+                            models.player_events.c.event_id == event_id
+                        )
+                    ).first()
+                    if pe:
+                        user_dict["evaluation_score"] = float(pe.evaluation_score) if pe.evaluation_score is not None else None
+                        user_dict["category"] = pe.category
                 
                 # Helper to get rating from skill_ratings relationship
                 def get_rating(sport_name):
@@ -2220,7 +2384,6 @@ def log_activity(
     except Exception as e:
         db.rollback()
         error_msg = str(e)
-        print(f"Error logging activity: {error_msg}")
         return None
 
 @app.route("/api/activity-logs", methods=['GET'])
@@ -2345,7 +2508,6 @@ def create_public_activity_log_endpoint():
     except Exception as e:
         db.rollback()
         # Log error but don't expose sensitive info
-        print(f"Error creating activity log: {str(e)}")
         abort(500, description="Failed to create activity log")
     finally:
         db.close()
@@ -2386,28 +2548,63 @@ def create_activity_log_endpoint():
     except Exception as e:
         db.rollback()
         # Log error but don't expose sensitive info
-        print(f"Error creating activity log: {str(e)}")
         abort(500, description="Failed to create activity log")
     finally:
         db.close()
 
+@app.route("/api/session/validate", methods=['GET'])
 @app.route("/api/me", methods=['GET'])
 def get_current_user_info():
-    current_user = get_current_user()
-    return jsonify({
-        "user_id": current_user.user_id,
-        "username": current_user.username,
-        "email": current_user.email,
-        "user_type": current_user.user_type.value if hasattr(current_user.user_type, "value") else current_user.user_type,
-    })
+    try:
+        current_user = get_current_user()
+        user_type_str = current_user.user_type.value if hasattr(current_user.user_type, "value") else str(current_user.user_type)
+        return jsonify({
+            "success": True,
+            "authenticated": True,
+            "user_id": current_user.user_id,
+            "username": current_user.username,
+            "email": current_user.email,
+            "user_type": user_type_str,
+            "user": {
+                "id": current_user.user_id,
+                "user_id": current_user.user_id,
+                "username": current_user.username,
+                "email": current_user.email,
+                "user_type": user_type_str,
+                "role": user_type_str,
+                "is_active": current_user.is_active
+            },
+            "redirect_to": get_redirect_path(user_type_str)
+        })
+    except HTTPException as e:
+        if e.code in (401, 403, 404):
+            return jsonify({
+                "success": False,
+                "authenticated": False,
+                "message": e.description if hasattr(e, 'description') else "Not authenticated"
+            }), 401
+        raise
 
 # Logout endpoint
 @app.route("/api/logout", methods=['POST'])
 def logout():
-    """Log out the current user by deleting the session cookie."""
+    """Log out the current user by deleting database session and cookie."""
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if session_token:
+        db = SessionLocal()
+        try:
+            db.query(models.Session).filter(models.Session.session_token == session_token).delete()
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.warning(f"Error removing session from db during logout: {e}")
+        finally:
+            db.close()
+
     response = make_response(jsonify({"status": "success", "message": "Successfully logged out"}))
-    response.delete_cookie(SESSION_COOKIE_NAME)
+    response.delete_cookie(SESSION_COOKIE_NAME, path="/")
     return response
+
 
 
 # Root endpoint handled by serve_frontend below
@@ -2416,6 +2613,10 @@ def logout():
 @app.route("/register/player", methods=['POST'])
 def register_player_endpoint():
     raw_data = request.get_json()
+    
+    if raw_data.get('terms_accepted') is not True:
+        return jsonify({"error": "Bad Request", "message": "Terms and Conditions must be accepted before registration."}), 400
+
     db = SessionLocal()
     try:
         # Validate raw dict into Pydantic model
@@ -2432,6 +2633,81 @@ def register_player_endpoint():
         abort(500, description=str(e))
     finally:
         db.close()
+
+def calculate_player_score(player_cricket_data: dict, event_rules: dict) -> Optional[float]:
+    """Calculate an objective score based on factual cricket data and event rules."""
+    if not player_cricket_data or not event_rules:
+        return None
+        
+    def flatten(data):
+        if isinstance(data, list):
+            flat = {}
+            for item in data:
+                if isinstance(item, dict):
+                    flat.update(item)
+            return flat
+        return data or {}
+
+    weights = flatten(event_rules.get("weights", {}))
+    norm = flatten(event_rules.get("normalization", {}))
+    levels = flatten(event_rules.get("highest_level_scores", {}))
+    
+    score = 0.0
+    
+    for key, weight in weights.items():
+        if weight <= 0:
+            continue
+            
+        if key == "highest_level":
+            level_str = player_cricket_data.get("highest_level", "")
+            matched_score = 0.0
+            if level_str:
+                for k, v in levels.items():
+                    if k.lower() == level_str.lower():
+                        matched_score = float(v)
+                        break
+            score += matched_score * (weight / 100.0)
+        else:
+            # Handle legacy mismatches
+            data_key = "experience_years" if key == "years_experience" and "experience_years" in player_cricket_data else key
+            val = float(player_cricket_data.get(data_key, 0))
+            
+            # Determine norm key (e.g. matches_played -> matches_max, runs -> runs_max)
+            max_key = key + "_max"
+            if key == "matches_played":
+                max_key = "matches_max"
+            elif key == "years_experience":
+                max_key = "experience_max"
+                
+            max_val = float(norm.get(max_key, 100)) # default to 100 to avoid DivByZero
+            if max_val > 0:
+                component_score = min((val / max_val) * 100, 100)
+                score += component_score * (weight / 100.0)
+        
+    return round(score, 2)
+
+def calculate_player_category(score: float, category_rules: list) -> Optional[str]:
+    """Calculate the category based on the objective score and event category rules."""
+    if score is None or not category_rules or not isinstance(category_rules, list):
+        return None
+        
+    for cat in category_rules:
+        if not isinstance(cat, dict):
+            continue
+        
+        min_score = cat.get('min_score')
+        max_score = cat.get('max_score')
+        
+        if min_score is not None and max_score is not None:
+            try:
+                min_s = float(min_score)
+                max_s = float(max_score)
+                if min_s <= score <= max_s:
+                    return cat.get('name')
+            except ValueError:
+                continue
+                
+    return None
 
 def register_player(
     player_data: schemas.PlayerRegistration,
@@ -2599,6 +2875,37 @@ def register_player(
         # Link to event
         player_profile.events.append(event)
         logger.info(f"Linked player to event ID: {event_id}")
+        
+        # Calculate and store evaluation score if event has rules
+        if event.event_config and "evaluation_rules" in event.event_config:
+            sport_name = "cricket"
+            if hasattr(event, "sports") and event.sports:
+                sport_name = event.sports[0].name.lower()
+                
+            sport_data = player_data.sport_profiles.get(sport_name, {}) if player_data.sport_profiles else {}
+            if not sport_data and player_data.sport_profiles and "cricket" in player_data.sport_profiles:
+                sport_data = player_data.sport_profiles["cricket"]
+                
+            score = calculate_player_score(sport_data, event.event_config["evaluation_rules"])
+            if score is not None:
+                # Use flush to ensure the association row exists, then update it
+                db.flush()
+                
+                # Calculate category if rules exist in event config
+                category = None
+                if "categories_config" in event.event_config:
+                    category = calculate_player_category(score, event.event_config["categories_config"])
+                    
+                update_values = {"evaluation_score": score}
+                if category:
+                    update_values["category"] = category
+                    
+                stmt = models.player_events.update().where(
+                    models.player_events.c.player_id == player_profile.player_id,
+                    models.player_events.c.event_id == event_id
+                ).values(**update_values)
+                db.execute(stmt)
+                logger.info(f"Calculated and saved evaluation_score: {score}, category: {category}")
 
         # Save sport ratings
         if player_data.sport_ratings:
@@ -2606,6 +2913,15 @@ def register_player(
                 sport_id = sport_rating.get('sport_id')
                 rating = sport_rating.get('rating', 0)
                 if rating > 0:
+                    sport_obj = db.query(models.Sport).filter(models.Sport.sport_id == sport_id).first()
+                    if sport_obj:
+                        if sport_obj.name.lower() == 'cricket':
+                            player_profile.cricket_rating = rating
+                        elif sport_obj.name.lower() == 'football':
+                            player_profile.football_rating = rating
+                        elif sport_obj.name.lower() == 'basketball':
+                            player_profile.basketball_rating = rating
+
                     skill = db.query(models.PlayerSkill).filter(
                         models.PlayerSkill.sport_id == sport_id,
                         models.PlayerSkill.skill_name == "Overall"
@@ -2998,6 +3314,10 @@ def admin_delete_team(team_id: int):
 @app.route("/register/team-owner", methods=['POST'])
 def register_team_owner():
     registration_data = request.get_json()
+    
+    if registration_data.get('terms_accepted') is not True:
+        return jsonify({"success": False, "message": "Terms and Conditions must be accepted before registration."}), 400
+
     db = SessionLocal()
     
     try:
@@ -3375,7 +3695,10 @@ def get_events():
     db = SessionLocal()
     try:
         from sqlalchemy.orm import joinedload
-        query = db.query(models.Event).options(joinedload(models.Event.sports))
+        # Use load_only to only fetch sport_id and name, avoiding missing columns in DB
+        query = db.query(models.Event).options(
+            joinedload(models.Event.sports).load_only(models.Sport.sport_id, models.Sport.name)
+        )
         
         skip = request.args.get('skip', 0, type=int)
         limit = request.args.get('limit', 100, type=int)
@@ -3447,7 +3770,9 @@ def get_live_events():
     db = SessionLocal()
     try:
         from sqlalchemy.orm import joinedload
-        events = db.query(models.Event).options(joinedload(models.Event.sports)).filter(models.Event.is_live == True).all()
+        events = db.query(models.Event).options(
+            joinedload(models.Event.sports).defer(models.Sport.evaluation_rules)
+        ).filter(models.Event.is_live == True).all()
         result = []
         for event in events:
             teams_count = db.query(models.Team).filter(
@@ -3502,7 +3827,9 @@ def get_event(event_id: int):
     db = SessionLocal()
     try:
         from sqlalchemy.orm import joinedload
-        event = db.query(models.Event).options(joinedload(models.Event.sports)).filter(models.Event.event_id == event_id).first()
+        event = db.query(models.Event).options(
+            joinedload(models.Event.sports).load_only(models.Sport.sport_id, models.Sport.name)
+        ).filter(models.Event.event_id == event_id).first()
         if not event:
             abort(404, description="Event not found")
         
@@ -3548,6 +3875,7 @@ def get_event(event_id: int):
 
 # POST create event
 @app.route("/events/", methods=['POST'])
+@app.route("/api/events", methods=['POST'])
 @app.route("/api/events/", methods=['POST'])
 def create_event():
     """
@@ -3604,6 +3932,14 @@ def create_event():
                 # Add any additional flexible config here, e.g., roles or specific cricket mechanics
                 if 'roles_config' not in final_event_config and sport.roles_config:
                     final_event_config['roles_config'] = sport.roles_config
+                
+                # Copy Evaluation Rules snapshot from Sport Master
+                if 'evaluation_rules' not in final_event_config and sport.evaluation_rules:
+                    final_event_config['evaluation_rules'] = sport.evaluation_rules
+                    
+                # Copy Categories Rules snapshot from Sport Master
+                if 'categories_config' not in final_event_config and sport.categories_config:
+                    final_event_config['categories_config'] = sport.categories_config
 
                 # Create new event mapped to authoritative fields
                 new_event = models.Event(
@@ -4505,25 +4841,40 @@ def get_event_players(event_id: int):
         if not event:
             abort(404, description="Event not found")
             
+        # Query players along with their evaluation score and category from the association table
+        results = db.query(
+            models.Player,
+            models.player_events.c.evaluation_score,
+            models.player_events.c.category
+        ).join(
+            models.player_events,
+            models.Player.player_id == models.player_events.c.player_id
+        ).filter(
+            models.player_events.c.event_id == event_id
+        ).all()
+            
         players_data = []
-        for player in event.players:
-            # Determine category (mocking for now if missing)
-            category = "standard"
-            if player.highest_winning_bid and player.highest_winning_bid > 500000:
-                category = "diamond"
-            elif player.highest_winning_bid and player.highest_winning_bid > 200000:
-                category = "platinum"
-            elif player.highest_winning_bid and player.highest_winning_bid > 100000:
-                category = "gold"
+        for player, eval_score, cat in results:
+            # Use assigned category, fallback to category mockup only if not assigned
+            category = cat or "standard"
+            if not cat:
+                if player.highest_winning_bid and player.highest_winning_bid > 500000:
+                    category = "diamond"
+                elif player.highest_winning_bid and player.highest_winning_bid > 200000:
+                    category = "platinum"
+                elif player.highest_winning_bid and player.highest_winning_bid > 100000:
+                    category = "gold"
                 
             players_data.append({
                 "id": player.player_id,
                 "name": player.full_name,
                 "category": category,
-                "rating": player.cricket_rating or 7.0,
+                "rating": player.cricket_rating or 0,
+                "evaluation_score": float(eval_score) if eval_score is not None else None,
+                "sport_profiles": player.sport_profiles,
                 "wins": player.tournaments_won or 0,
                 "losses": 0, # Not tracked directly
-                "basePrice": float(player.average_bid_amount or 10000),
+                "basePrice": resolve_category_base_price(event, category, player),
                 "image": player.profile_image_url or f"https://placehold.co/300x200/1e293b/ffffff?text={player.first_name}"
             })
             
@@ -4604,6 +4955,10 @@ def get_auction_by_event(event_id: int):
         sold_player_bids = {b.player_id: b for b in winning_bids}
         team_id_to_name = {t.team_id: t.team_name for t in teams}
         
+        # Pre-fetch player_events for category mapping
+        pe_rows = db.query(models.player_events).filter(models.player_events.c.event_id == event_id).all()
+        pe_map = {row.player_id: row for row in pe_rows}
+        
         players_data = []
         for player in event.players:
             p_status = "UPCOMING"
@@ -4616,20 +4971,23 @@ def get_auction_by_event(event_id: int):
                 highest_bid_amount = float(bid.amount)
                 sold_to_team = team_id_to_name.get(bid.team_id, "Unknown Team")
             
-            category = "Standard"
-            if player.highest_winning_bid and player.highest_winning_bid > 500000:
-                category = "Diamond"
-            elif player.highest_winning_bid and player.highest_winning_bid > 200000:
-                category = "Platinum"
-            elif player.highest_winning_bid and player.highest_winning_bid > 100000:
-                category = "Gold"
+            # Fetch assigned category from association table
+            cat = pe_map.get(player.player_id).category if pe_map.get(player.player_id) else None
+            category = cat or "standard"
+            if not cat:
+                if player.highest_winning_bid and player.highest_winning_bid > 500000:
+                    category = "diamond"
+                elif player.highest_winning_bid and player.highest_winning_bid > 200000:
+                    category = "platinum"
+                elif player.highest_winning_bid and player.highest_winning_bid > 100000:
+                    category = "gold"
                 
             players_data.append({
                 "id": player.player_id,
                 "name": player.full_name,
                 "role": "Player",
                 "category": category,
-                "basePrice": float(player.average_bid_amount or 10000),
+                "basePrice": resolve_category_base_price(event, category, player),
                 "photo": player.profile_image_url or f"https://placehold.co/300x200/1e293b/ffffff?text={player.first_name}",
                 "status": p_status,
                 "sold_amount": highest_bid_amount,
@@ -4736,8 +5094,14 @@ def auction_next_player(auction_id: int):
             
         next_player = available_players[0] # Simplest "next"
         
+        # Phase 6: Read starting price from pre-resolved AuctionPlayer
+        next_ap = db.query(models.AuctionPlayer).filter(
+            models.AuctionPlayer.auction_id == auction_id,
+            models.AuctionPlayer.player_id == next_player.player_id
+        ).first()
+        
         auction.current_player_id = next_player.player_id
-        auction.current_bid_amount = float(event.base_prices.get(next_player.category.lower() if next_player.category else 'silver', 10000)) if event.base_prices else 10000
+        auction.current_bid_amount = float(next_ap.base_price) if next_ap and next_ap.base_price is not None else 10000.0
         auction.status = 'IN_PROGRESS' # Ensure running
         
         db.commit()
@@ -4986,10 +5350,29 @@ def get_team_owner_dashboard_stats():
 # -------------------------
 
 # Manage Sports
-@app.route("/api/admin/sports", methods=['GET'])
-def admin_get_sports():
+@app.route("/api/admin/sports", methods=['GET', 'POST'])
+def admin_manage_sports():
     db = SessionLocal()
     try:
+        if request.method == 'POST':
+            current_user = get_current_user()
+            if not current_user or current_user.user_type.name != 'admin':
+                return jsonify({"success": False, "error": "Unauthorized"}), 403
+                
+            data = request.json or {}
+            name = data.get('name')
+            if not name:
+                return jsonify({"success": False, "error": "Name is required"}), 400
+                
+            new_sport = models.Sport(
+                name=name,
+                description=data.get('description', ''),
+                icon_class=data.get('icon_class', 'fas fa-trophy')
+            )
+            db.add(new_sport)
+            db.commit()
+            return jsonify({"success": True, "sport_id": new_sport.sport_id})
+            
         sports = db.query(models.Sport).all()
         return jsonify([
             {
@@ -4999,6 +5382,10 @@ def admin_get_sports():
                 "icon_class": s.icon_class
             } for s in sports
         ])
+    except Exception as e:
+        app.logger.error(f"Error managing sports: {e}")
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
     finally:
         db.close()
 
@@ -5017,11 +5404,12 @@ def get_sports():
             "roles_config": s.roles_config,
             "categories_config": s.categories_config,
             "attributes_schema": s.attributes_schema,
-            "default_auction_rules": s.default_auction_rules
+            "default_auction_rules": s.default_auction_rules,
+            "evaluation_rules": s.evaluation_rules
         } for s in sports]
         return jsonify({"success": True, "sports": sports_data})
     except Exception as e:
-        logger.error(f"Error fetching sports: {e}")
+        app.logger.error(f"Error fetching sports: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
     finally:
         db.close()
@@ -5042,7 +5430,8 @@ def get_sport(sport_id: int):
                 "roles_config": sport.roles_config,
                 "categories_config": sport.categories_config,
                 "attributes_schema": sport.attributes_schema,
-                "default_auction_rules": sport.default_auction_rules
+                "default_auction_rules": sport.default_auction_rules,
+                "evaluation_rules": sport.evaluation_rules
             }
         })
     except HTTPException:
@@ -5069,11 +5458,68 @@ def update_sport_config(sport_id: int):
         if 'roles_config' in config_data:
             sport.roles_config = config_data['roles_config']
         if 'categories_config' in config_data:
-            sport.categories_config = config_data['categories_config']
+            # Validate categories_config
+            cats = config_data['categories_config']
+            if not isinstance(cats, list):
+                abort(400, description="categories_config must be a list")
+                
+            names = set()
+            for i, cat in enumerate(cats):
+                if not isinstance(cat, dict):
+                    abort(400, description="Each category must be an object")
+                    
+                name = cat.get('name', '').strip()
+                if not name:
+                    abort(400, description="Category name is required")
+                if name.lower() in names:
+                    abort(400, description=f"Duplicate category name: {name}")
+                names.add(name.lower())
+                
+                min_score = cat.get('min_score')
+                max_score = cat.get('max_score')
+                
+                if min_score is None or max_score is None:
+                    lower_name = name.lower()
+                    if 'diamond' in lower_name:
+                        min_score, max_score = 90.0, 100.0
+                    elif 'platinum' in lower_name:
+                        min_score, max_score = 75.0, 89.99
+                    elif 'gold' in lower_name:
+                        min_score, max_score = 50.0, 74.99
+                    elif 'silver' in lower_name:
+                        min_score, max_score = 0.0, 49.99
+                    else:
+                        abort(400, description=f"Category {name} is missing min_score or max_score")
+                    
+                    cat['min_score'] = min_score
+                    cat['max_score'] = max_score
+                    
+                try:
+                    min_score = float(min_score)
+                    max_score = float(max_score)
+                except ValueError:
+                    abort(400, description=f"Scores must be numeric for category {name}")
+                    
+                if min_score < 0 or max_score > 100:
+                    abort(400, description=f"Scores must be between 0 and 100 for category {name}")
+                if min_score > max_score:
+                    abort(400, description=f"min_score cannot be greater than max_score for category {name}")
+                    
+                # Check overlaps with previous categories
+                for j in range(i):
+                    prev = cats[j]
+                    p_min = float(prev['min_score'])
+                    p_max = float(prev['max_score'])
+                    if min_score <= p_max and max_score >= p_min:
+                        abort(400, description=f"Category '{name}' overlaps with category '{prev['name']}'")
+                        
+            sport.categories_config = cats
         if 'attributes_schema' in config_data:
             sport.attributes_schema = config_data['attributes_schema']
         if 'default_auction_rules' in config_data:
             sport.default_auction_rules = config_data['default_auction_rules']
+        if 'evaluation_rules' in config_data:
+            sport.evaluation_rules = config_data['evaluation_rules']
             
         db.commit()
         return jsonify({"success": True, "message": "Sport configuration updated"})
@@ -5352,7 +5798,6 @@ def create_notification(user_id, n_type, title, message, db_session=None):
         db_session.commit()
         return True
     except Exception as e:
-        print(f"Error creating notification: {e}")
         return False
     finally:
         if close_db:
@@ -5466,7 +5911,6 @@ def send_otp_email(to_email, otp):
     smtp_password = os.getenv("SMTP_PASSWORD", "")
     
     if not smtp_email or not smtp_password:
-        print("SMTP config is missing. Could not send email to:", to_email)
         return False
         
     try:
@@ -5481,7 +5925,6 @@ def send_otp_email(to_email, otp):
             server.send_message(msg)
         return True
     except Exception as e:
-        print("Error sending OTP email:", e)
         return False
 
 @app.route("/api/auth/forgot-password", methods=["POST"])
@@ -5580,6 +6023,281 @@ def initialize_database():
         logger.error(f"Error initializing database: {e}")
         return False
 
+# Ensure all tables (including training_sessions, training_attendance) exist
+# even under Passenger/WSGI where __main__ block never runs.
+try:
+    Base.metadata.create_all(bind=engine)
+    logger.info("Startup: ensured all DB tables are created.")
+except Exception as _e:
+    logger.warning(f"Startup create_all skipped: {_e}")
+
+
+# -------------------------------------------------------------------------
+# Analyst Dashboard APIs
+# -------------------------------------------------------------------------
+
+@app.route('/api/analyst/dashboard_data', methods=['GET'])
+def get_analyst_dashboard_data():
+    current_user = get_current_user()
+    if getattr(current_user.user_type, 'value', current_user.user_type) not in ['team_analyst', 'team_owner', 'team_manager']:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    session = SessionLocal()
+    try:
+        # Mock Quick Stats
+        stats = {
+            "win_probability": f"{random.randint(45, 85)}%",
+            "team_rank": f"#{random.randint(1, 10)}",
+            "performance_trend": random.choice(["Up 12%", "Stable", "Down 5%", "Up 23%"]),
+            "value_picks": str(random.randint(2, 15))
+        }
+
+        # Scout Pool (Players not yet assigned to teams)
+        # Fetching any unassigned players or a mock list for demonstration
+        players = session.query(models.Player).limit(5).all()
+        scout_pool = []
+        for p in players:
+            scout_pool.append({
+                "id": p.player_id,
+                "name": p.full_name,
+                "role": "Player",
+                "category": "Standard",
+                "base_price": 1000000
+            })
+            
+        # Fallback mock data if DB is empty
+        if not scout_pool:
+            scout_pool = [
+                {"id": 1, "name": "M. Dhoni", "role": "Wicketkeeper", "category": "Diamond", "base_price": 5000000},
+                {"id": 2, "name": "V. Kohli", "role": "Batsman", "category": "Platinum", "base_price": 4500000},
+                {"id": 3, "name": "R. Sharma", "role": "Batsman", "category": "Platinum", "base_price": 4000000},
+            ]
+
+        return jsonify({"success": True, "stats": stats, "scout_pool": scout_pool})
+    except Exception as e:
+        logger.error(f"Error fetching analyst dashboard data: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+    finally:
+        session.close()
+
+@app.route('/api/analyst/players', methods=['GET'])
+def get_analyst_players():
+    current_user = get_current_user()
+    if getattr(current_user.user_type, "value", current_user.user_type) not in ['team_analyst', 'team_owner', 'team_manager']:
+        return jsonify({"error": "Unauthorized"}), 403
+        
+    session = SessionLocal()
+    try:
+        # Re-fetch user in current session to prevent DetachedInstanceError on lazy loads
+        user_in_session = session.query(models.User).filter(models.User.user_id == current_user.user_id).first()
+        if not user_in_session:
+            return jsonify({"error": "User not found"}), 404
+
+        # Determine the event for this team staff
+        event_id = None
+        user_type_val = getattr(user_in_session.user_type, 'value', user_in_session.user_type)
+        if user_type_val == 'team_owner':
+            owner = user_in_session.team_owner
+            if owner and owner.teams and len(owner.teams) > 0:
+                event_id = owner.teams[0].event_id
+        else:
+            owner_user = user_in_session.parent_user
+            if owner_user and owner_user.team_owner and owner_user.team_owner.teams and len(owner_user.team_owner.teams) > 0:
+                event_id = owner_user.team_owner.teams[0].event_id
+
+        player_list = []
+        if event_id:
+            event = session.query(models.Event).filter(models.Event.event_id == event_id).first()
+            players_data = session.query(models.Player, models.player_events.c.category).join(
+                models.player_events,
+                models.Player.player_id == models.player_events.c.player_id
+            ).filter(
+                models.player_events.c.event_id == event_id,
+                models.Player.is_active == True
+            ).all()
+
+            for p, category in players_data:
+                role = getattr(p, "bio", "All-Rounder")
+                if p.sport_profiles and isinstance(p.sport_profiles, dict) and "cricket" in p.sport_profiles:
+                    role = p.sport_profiles["cricket"].get("role", role)
+                    
+                # Dynamically resolve base price from event config if available
+                base_price = 100000.0
+                if event and category:
+                    try:
+                        base_price = resolve_category_base_price(event, category, p)
+                    except Exception:
+                        pass
+                else:
+                    base_price = float(p.average_bid_amount or getattr(p, "base_price", 100000))
+
+                player_list.append({
+                    "id": p.player_id,
+                    "name": p.full_name,
+                    "category": category or "Standard",
+                    "role": role,
+                    "base_price": float(base_price)
+                })
+        else:
+            players = session.query(models.Player).limit(20).all()
+            for p in players:
+                role = getattr(p, "bio", "All-Rounder")
+                if p.sport_profiles and isinstance(p.sport_profiles, dict) and "cricket" in p.sport_profiles:
+                    role = p.sport_profiles["cricket"].get("role", role)
+                    
+                player_list.append({
+                    "id": p.player_id,
+                    "name": p.full_name,
+                    "category": "Standard",
+                    "role": role,
+                    "base_price": float(p.average_bid_amount or getattr(p, "base_price", 100000))
+                })
+
+        return jsonify({"success": True, "players": player_list})
+    except Exception as e:
+        logger.error(f"Error fetching analyst players: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+    finally:
+        session.close()
+
+@app.route('/api/analyst/player_stats/<int:player_id>', methods=['GET'])
+def get_analyst_player_stats(player_id):
+    current_user = get_current_user()
+    if getattr(current_user.user_type, "value", current_user.user_type) not in ['team_analyst', 'team_owner', 'team_manager']:
+        return jsonify({"error": "Unauthorized"}), 403
+        
+    session = SessionLocal()
+    try:
+        player = session.query(models.Player).filter(models.Player.player_id == player_id).first()
+        name = player.full_name if player else f"Player {player_id}"
+        
+        stats = []
+        if player:
+            if player.sport_profiles and isinstance(player.sport_profiles, dict) and "cricket" in player.sport_profiles:
+                cricket_profile = player.sport_profiles["cricket"]
+                cricket_stats = cricket_profile.get("radar_stats", {})
+                
+                if cricket_stats:
+                    stats = [
+                        cricket_stats.get("batting", 0),
+                        cricket_stats.get("bowling", 0),
+                        cricket_stats.get("fielding", 0),
+                        cricket_stats.get("consistency", 0),
+                        cricket_stats.get("form", 0),
+                        cricket_stats.get("value", 0)
+                    ]
+                else:
+                    # Dynamically compute stats from raw player registration inputs
+                    try:
+                        matches = int(cricket_profile.get("matches_played", 0) or 0)
+                        runs = int(cricket_profile.get("runs", 0) or 0)
+                        wickets = int(cricket_profile.get("wickets", 0) or 0)
+                        experience = int(cricket_profile.get("years_of_experience", 0) or 0)
+                        
+                        rating = getattr(player, 'cricket_rating', 5)
+                        if rating is None: rating = 5
+                        
+                        # Batting: 40 runs/match = 100 score
+                        if matches > 0:
+                            batting = min(100.0, (runs / matches) * 2.5)
+                        else:
+                            batting = rating * 10.0
+                            
+                        # Bowling: 2.5 wickets/match = 100 score
+                        if matches > 0:
+                            bowling = min(100.0, (wickets / matches) * 40.0)
+                        else:
+                            bowling = rating * 10.0
+                            
+                        # Consistency: Matches + Experience multiplier
+                        consistency = min(100.0, matches + (experience * 5.0))
+                        
+                        # Fielding and Form based on overall rating baseline
+                        fielding = rating * 10.0
+                        form = rating * 10.0
+                        
+                        # Value is the average
+                        value = (batting + bowling + consistency + fielding + form) / 5.0
+                        
+                        stats = [
+                            int(batting),
+                            int(bowling),
+                            int(fielding),
+                            int(consistency),
+                            int(form),
+                            int(value)
+                        ]
+                    except Exception as e:
+                        logger.warning(f"Failed to parse raw cricket stats for player {player_id}: {e}")
+            
+            # Use deterministic, uniform stats based strictly on user input (cricket_rating)
+            if not stats:
+                rating = getattr(player, 'cricket_rating', 5)
+                if rating is None: rating = 5
+                base_stat = rating * 10
+                stats = [base_stat, base_stat, base_stat, base_stat, base_stat, base_stat]
+
+        return jsonify({
+            "success": True,
+            "player": {"id": player_id, "name": name},
+            "stats": stats
+        })
+    except Exception as e:
+        logger.error(f"Error fetching analyst player stats: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+    finally:
+        session.close()
+
+# -------------------------------------------------------------------------
+# Admin Utility: Initialize / migrate missing DB tables on demand
+# -------------------------------------------------------------------------
+
+@app.route('/api/admin/init-tables', methods=['POST', 'GET'])
+def admin_init_tables():
+    """Create any missing DB tables (safe: only creates, never drops).
+    Useful after deploying new models without a full server restart."""
+    try:
+        from database import Base, engine
+        Base.metadata.create_all(bind=engine)
+        logger.info("admin_init_tables: create_all completed successfully")
+        return jsonify({"success": True, "message": "All tables initialized / verified successfully"})
+    except Exception as e:
+        logger.error(f"admin_init_tables error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# -------------------------------------------------------------------------
+# Analyst Profile Update
+# -------------------------------------------------------------------------
+
+@app.route('/api/analyst/update_profile', methods=['POST'])
+def update_analyst_profile():
+    current_user = get_current_user()
+    if getattr(current_user.user_type, 'value', current_user.user_type) not in ['team_analyst', 'team_owner', 'team_manager']:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json(force=True, silent=True) or {}
+    session = SessionLocal()
+    try:
+        user = session.query(models.User).filter(models.User.user_id == current_user.user_id).first()
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        if data.get('username'):
+            user.username = data['username'].strip()
+        if data.get('email'):
+            user.email = data['email'].strip().lower()
+        if data.get('password'):
+            from werkzeug.security import generate_password_hash
+            user.password_hash = generate_password_hash(data['password'])
+
+        session.commit()
+        return jsonify({"success": True, "message": "Profile updated successfully"})
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error updating analyst profile: {e}")
+        return jsonify({"success": False, "error": "Failed to update profile"}), 500
+    finally:
+        session.close()
 
 # -------------------------------------------------------------------------
 # Passenger / cPanel auction engine bootstrap
@@ -6747,17 +7465,393 @@ def db_inspect():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
+# -------------------------
+# Training Calendar APIs
+# -------------------------
+@app.route('/api/manager/training', methods=['GET', 'POST'])
+def manage_training_sessions():
+    from database import SessionLocal
+    from models import TrainingSession, TrainingAttendance, User, TeamPlayer
+    from datetime import datetime
+
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    db = SessionLocal()
+    try:
+        current_user = db.merge(current_user)
+        user_type_str = current_user.user_type.value if hasattr(current_user.user_type, 'value') else str(current_user.user_type)
+        if user_type_str not in ['team_owner', 'team_manager']:
+            return jsonify({"success": False, "error": "Forbidden"}), 403
+
+        # Resolve team_owner — handle missing parent or no teams gracefully
+        team_owner = None
+        if user_type_str == 'team_manager':
+            if not current_user.parent_user_id:
+                return jsonify({"success": True, "sessions": [], "message": "No parent owner linked"})
+            parent_user = db.query(User).filter(User.user_id == current_user.parent_user_id).first()
+            if parent_user:
+                team_owner = parent_user.team_owner
+        else:
+            team_owner = current_user.team_owner
+
+        if not team_owner:
+            return jsonify({"success": True, "sessions": [], "message": "No team owner profile found"})
+        if not team_owner.teams:
+            return jsonify({"success": True, "sessions": [], "message": "No team assigned"})
+
+        # Use provided team_id or default to first team
+        json_data = request.get_json(silent=True) if request.is_json else None
+        team_id = request.args.get('team_id') or (json_data.get('team_id') if json_data else None)
+        if not team_id or str(team_id) == 'undefined':
+            team_id = team_owner.teams[0].team_id
+        
+        try:
+            team_id = int(team_id)
+        except (ValueError, TypeError):
+            return jsonify({"success": False, "error": "Invalid team ID format"}), 400
+        
+        # Verify ownership
+        valid_team = any(t.team_id == team_id for t in team_owner.teams)
+        if not valid_team:
+            return jsonify({"success": False, "error": "Unauthorized for this team"}), 403
+
+        if request.method == 'GET':
+            try:
+                sessions = db.query(TrainingSession).filter(TrainingSession.team_id == team_id).all()
+            except Exception as table_err:
+                err_str = str(table_err).lower()
+                if "no such table" in err_str or "doesn't exist" in err_str or "does not exist" in err_str or "relation" in err_str:
+                    # Table missing — create it now and retry
+                    logger.warning(f"training_sessions table missing, creating now: {table_err}")
+                    try:
+                        from database import Base, engine
+                        Base.metadata.create_all(bind=engine)
+                        db.close()
+                        db = SessionLocal()
+                        sessions = db.query(TrainingSession).filter(TrainingSession.team_id == team_id).all()
+                    except Exception as create_err:
+                        logger.error(f"Failed to auto-create training tables: {create_err}")
+                        return jsonify({"success": True, "sessions": [], "message": "Training table being initialized"})
+                else:
+                    raise  # re-raise non-table errors
+
+            return jsonify({
+                "success": True,
+                "sessions": [{
+                    "id": s.training_session_id,
+                    "title": s.title,
+                    "type": s.training_type,
+                    "date": str(s.date),
+                    "start_time": str(s.start_time),
+                    "end_time": str(s.end_time),
+                    "location": s.location,
+                    "coach": s.coach,
+                    "status": s.status
+                } for s in sessions]
+            })
+
+        elif request.method == 'POST':
+            data = request.json
+            if not data.get('title') or not data.get('date') or not data.get('start_time') or not data.get('end_time'):
+                return jsonify({"success": False, "error": "Missing required fields"}), 400
+
+            try:
+                start_time_obj = datetime.strptime(data['start_time'], "%H:%M").time()
+                end_time_obj = datetime.strptime(data['end_time'], "%H:%M").time()
+                if end_time_obj <= start_time_obj:
+                    return jsonify({"success": False, "error": "End time must be after start time"}), 400
+            except ValueError:
+                # In case formatting is like "%H:%M:%S"
+                try:
+                    start_time_obj = datetime.strptime(data['start_time'], "%H:%M:%S").time()
+                    end_time_obj = datetime.strptime(data['end_time'], "%H:%M:%S").time()
+                    if end_time_obj <= start_time_obj:
+                        return jsonify({"success": False, "error": "End time must be after start time"}), 400
+                except ValueError:
+                    pass
+
+            new_session = TrainingSession(
+                team_id=team_id,
+                manager_id=current_user.user_id,
+                title=data['title'],
+                training_type=data.get('type', 'Other'),
+                date=data['date'],
+                start_time=data['start_time'],
+                end_time=data['end_time'],
+                location=data.get('location'),
+                coach=data.get('coach'),
+                description=data.get('description'),
+                status='Scheduled'
+            )
+            db.add(new_session)
+            db.flush()
+
+            # Add players
+            player_ids = data.get('players', [])
+            for pid in player_ids:
+                tp = db.query(TeamPlayer).filter(TeamPlayer.team_id == team_id, TeamPlayer.player_id == pid).first()
+                if tp:
+                    att = TrainingAttendance(
+                        training_session_id=new_session.training_session_id,
+                        player_id=pid,
+                        status='Pending'
+                    )
+                    db.add(att)
+            
+            db.commit()
+            return jsonify({"success": True, "message": "Training scheduled", "id": new_session.training_session_id})
+            
+    except Exception as e:
+        app.logger.error(f"Training API Error: {e}")
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        db.close()
+
+@app.route('/api/manager/training/<int:session_id>', methods=['GET', 'PUT', 'DELETE'])
+def training_session_detail(session_id):
+    from database import SessionLocal
+    from models import TrainingSession, TrainingAttendance, User
+    
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    db = SessionLocal()
+    try:
+        current_user = db.merge(current_user)
+        session_obj = db.query(TrainingSession).filter(TrainingSession.training_session_id == session_id).first()
+        if not session_obj:
+            return jsonify({"success": False, "error": "Not found"}), 404
+
+        user_type_str = current_user.user_type.value if hasattr(current_user.user_type, 'value') else str(current_user.user_type)
+        if user_type_str == 'team_manager':
+            parent_user = db.query(User).filter(User.user_id == current_user.parent_user_id).first()
+            team_owner = parent_user.team_owner if parent_user else None
+        else:
+            team_owner = current_user.team_owner
+            
+        if not team_owner or not any(t.team_id == session_obj.team_id for t in team_owner.teams):
+            return jsonify({"success": False, "error": "Forbidden"}), 403
+
+        if request.method == 'GET':
+            attendances = db.query(TrainingAttendance).filter(TrainingAttendance.training_session_id == session_id).all()
+            return jsonify({
+                "success": True,
+                "session": {
+                    "id": session_obj.training_session_id,
+                    "title": session_obj.title,
+                    "type": session_obj.training_type,
+                    "date": str(session_obj.date),
+                    "start_time": str(session_obj.start_time),
+                    "end_time": str(session_obj.end_time),
+                    "location": session_obj.location,
+                    "coach": session_obj.coach,
+                    "description": session_obj.description,
+                    "status": session_obj.status,
+                    "players": [{
+                        "player_id": a.player_id,
+                        "name": a.player.full_name,
+                        "status": a.status,
+                        "remarks": a.remarks
+                    } for a in attendances]
+                }
+            })
+
+        elif request.method == 'PUT':
+            if session_obj.status in ["Completed", "Cancelled"]:
+                return jsonify({"success": False, "error": "Cannot edit completed or cancelled sessions"}), 400
+
+            data = request.json
+            if 'title' in data: session_obj.title = data['title']
+            if 'type' in data: session_obj.training_type = data['type']
+            if 'date' in data: session_obj.date = data['date']
+            if 'start_time' in data: session_obj.start_time = data['start_time']
+            if 'end_time' in data: session_obj.end_time = data['end_time']
+            if 'location' in data: session_obj.location = data['location']
+            if 'coach' in data: session_obj.coach = data['coach']
+            if 'description' in data: session_obj.description = data['description']
+            if 'status' in data: session_obj.status = data['status']
+            db.commit()
+            return jsonify({"success": True})
+
+        elif request.method == 'DELETE':
+            session_obj.status = 'Cancelled'
+            db.commit()
+            return jsonify({"success": True})
+
+    except Exception as e:
+        app.logger.error(f"Training API Error: {e}")
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        db.close()
+
+@app.route('/api/manager/training/<int:session_id>/attendance', methods=['POST'])
+def update_training_attendance(session_id):
+    from database import SessionLocal
+    from models import TrainingSession, TrainingAttendance, User
+    
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    db = SessionLocal()
+    try:
+        current_user = db.merge(current_user)
+        session_obj = db.query(TrainingSession).filter(TrainingSession.training_session_id == session_id).first()
+        if not session_obj:
+            return jsonify({"success": False, "error": "Not found"}), 404
+
+        data = request.json
+        attendance_updates = data.get('attendance', [])
+        
+        for update in attendance_updates:
+            pid = update.get('player_id')
+            status = update.get('status')
+            remarks = update.get('remarks')
+            
+            if status and status not in ['Pending', 'Present', 'Absent', 'Late', 'Excused']:
+                return jsonify({"success": False, "error": "Invalid attendance status"}), 400
+            
+            att = db.query(TrainingAttendance).filter(
+                TrainingAttendance.training_session_id == session_id,
+                TrainingAttendance.player_id == pid
+            ).first()
+            if att:
+                if status: att.status = status
+                if remarks is not None: att.remarks = remarks
+                
+        db.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        app.logger.error(f"Training API Error: {e}")
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        db.close()
+
+@app.route('/api/owner/staff', methods=['GET'])
+def get_owner_staff():
+    from database import SessionLocal
+    from models import User, UserType
+    
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    db = SessionLocal()
+    try:
+        current_user = db.merge(current_user)
+        user_type_str = current_user.user_type.value if hasattr(current_user.user_type, 'value') else str(current_user.user_type)
+        
+        # Resolve owner user_id: team_owner uses own id; team_manager uses parent_user_id
+        if user_type_str == 'team_owner':
+            owner_user_id = current_user.user_id
+        elif user_type_str == 'team_manager':
+            owner_user_id = current_user.parent_user_id
+            if not owner_user_id:
+                return jsonify({"success": True, "manager": None, "analyst": None})
+        else:
+            return jsonify({"success": False, "error": "Forbidden"}), 403
+
+        staff_members = db.query(User).filter(
+            User.parent_user_id == owner_user_id,
+            User.user_type.in_([UserType.team_manager, UserType.team_analyst])
+        ).all()
+        
+        staff_data = {
+            "manager": None,
+            "analyst": None
+        }
+        
+        for staff in staff_members:
+            stype = staff.user_type.value if hasattr(staff.user_type, 'value') else str(staff.user_type)
+            role_key = "manager" if stype == 'team_manager' else "analyst"
+            
+            staff_data[role_key] = {
+                "user_id": staff.user_id,
+                "name": staff.username,
+                "email": staff.email,
+                "is_active": staff.is_active
+            }
+            
+        return jsonify({"success": True, **staff_data})
+    except Exception as e:
+        logger.error(f"Error fetching staff settings: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        db.close()
+
+@app.route('/api/owner/staff/<role>', methods=['PUT'])
+def update_owner_staff(role):
+    from database import SessionLocal
+    from models import User
+    
+    if role not in ['team_manager', 'team_analyst']:
+        return jsonify({"success": False, "error": "Invalid role"}), 400
+        
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    db = SessionLocal()
+    try:
+        current_user = db.merge(current_user)
+        user_type_str = current_user.user_type.value if hasattr(current_user.user_type, 'value') else str(current_user.user_type)
+        if user_type_str != 'team_owner':
+            return jsonify({"success": False, "error": "Forbidden"}), 403
+
+        data = request.json
+        from models import UserType
+        target_enum = UserType.team_manager if role == 'team_manager' else UserType.team_analyst
+        
+        staff = db.query(User).filter(
+            User.parent_user_id == current_user.user_id,
+            User.user_type == target_enum
+        ).first()
+        
+        if not staff:
+            return jsonify({"success": False, "error": f"{role.replace('_', ' ').title()} not found for this team"}), 404
+            
+        if 'name' in data:
+            staff.username = data['name']
+        if 'email' in data:
+            staff.email = data['email']
+            
+        if data.get('password') and str(data['password']).strip() != '':
+            staff.set_password(str(data['password']).strip())
+            
+        db.commit()
+        return jsonify({"success": True, "message": f"{role.replace('_', ' ').title()} updated successfully"})
+    except Exception as e:
+        logger.error(f"Error updating staff settings: {e}")
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        db.close()
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_frontend_static_catchall(path):
+    """Serve the frontend static files and SPA index.html on local development."""
+    if FRONTEND_DIR and path and os.path.exists(os.path.join(FRONTEND_DIR, path)):
+        return send_from_directory(FRONTEND_DIR, path)
+    elif FRONTEND_DIR:
+        return send_from_directory(FRONTEND_DIR, 'index.html')
+    return "Frontend directory not found.", 404
+
 # Local development only — Passenger imports `app` and never hits this block
 application=app
 if __name__ == "__main__":
-    print("Starting development server...")
     initialize_database()
     try:
         from auction_engine import start_auction_engine
         start_auction_engine()
-        print("Auction engine started successfully")
     except Exception as e:
-        print(f"Error starting auction engine: {e}")
+        print(f"Failed to start auction engine: {e}")
 
     socketio.run(
         app,

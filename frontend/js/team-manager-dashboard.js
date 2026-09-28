@@ -42,9 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // Authentication check
 document.addEventListener('DOMContentLoaded', function () {
 
+
     // Check if user is authenticated via localStorage
     const userStr = sessionStorage.getItem('user');
     if (!userStr) {
+
         window.location.replace('/');
         return;
     }
@@ -58,14 +60,17 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
+
     // Check if user is team owner, manager, or analyst
     if (!['team_owner', 'team_manager', 'team_analyst'].includes(user.user_type)) {
+
         showModal('Access Denied', 'Please login as a team owner, manager, or analyst to access this page.');
         setTimeout(() => {
             window.location.replace('/');
         }, 2000);
         return;
     }
+
 
     // Apply role-based UI restrictions
     applyRolePermissions(user);
@@ -114,29 +119,42 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (adminBidTime) {
         currentAuction.bidTimeLimit = parseInt(adminBidTime);
+
     } else if (teamBidTime) {
         currentAuction.bidTimeLimit = parseInt(teamBidTime);
+
     }
 
     if (currentAuctionStatus === 'NOT_STARTED' && auctionStarting === 'true') {
+
         return;
     } else if (currentAuctionStatus === 'NOT_STARTED' && !auctionStarting) {
+
     }
 
     if (user.user_type === 'team_owner') {
+
         loadTeamOwnerData();
+
         loadSquad();
+
         loadAuctionPool();
+
         initTrainingCalendar();
+
         initializeAuction();
+
         startAuctionTimer();
 
         // As a superset role, Team Owner also needs Analyst and Manager data loaded
+
         if (typeof loadAnalystDashboard === 'function') loadAnalystDashboard();
     } else if (user.user_type === 'team_analyst') {
+
         if (typeof loadAnalystDashboard === 'function') loadAnalystDashboard();
         // Setup analyst specific initializations if needed
     } else if (user.user_type === 'team_manager') {
+
         loadTeamOwnerData();
         loadSquad();
         loadAuctionPool();
@@ -145,15 +163,20 @@ document.addEventListener('DOMContentLoaded', function () {
         startAuctionTimer();
     }
 
+
     setupEventListeners();
+
     startHeartbeat();
+
     // Initial view rendering based on hash
     setTimeout(() => {
         let defaultHash = '#dashboard';
         if (user.user_type === 'team_analyst') defaultHash = '#analytics';
         else if (user.user_type === 'team_manager') defaultHash = '/dashboard/manager';
         const initialHash = window.location.hash || defaultHash;
+
         switchView(initialHash);
+
     }, 100);
 });
 
@@ -512,11 +535,9 @@ async function loadStaffSettings() {
     try {
         const response = await fetch('/api/owner/staff');
 
-
         if (response.status === 401 || response.status === 403) return;
 
         const text = await response.text();
-
         let data;
         try {
             data = JSON.parse(text);
@@ -526,7 +547,7 @@ async function loadStaffSettings() {
         }
 
         if (data.success) {
-
+            // Populate owner-panel staff edit forms (only shown for team_owner)
             const manager = data.manager;
             if (manager) {
                 if (document.getElementById('manager-name')) {
@@ -546,11 +567,90 @@ async function loadStaffSettings() {
                     document.getElementById('analyst-email').value = analyst.email || '';
                 }
             }
+
+            // Populate the read-only staff reference cards in manager-panel Settings
+            const staffRef = document.getElementById('manager-staff-reference');
+            if (staffRef && (manager || analyst)) {
+                staffRef.style.display = 'block';
+                if (manager) {
+                    const nameEl = document.getElementById('staff-ref-manager-name');
+                    const emailEl = document.getElementById('staff-ref-manager-email');
+                    if (nameEl) nameEl.textContent = manager.name || '—';
+                    if (emailEl) emailEl.textContent = manager.email || '—';
+                }
+                if (analyst) {
+                    const nameEl = document.getElementById('staff-ref-analyst-name');
+                    const emailEl = document.getElementById('staff-ref-analyst-email');
+                    if (nameEl) nameEl.textContent = analyst.name || '—';
+                    if (emailEl) emailEl.textContent = analyst.email || '—';
+                }
+            }
         }
+
+        // Always load the manager's own profile into the manager-panel Settings form
+        loadManagerProfileSettings();
     } catch (e) {
-        console.error("Error loading staff settings:", e);
+        console.error('Error loading staff settings:', e);
+        // Still try to load own profile even if staff list fails
+        loadManagerProfileSettings();
     }
 }
+
+async function loadManagerProfileSettings() {
+    try {
+        const res = await fetch('/api/me', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const nameEl = document.getElementById('manager-profile-name');
+        const emailEl = document.getElementById('manager-profile-email');
+        if (nameEl && data.username) nameEl.value = data.username;
+        if (emailEl && data.email) emailEl.value = data.email;
+    } catch (e) {
+        console.warn('Could not load manager profile:', e);
+    }
+}
+
+window.saveManagerProfile = async function (e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; btn.disabled = true; }
+
+    const name = document.getElementById('manager-profile-name')?.value;
+    const email = document.getElementById('manager-profile-email')?.value;
+    const password = document.getElementById('manager-profile-password')?.value;
+
+    const payload = {};
+    if (name) payload.username = name;
+    if (email) payload.email = email;
+    if (password) payload.password = password;
+
+    try {
+        // Reuse the analyst/update_profile endpoint — it works for any staff role
+        const res = await fetch('/api/analyst/update_profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+                showNotification('Profile updated successfully!', 'success');
+                const pwEl = document.getElementById('manager-profile-password');
+                if (pwEl) pwEl.value = '';
+            } else {
+                showNotification(data.error || 'Failed to update profile.', 'error');
+            }
+        } else {
+            showNotification('Server error updating profile.', 'error');
+        }
+    } catch (err) {
+        showNotification('Network error.', 'error');
+    } finally {
+        if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
+    }
+};
 
 async function updateStaffDetails(e, role) {
     e.preventDefault();
@@ -590,6 +690,7 @@ async function updateStaffDetails(e, role) {
         btn.disabled = false;
     }
 }
+
 
 // --- ANALYST DASHBOARD LOGIC ---
 // NOTE: Only the authoritative loadAnalystDashboard() is defined further below (near line 2568).
@@ -2152,6 +2253,7 @@ function initializeLobbySocket(auctionId, teamId) {
         socket = io({ transports: ['polling'], upgrade: false }); // Connects to the host using polling only
 
         socket.on('connect', () => {
+
             socket.emit('join_lobby', {
                 auction_id: auctionId,
                 team_id: teamId
@@ -2159,6 +2261,7 @@ function initializeLobbySocket(auctionId, teamId) {
         });
 
         socket.on('team_status_update', (data) => {
+
             if (data.team_id == teamId && data.status === 'READY') {
                 const btn = document.getElementById('btn-team-ready');
                 if (btn) {
@@ -2170,6 +2273,7 @@ function initializeLobbySocket(auctionId, teamId) {
         });
 
         socket.on('auction_update', (data) => {
+
             if (data.status === 'RUNNING') {
                 // Transition from lobby to live auction UI
                 const lobbyContainer = document.getElementById('auction-lobby-container');
@@ -2204,6 +2308,7 @@ function initializeLobbySocket(auctionId, teamId) {
         });
 
         socket.on('bid_placed', (data) => {
+
             const bidAmountEl = document.getElementById('currentBidAmount') || document.getElementById('currentBid');
             if (bidAmountEl) bidAmountEl.textContent = `₹${data.amount}`;
 
@@ -2292,8 +2397,11 @@ const MOCK_HOLIDAYS = [
     { id: "holiday-14", title: "Christmas", date: "2026-12-25", type: "Holiday", start_time: "00:00", end_time: "23:59", status: "Scheduled", isHoliday: true }
 ];
 
+let _trainingCalendarInit = false;
 function initTrainingCalendar() {
     if (document.getElementById('manager-panel')) {
+        if (_trainingCalendarInit) return; // already running
+        _trainingCalendarInit = true;
         fetchTrainingSessions();
     }
 }
@@ -2739,6 +2847,7 @@ let analystHeatmapChart = null;
 let analystPoolData = [];
 
 async function loadAnalystDashboard() {
+    console.log('loadAnalystDashboard EXECUTED');
     try {
         // 1. Fetch Dashboard Stats
         const dashboardRes = await fetch('/api/analyst/dashboard_data');

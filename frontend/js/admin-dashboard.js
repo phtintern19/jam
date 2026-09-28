@@ -121,14 +121,14 @@ async function loadEvents() {
             console.error(`[API HTTP Error] loadEvents failed with status: ${response.status}`);
             throw new Error(`Failed to fetch events (Status: ${response.status})`);
         }
-        
+
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             const text = await response.text();
             console.error('Non-JSON response from /events/:', text);
             throw new Error('Server returned non-JSON response. Please check if the backend is running correctly.');
         }
-        
+
         eventsData = await response.json();
 
         // Update summary cards
@@ -540,32 +540,32 @@ let teamsModalElement = null;
 
 async function viewEventTeams(eventId, eventTitle) {
     if (document.getElementById('teamsLoadingModal')) return; // Prevent duplicate requests
-    
+
     // Create loading modal
     teamsModalElement = document.createElement('div');
     teamsModalElement.id = 'teamsLoadingModal';
     teamsModalElement.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999;';
-    
+
     // Make sure we use a close button with a clear label as requested
-    teamsModalElement.innerHTML = 
+    teamsModalElement.innerHTML =
         '<div class="glass-card" style="background: var(--bg-card, #ffffff); padding: 2rem; border-radius: 1rem; min-width: 400px; max-width: 90vw; max-height: 80vh; overflow-y: auto; position: relative;">' +
-            '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 1rem;">' +
-                '<div>' +
-                    '<h3 style="margin: 0; font-size: 1.25rem; font-weight: 700;">REGISTERED TEAMS</h3>' +
-                    '<div style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">' + eventTitle + '</div>' +
-                '</div>' +
-                '<button onclick="closeTeamsModal()" style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color, #e2e8f0); border-radius: 0.25rem; padding: 0.25rem 0.75rem; cursor: pointer; color: var(--text-primary, #0f172a); font-weight: 600;">&times; Close</button>' +
-            '</div>' +
-            '<div id="teamsModalContent" style="text-align: center; padding: 2rem;">' +
-                '<i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #3b82f6; margin-bottom: 1rem;"></i>' +
-                '<div>Loading registered teams...</div>' +
-            '</div>' +
+        '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 1rem;">' +
+        '<div>' +
+        '<h3 style="margin: 0; font-size: 1.25rem; font-weight: 700;">REGISTERED TEAMS</h3>' +
+        '<div style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">' + eventTitle + '</div>' +
+        '</div>' +
+        '<button onclick="closeTeamsModal()" style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color, #e2e8f0); border-radius: 0.25rem; padding: 0.25rem 0.75rem; cursor: pointer; color: var(--text-primary, #0f172a); font-weight: 600;">&times; Close</button>' +
+        '</div>' +
+        '<div id="teamsModalContent" style="text-align: center; padding: 2rem;">' +
+        '<i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #3b82f6; margin-bottom: 1rem;"></i>' +
+        '<div>Loading registered teams...</div>' +
+        '</div>' +
         '</div>';
     document.body.appendChild(teamsModalElement);
-    
+
     try {
         const response = await apiFetch('/api/events/' + eventId + '/teams');
-        
+
         let data = null;
         try {
             data = await response.json();
@@ -577,47 +577,47 @@ async function viewEventTeams(eventId, eventTitle) {
             if (response.status === 401) throw new Error("Your session has expired. Please log in again.");
             if (response.status === 403) throw new Error("You do not have permission to view registered teams.");
             if (response.status === 404) throw new Error("Event not found.");
-            
+
             const errorMsg = data && data.message ? data.message : "Failed to load teams. Server error " + response.status;
             throw new Error(errorMsg);
         }
-        
+
         const contentDiv = document.getElementById('teamsModalContent');
         if (!contentDiv) return;
-        
+
         if (!data || !data.teams || data.teams.length === 0) {
-            contentDiv.innerHTML = 
+            contentDiv.innerHTML =
                 '<div style="text-align: center; padding: 2rem;">' +
-                    '<i class="fas fa-users-slash" style="font-size: 3rem; color: #94a3b8; margin-bottom: 1rem;"></i>' +
-                    '<h4 style="margin: 0 0 0.5rem 0;">No teams registered</h4>' +
-                    '<p style="color: #64748b; margin: 0;">There are currently no teams registered for this event.</p>' +
+                '<i class="fas fa-users-slash" style="font-size: 3rem; color: #94a3b8; margin-bottom: 1rem;"></i>' +
+                '<h4 style="margin: 0 0 0.5rem 0;">No teams registered</h4>' +
+                '<p style="color: #64748b; margin: 0;">There are currently no teams registered for this event.</p>' +
                 '</div>';
             return;
         }
-        
+
         let html = '<div style="display: flex; flex-direction: column; gap: 1rem; text-align: left;">';
         data.teams.forEach(team => {
-            html += 
+            html +=
                 '<div style="border: 1px solid var(--border-color, #e2e8f0); border-radius: 0.5rem; padding: 1rem;">' +
-                    '<div style="font-weight: 700; font-size: 1.125rem; color: var(--text-primary, #0f172a); margin-bottom: 0.25rem;">' + team.team_name + '</div>' +
-                    '<div style="color: #64748b; font-size: 0.875rem;">' +
-                        '<div><i class="fas fa-user-tie" style="width: 16px;"></i> Owner: ' + team.owner_name + '</div>' +
-                        '<div><i class="fas fa-users" style="width: 16px;"></i> Players: ' + team.players_count + '</div>' +
-                    '</div>' +
+                '<div style="font-weight: 700; font-size: 1.125rem; color: var(--text-primary, #0f172a); margin-bottom: 0.25rem;">' + team.team_name + '</div>' +
+                '<div style="color: #64748b; font-size: 0.875rem;">' +
+                '<div><i class="fas fa-user-tie" style="width: 16px;"></i> Owner: ' + team.owner_name + '</div>' +
+                '<div><i class="fas fa-users" style="width: 16px;"></i> Players: ' + team.players_count + '</div>' +
+                '</div>' +
                 '</div>';
         });
         html += '</div>';
-        
+
         contentDiv.innerHTML = html;
-        
+
     } catch (error) {
         const contentDiv = document.getElementById('teamsModalContent');
         if (contentDiv) {
-            contentDiv.innerHTML = 
+            contentDiv.innerHTML =
                 '<div style="text-align: center; padding: 2rem; color: #ef4444;">' +
-                    '<i class="fas fa-exclamation-circle" style="font-size: 3rem; margin-bottom: 1rem;"></i>' +
-                    '<h4 style="margin: 0 0 0.5rem 0;">Error</h4>' +
-                    '<p style="margin: 0;">' + error.message + '</p>' +
+                '<i class="fas fa-exclamation-circle" style="font-size: 3rem; margin-bottom: 1rem;"></i>' +
+                '<h4 style="margin: 0 0 0.5rem 0;">Error</h4>' +
+                '<p style="margin: 0;">' + error.message + '</p>' +
                 '</div>';
         }
         console.error("Error loading teams:", error);
@@ -678,7 +678,7 @@ async function viewPlayers(eventId) {
 
     // Update modal title
     document.getElementById('playersModalTitle').textContent = `Registered Players for ${event.title || event.name}`;
-    
+
     // Show modal immediately to indicate loading
     document.getElementById('viewPlayersModal').classList.add('active');
 
@@ -689,10 +689,10 @@ async function viewPlayers(eventId) {
     try {
         const response = await apiFetch(`/api/events/${eventId}/players`);
         if (!response.ok) throw new Error('Failed to fetch players');
-        
+
         const players = await response.json();
         playersGrid.innerHTML = '';
-        
+
         if (players.length === 0) {
             playersGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #64748b;">No players registered for this event yet.</div>';
             return;
@@ -731,6 +731,11 @@ function createPlayerCard(player) {
                     <div class="stat-label">Rating</div>
                 </div>
                 <div class="stat-item">
+                    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-value">${player.evaluation_score !== undefined && player.evaluation_score !== null ? player.evaluation_score : '--'}</div>
+                    <div class="stat-label">Eval Score</div>
+                </div>
+                <div class="stat-item">
                     <div class="stat-icon"><i class="fas fa-trophy"></i></div>
                     <div class="stat-value">${player.wins}</div>
                     <div class="stat-label">Wins</div>
@@ -744,7 +749,7 @@ function createPlayerCard(player) {
             <div class="player-price">
                 <i class="fas fa-coins"></i>
                 <span class="price-label-small">Base Price:</span>
-                <span class="price-amount-large">$${player.basePrice.toLocaleString()}</span>
+                <span class="price-amount-large">₹${player.basePrice.toLocaleString()}</span>
             </div>
             <button class="view-profile-btn">
                 <i class="fas fa-user"></i>
@@ -812,16 +817,16 @@ async function logout() {
         } catch (error) {
             console.error('Error logging out:', error);
         }
-        
+
         // Clear all session storage
         sessionStorage.clear();
-        
+
         // Clear all local storage
-        localStorage.removeItem('user');
-        localStorage.removeItem('session_token');
-        localStorage.removeItem('userType');
-        localStorage.removeItem('username');
-        localStorage.removeItem('teamName');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('session_token');
+        sessionStorage.removeItem('userType');
+        sessionStorage.removeItem('username');
+        sessionStorage.removeItem('teamName');
 
         // Redirect to home page
         window.location.replace('/');
@@ -1203,7 +1208,7 @@ function handleAuthError(error) {
         setTimeout(() => {
             sessionStorage.clear();
             localStorage.clear();
-            window.location.href = '/';
+            window.location.replace('/');
         }, 2000);
         return true;
     }
@@ -1469,12 +1474,12 @@ async function loadTeamOwnerRegistrations(page = teamOwnerCurrentPage, pageSize 
         if (currentViewEventId) {
             url += `&event_id=${currentViewEventId}`;
         }
-        
+
         // Add cache-busting timestamp to prevent browser from returning stale list after deletion
         url += (url.includes('?') ? '&' : '?') + `_t=${new Date().getTime()}`;
 
         const response = await apiFetch(url, {
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 'Cache-Control': 'no-cache, no-store, must-revalidate'
             },
@@ -1526,12 +1531,12 @@ async function loadTeamOwnerRegistrations(page = teamOwnerCurrentPage, pageSize 
 
                 // Escape owner name to prevent JS string breaking
                 const ownerName = (owner.owner_name || owner.username || 'User').replace(/'/g, "\\'");
-                
+
                 let actions = '';
                 if (!owner.is_active) {
                     actions = `<button onclick="approveUser(${owner.user_id}, '${ownerName}')" class="action-btn" style="background-color: #10b981; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; cursor: pointer;">Approve</button>`;
                 }
-                
+
                 // Add delete button for all team owners
                 actions += `<button onclick="deleteTeamOwner(${owner.user_id}, '${ownerName}')" class="action-btn" style="background-color: #ef4444; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; cursor: pointer; margin-left: 0.25rem;">Delete</button>`;
 
@@ -1629,7 +1634,7 @@ async function deleteTeamOwner(userId, currentName) {
         `• Delete all teams and related data\n\n` +
         `This action cannot be undone.`
     );
-    
+
     if (!confirmed) return;
 
     try {
@@ -1646,19 +1651,19 @@ async function deleteTeamOwner(userId, currentName) {
         }
 
         const result = await response.json();
-        
+
         let message = `Team owner ${currentName} deleted successfully!`;
         if (result.deleted_staff_count > 0) {
             message += `\n\nAlso deleted ${result.deleted_staff_count} linked staff members.`;
         }
-        
+
         alert(message);
-        
+
         const rowToRemove = document.getElementById(`team-owner-row-${userId}`);
         if (rowToRemove) {
             rowToRemove.remove();
         }
-        
+
         loadTeamOwnerRegistrations(); // Reload list
     } catch (error) {
         console.error('Error deleting team owner:', error);
@@ -2360,8 +2365,12 @@ function generateSportSkillsHTML(player) {
 // View full details of a player
 async function viewPlayerFullDetails(playerId) {
     try {
+        let url = `/api/users/${playerId}`;
+        if (typeof currentEventId !== 'undefined' && currentEventId) {
+            url += `?event_id=${currentEventId}`;
+        }
         // Fetch full player details
-        const response = await apiFetch(`/api/users/${playerId}`, {
+        const response = await apiFetch(url, {
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include'
         });
@@ -2477,6 +2486,48 @@ async function viewPlayerFullDetails(playerId) {
                 </div>
             </div>
             
+             ${player.evaluation_score !== undefined ? `
+             <div style="margin-top: 2rem; background: #0f172a; padding: 1.5rem; border-radius: 0.5rem; border: 1px solid #334155; display: flex; gap: 2rem; align-items: center;">
+                 <div>
+                     <span style="display: block; color: #94a3b8; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Evaluation Score</span>
+                     <span style="color: #3b82f6; font-size: 2rem; font-weight: bold;">${player.evaluation_score}<span style="font-size: 1rem; color: #64748b;">/100</span></span>
+                 </div>
+                 ${player.category ? `
+                 <div style="border-left: 1px solid #334155; padding-left: 2rem;">
+                     <span style="display: block; color: #94a3b8; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Category</span>
+                     <span style="color: #10b981; font-size: 1.5rem; font-weight: bold; text-transform: capitalize;">${player.category}</span>
+                 </div>
+                 ` : ''}
+             </div>
+             ` : ''}
+             
+             <!-- Factual Sport Profiles -->
+             ${(() => {
+                if (player.sport_profiles && player.sport_profiles.cricket) {
+                    const cricket = player.sport_profiles.cricket;
+                    return `
+                        <div style="margin-top: 2rem;">
+                            <h3 style="color: #cbd5e1; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; margin-bottom: 1rem;">Cricket Information</h3>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;">
+                                <div class="info-group">
+                                    <div class="info-row"><label>Role:</label> <span>${cricket.role || 'N/A'}</span></div>
+                                    <div class="info-row"><label>Batting Style:</label> <span>${cricket.batting_style || 'N/A'}</span></div>
+                                    <div class="info-row"><label>Bowling Style:</label> <span>${cricket.bowling_style || 'N/A'}</span></div>
+                                    <div class="info-row"><label>Highest Level:</label> <span>${cricket.highest_level || 'N/A'}</span></div>
+                                </div>
+                                <div class="info-group">
+                                    <div class="info-row"><label>Matches:</label> <span>${cricket.matches_played || 0}</span></div>
+                                    <div class="info-row"><label>Runs:</label> <span>${cricket.runs || 0}</span></div>
+                                    <div class="info-row"><label>Wickets:</label> <span>${cricket.wickets || 0}</span></div>
+                                    <div class="info-row"><label>Experience:</label> <span>${cricket.years_experience || 0} Years</span></div>
+                                </div>
+                            </div>
+                        </div>
+                     `;
+                }
+                return '';
+            })()}
+
              <div style="margin-top: 2rem;">
                 <h3 style="color: #cbd5e1; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; margin-bottom: 1rem;">Bio</h3>
                 <p style="color: #94a3b8; line-height: 1.6;">${player.bio || 'No status bio provided.'}</p>
@@ -2582,6 +2633,16 @@ function createPlayerCard(player) {
                 </div>
                 <h3 style="margin: 0; color: #f8fafc; font-size: 1.125rem;">${player.first_name || ''} ${player.last_name || ''}</h3>
                 <p style="margin: 0.25rem 0 0; color: #94a3b8; font-size: 0.875rem;">@${player.username}</p>
+                ${player.evaluation_score !== undefined ? `
+                <div style="margin-top: 0.5rem; background: #3b82f6; color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: bold; font-size: 0.875rem;">
+                    Score: ${player.evaluation_score}
+                </div>
+                ` : ''}
+                ${player.category ? `
+                <div style="margin-top: 0.5rem; background: #10b981; color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: bold; font-size: 0.875rem; text-transform: capitalize;">
+                    ${player.category}
+                </div>
+                ` : ''}
             </div>
             <div style="padding: 1.5rem; flex: 1;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.875rem;">
@@ -2863,18 +2924,18 @@ async function loadSports() {
         const sports = data.sports || data || [];
         const tbody = document.querySelector('#sportsTable tbody');
         const sportSelect = document.getElementById('editSportId');
-        
+
         if (sportSelect) {
             sportSelect.innerHTML = '<option value="">Select a Sport...</option>';
         }
-        
+
         if (!tbody) return;
-        
+
         if (sports.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: #94a3b8;">No sports found.</td></tr>';
             return;
         }
-        
+
         tbody.innerHTML = '';
         sports.forEach(sport => {
             // Populate the dropdown inside the Event Creation Modal
@@ -2884,12 +2945,12 @@ async function loadSports() {
                 opt.textContent = sport.name;
                 sportSelect.appendChild(opt);
             }
-            
+
             const tr = document.createElement('tr');
-            
+
             // Serialize config to string safely for data attributes
             const sportData = btoa(unescape(encodeURIComponent(JSON.stringify(sport))));
-            
+
             tr.innerHTML = `
                 <td>${sport.sport_id}</td>
                 <td><i class="${sport.icon_class} mr-2"></i> ${sport.name}</td>
@@ -2913,12 +2974,12 @@ function openConfigureSportModal(sportDataB64) {
     try {
         const sport = JSON.parse(decodeURIComponent(escape(atob(sportDataB64))));
         document.getElementById('configureSportId').value = sport.sport_id;
-        
+
         // Handle hidden values to preserve non-editable JSON structures
         document.getElementById('configRolesHidden').value = sport.roles_config ? JSON.stringify(sport.roles_config) : '';
         document.getElementById('configAttributesHidden').value = sport.attributes_schema ? JSON.stringify(sport.attributes_schema) : '';
         document.getElementById('configRulesHidden').value = sport.default_auction_rules ? JSON.stringify(sport.default_auction_rules) : '';
-        
+
         // 1. Populate Team Budget
         const budgetInput = document.getElementById('configDefaultBudget');
         if (sport.default_auction_rules && sport.default_auction_rules.default_budget) {
@@ -2927,31 +2988,106 @@ function openConfigureSportModal(sportDataB64) {
             budgetInput.value = ''; // Default to empty so admin sets it
         }
 
+        // 1.5 Populate Evaluation Rules
+        const isBadminton = sport.name.toLowerCase() === 'badminton';
+        const evalRules = sport.evaluation_rules || {
+            weights: isBadminton 
+                ? { matches_played: 15, win_rate: 25, tournaments_won: 25, years_experience: 15, highest_level: 20 }
+                : { matches_played: 15, runs: 25, wickets: 25, years_experience: 15, highest_level: 20 },
+            normalization: isBadminton
+                ? { matches_max: 200, win_rate_max: 100, tournaments_won_max: 20, experience_max: 15 }
+                : { matches_max: 150, runs_max: 5000, wickets_max: 200, experience_max: 15 }
+        };
+
+        // Update Modal Title and Subtitle
+        const modalTitle = document.querySelector('#configureSportModal h2');
+        if (modalTitle) modalTitle.innerHTML = `<i class="fas fa-cogs"></i> Configure ${sport.name}`;
+        
+        const modalSubtitle = document.getElementById('configureSportModalSubtitle');
+        if (modalSubtitle) modalSubtitle.innerText = `Set the default auction configuration for ${sport.name} events.`;
+
+        // Update Labels dynamically
+        if (document.getElementById('configWeightRuns') && document.getElementById('configWeightRuns').previousElementSibling) {
+            document.getElementById('configWeightRuns').previousElementSibling.innerText = isBadminton ? 'Win Rate Weight (%)' : 'Runs Weight (%)';
+            document.getElementById('configWeightWickets').previousElementSibling.innerText = isBadminton ? 'Tournaments Won Weight (%)' : 'Wickets Weight (%)';
+            document.getElementById('configNormRuns').previousElementSibling.innerText = isBadminton ? 'Max Win Rate (%)' : 'Max Runs';
+            document.getElementById('configNormWickets').previousElementSibling.innerText = isBadminton ? 'Max Tournaments Won' : 'Max Wickets';
+        }
+        
+        // Update Bottom Info Box dynamically
+        const infoBoxTitle = document.querySelector('#configureSportModal .form-section:last-child h4');
+        const infoBoxRoles = document.querySelector('#configureSportModal .form-section:last-child p:nth-of-type(1)');
+        const infoBoxAttrs = document.querySelector('#configureSportModal .form-section:last-child p:nth-of-type(2)');
+        if (infoBoxTitle) infoBoxTitle.innerHTML = `<i class="fas fa-info-circle"></i> ${sport.name} Configuration`;
+        if (infoBoxRoles) infoBoxRoles.innerHTML = `<strong>Roles:</strong> ${isBadminton ? 'Singles · Doubles · Mixed Doubles' : 'Batsman · Bowler · All-Rounder · Wicket-Keeper'}`;
+        if (infoBoxAttrs) infoBoxAttrs.innerHTML = `<strong>Player Attributes:</strong> Automatically configured for ${sport.name}`;
+
+        document.getElementById('configWeightMatches').value = evalRules.weights.matches_played || 0;
+        document.getElementById('configWeightRuns').value = isBadminton ? (evalRules.weights.win_rate || 0) : (evalRules.weights.runs || 0);
+        document.getElementById('configWeightWickets').value = isBadminton ? (evalRules.weights.tournaments_won || 0) : (evalRules.weights.wickets || 0);
+        document.getElementById('configWeightExperience').value = evalRules.weights.years_experience || 0;
+        document.getElementById('configWeightLevel').value = evalRules.weights.highest_level || 0;
+
+        // Add event listeners for dynamic total calculation
+        ['Matches', 'Runs', 'Wickets', 'Experience', 'Level'].forEach(field => {
+            document.getElementById(`configWeight${field}`).addEventListener('input', updateTotalWeight);
+        });
+
+        document.getElementById('configNormMatches').value = evalRules.normalization.matches_max || 150;
+        document.getElementById('configNormRuns').value = isBadminton ? (evalRules.normalization.win_rate_max || 100) : (evalRules.normalization.runs_max || 5000);
+        document.getElementById('configNormWickets').value = isBadminton ? (evalRules.normalization.tournaments_won_max || 20) : (evalRules.normalization.wickets_max || 200);
+        document.getElementById('configNormExperience').value = evalRules.normalization.experience_max || 15;
+
+        updateTotalWeight(); // update the display UI
+
         // 2. Populate Player Categories
         currentSportCategories = [];
+        let legacyCategories = [];
         if (sport.categories_config) {
             if (Array.isArray(sport.categories_config)) {
                 // If stored as array: [{"name": "Diamond", "base_price": 50000}]
-                currentSportCategories = [...sport.categories_config];
+                legacyCategories = [...sport.categories_config];
             } else if (typeof sport.categories_config === 'object') {
                 // If stored as dictionary: {"diamond": 50000}
                 for (const [key, value] of Object.entries(sport.categories_config)) {
                     // Capitalize dictionary keys for display (e.g. "diamond" -> "Diamond")
                     const displayName = key.charAt(0).toUpperCase() + key.slice(1);
-                    currentSportCategories.push({
+                    legacyCategories.push({
                         name: displayName,
                         base_price: value
                     });
                 }
             }
         }
-        
+
+        // Auto-assign safe ranges for legacy categories if missing
+        currentSportCategories = legacyCategories.map(cat => {
+            if (cat.min_score !== undefined && cat.max_score !== undefined) {
+                return cat;
+            }
+
+            let min = 0, max = 0;
+            const lowerName = (cat.name || '').toLowerCase();
+            if (lowerName.includes('diamond')) { min = 90; max = 100; }
+            else if (lowerName.includes('platinum')) { min = 75; max = 89.99; }
+            else if (lowerName.includes('gold')) { min = 50; max = 74.99; }
+            else if (lowerName.includes('silver')) { min = 0; max = 49.99; }
+
+            return {
+                ...cat,
+                min_score: min,
+                max_score: max
+            };
+        });
+
         renderSportCategories();
-        
+
         // Clear add category inputs
         document.getElementById('newCategoryName').value = '';
+        document.getElementById('newCategoryMinScore').value = '';
+        document.getElementById('newCategoryMaxScore').value = '';
         document.getElementById('newCategoryPrice').value = '';
-        
+
         document.getElementById('configureSportModal').classList.add('active');
     } catch (e) {
         console.error("Error opening configure sport modal:", e);
@@ -2959,22 +3095,39 @@ function openConfigureSportModal(sportDataB64) {
     }
 }
 
+function updateTotalWeight() {
+    const wMatches = parseFloat(document.getElementById('configWeightMatches').value) || 0;
+    const wRuns = parseFloat(document.getElementById('configWeightRuns').value) || 0;
+    const wWickets = parseFloat(document.getElementById('configWeightWickets').value) || 0;
+    const wExp = parseFloat(document.getElementById('configWeightExperience').value) || 0;
+    const wLevel = parseFloat(document.getElementById('configWeightLevel').value) || 0;
+
+    const total = wMatches + wRuns + wWickets + wExp + wLevel;
+    const el = document.getElementById('configWeightTotalDisplay');
+    if (el) {
+        el.textContent = `${total}%`;
+        el.style.color = (total === 100) ? '#10b981' : '#ef4444';
+    }
+}
+
 function renderSportCategories() {
     const tbody = document.getElementById('configCategoriesTableBody');
     if (!tbody) return;
-    
+
     tbody.innerHTML = '';
-    
+
     if (currentSportCategories.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: #94a3b8; padding: 1rem;">No categories added yet.</td></tr>';
         return;
     }
-    
+
     currentSportCategories.forEach((cat, index) => {
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid #1e293b';
         tr.innerHTML = `
             <td style="padding: 0.75rem 0;">${cat.name}</td>
+            <td style="padding: 0.75rem 0;">${cat.min_score !== undefined ? cat.min_score : 'N/A'}</td>
+            <td style="padding: 0.75rem 0;">${cat.max_score !== undefined ? cat.max_score : 'N/A'}</td>
             <td style="padding: 0.75rem 0;">₹${cat.base_price.toLocaleString()}</td>
             <td style="padding: 0.75rem 0; text-align: right;">
                 <button type="button" class="btn btn-outline-danger" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" onclick="deleteSportCategory(${index})">
@@ -2988,37 +3141,75 @@ function renderSportCategories() {
 
 function addSportCategory() {
     const nameInput = document.getElementById('newCategoryName');
+    const minScoreInput = document.getElementById('newCategoryMinScore');
+    const maxScoreInput = document.getElementById('newCategoryMaxScore');
     const priceInput = document.getElementById('newCategoryPrice');
-    
+
     const name = nameInput.value.trim();
+    const minScore = parseFloat(minScoreInput.value);
+    const maxScore = parseFloat(maxScoreInput.value);
     const price = parseFloat(priceInput.value);
-    
+
     if (!name) {
         showModal('Validation Error', 'Category name is required.');
         return;
     }
-    
+
+    if (isNaN(minScore) || minScore < 0 || minScore > 100) {
+        showModal('Validation Error', 'Min score must be between 0 and 100.');
+        return;
+    }
+
+    if (isNaN(maxScore) || maxScore < 0 || maxScore > 100) {
+        showModal('Validation Error', 'Max score must be between 0 and 100.');
+        return;
+    }
+
+    if (minScore > maxScore) {
+        showModal('Validation Error', 'Min score cannot be greater than max score.');
+        return;
+    }
+
     if (isNaN(price) || price < 0) {
         showModal('Validation Error', 'Base price must be a valid number greater than or equal to 0.');
         return;
     }
-    
+
     // Check for duplicates (case insensitive)
     const exists = currentSportCategories.some(cat => cat.name.toLowerCase() === name.toLowerCase());
     if (exists) {
         showModal('Validation Error', `Category "${name}" already exists.`);
         return;
     }
-    
+
+    // Check for overlapping score ranges locally
+    const overlap = currentSportCategories.some(cat => {
+        if (cat.min_score === undefined || cat.max_score === undefined) return false;
+        // overlap exists if one range's start is less than or equal to the other range's end, and vice versa
+        return (minScore <= cat.max_score) && (maxScore >= cat.min_score);
+    });
+
+    if (overlap) {
+        showModal('Validation Error', `Score range ${minScore}-${maxScore} overlaps with an existing category.`);
+        return;
+    }
+
     currentSportCategories.push({
         name: name,
+        min_score: minScore,
+        max_score: maxScore,
         base_price: price
     });
-    
+
+    // Sort descending by min_score
+    currentSportCategories.sort((a, b) => b.min_score - a.min_score);
+
     renderSportCategories();
-    
+
     // Clear inputs after successful add
     nameInput.value = '';
+    minScoreInput.value = '';
+    maxScoreInput.value = '';
     priceInput.value = '';
 }
 
@@ -3035,14 +3226,14 @@ function closeConfigureSportModal() {
 
 async function saveSportConfiguration() {
     const sportId = document.getElementById('configureSportId').value;
-    
+
     // Validate Team Budget
     const budgetValue = parseFloat(document.getElementById('configDefaultBudget').value);
     if (isNaN(budgetValue) || budgetValue <= 0) {
         showModal('Validation Error', 'Team Budget is required and must be greater than 0.');
         return;
     }
-    
+
     // Parse JSON safely from hidden inputs (preserves backend-provided configuration)
     const parseJSON = (id) => {
         const val = document.getElementById(id).value.trim();
@@ -3054,50 +3245,98 @@ async function saveSportConfiguration() {
             return null;
         }
     };
-    
+
     try {
-        const sportName = document.getElementById('configureSportNameDisplay').textContent.toLowerCase();
-        
         // Read the preserved rules from the hidden input, or create a new object
         let rules = parseJSON('configRulesHidden') || {};
         // Update the specific values that the Admin has control over
         rules.default_budget = budgetValue;
         // Enforce the system default timer if it wasn't already set
         if (!rules.default_timer) rules.default_timer = 20;
-        
+
+        // Get the sport name to determine if Badminton
+        const sportName = document.querySelector(`#sportsTableBody tr button[onclick*="${document.getElementById('configureSportId').value}"]`) 
+            ? document.querySelector(`#sportsTableBody tr button[onclick*="${document.getElementById('configureSportId').value}"]`).closest('tr').children[1].innerText.toLowerCase() 
+            : 'cricket'; // Fallback
+        const isBadminton = sportName.includes('badminton');
+
         let roles = parseJSON('configRolesHidden');
         if (!roles || (Array.isArray(roles) && roles.length === 0)) {
-            roles = ["Batsman", "Bowler", "All-Rounder", "Wicket-Keeper"];
+            roles = isBadminton ? ["Singles", "Doubles", "Mixed Doubles"] : ["Batsman", "Bowler", "All-Rounder", "Wicket-Keeper"];
         }
-        
+
         let attributes = parseJSON('configAttributesHidden');
         if (!attributes || Object.keys(attributes).length === 0) {
-            attributes = {
-                "batting_style": ["Right-hand bat", "Left-hand bat"],
-                "bowling_style": ["Right-arm fast", "Right-arm medium", "Right-arm spin", "Left-arm fast", "Left-arm medium", "Left-arm spin"]
-            };
+            attributes = isBadminton
+                ? {
+                    "playing_hand": ["Right-handed", "Left-handed"],
+                    "play_style": ["Aggressive", "Defensive", "Balanced"]
+                }
+                : {
+                    "batting_style": ["Right-hand bat", "Left-hand bat"],
+                    "bowling_style": ["Right-arm fast", "Right-arm medium", "Right-arm spin", "Left-arm fast", "Left-arm medium", "Left-arm spin"]
+                };
         }
-        
+
+        // Build Evaluation Rules
+        const wMatches = parseFloat(document.getElementById('configWeightMatches').value) || 0;
+        const wRuns = parseFloat(document.getElementById('configWeightRuns').value) || 0;
+        const wWickets = parseFloat(document.getElementById('configWeightWickets').value) || 0;
+        const wExp = parseFloat(document.getElementById('configWeightExperience').value) || 0;
+        const wLevel = parseFloat(document.getElementById('configWeightLevel').value) || 0;
+
+        const totalWeight = wMatches + wRuns + wWickets + wExp + wLevel;
+        if (Math.abs(totalWeight - 100) > 0.01) {
+            showModal('Validation Error', `Total evaluation weight must equal exactly 100%. Currently it is ${totalWeight}%.`);
+            return;
+        }
+
+        const evaluationRules = {
+            weights: {
+                matches_played: wMatches,
+                [isBadminton ? 'win_rate' : 'runs']: wRuns,
+                [isBadminton ? 'tournaments_won' : 'wickets']: wWickets,
+                years_experience: wExp,
+                highest_level: wLevel
+            },
+            normalization: {
+                matches_max: parseFloat(document.getElementById('configNormMatches').value) || 150,
+                [isBadminton ? 'win_rate_max' : 'runs_max']: parseFloat(document.getElementById('configNormRuns').value) || 5000,
+                [isBadminton ? 'tournaments_won_max' : 'wickets_max']: parseFloat(document.getElementById('configNormWickets').value) || 200,
+                experience_max: parseFloat(document.getElementById('configNormExperience').value) || 15
+            },
+            highest_level_scores: {
+                "Local": 20,
+                "District": 40,
+                "State": 60,
+                "National": 80,
+                "Professional": 95,
+                "International": 100
+            }
+        };
+
         const payload = {
             roles_config: roles,
             attributes_schema: attributes,
             categories_config: currentSportCategories, // Send as array of objects
-            default_auction_rules: rules
+            default_auction_rules: rules,
+            evaluation_rules: evaluationRules
         };
-        
+
         const response = await fetch(`/api/sports/${sportId}/config`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        
+
         const data = await response.json();
         if (data.success) {
             closeConfigureSportModal();
             loadSports();
-            showModal('Success', 'Cricket configuration saved successfully.');
+            showModal('Success', `${sportName.charAt(0).toUpperCase() + sportName.slice(1)} configuration saved successfully.`);
         } else {
-            showModal('Error', data.error || 'Failed to save configuration');
+            const errorMsg = data.message || data.detail || data.error || 'Failed to save configuration';
+            showModal('Error', errorMsg);
         }
     } catch (e) {
         showModal('Error', e.message || 'An error occurred saving configuration.');
@@ -3105,7 +3344,7 @@ async function saveSportConfiguration() {
 }
 
 async function deleteSport(id) {
-    if(!confirm("Are you sure you want to delete this sport?")) return;
+    if (!confirm("Are you sure you want to delete this sport?")) return;
     try {
         const response = await fetch(`/api/admin/sports/${id}`, { method: 'DELETE' });
         if (response.ok) {
@@ -3124,12 +3363,12 @@ async function loadTeams() {
         const teams = await response.json();
         const tbody = document.querySelector('#teamsTable tbody');
         if (!tbody) return;
-        
+
         if (teams.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: #94a3b8;">No teams found.</td></tr>';
             return;
         }
-        
+
         tbody.innerHTML = '';
         teams.forEach(t => {
             const tr = document.createElement('tr');
@@ -3137,7 +3376,7 @@ async function loadTeams() {
                 <td>${t.team_id}</td>
                 <td>${t.team_name}</td>
                 <td>${t.owner_name}</td>
-                <td>$${t.budget}M</td>
+                <td>₹${Number(t.budget).toLocaleString('en-IN')}</td>
                 <td>${t.manager_count}</td>
                 <td>${t.analyst_count}</td>
                 <td>
@@ -3155,19 +3394,19 @@ async function loadReports() {
     try {
         const response = await fetch('/api/dashboard/admin/stats');
         const stats = await response.json();
-        
+
         const revEl = document.getElementById('reportTotalRevenue');
         if (revEl) revEl.textContent = `$${stats.auction_revenue || 0}M`;
-        
+
         const teamEl = document.getElementById('reportTotalTeams');
         if (teamEl) teamEl.textContent = stats.total_teams || 0;
-        
+
         const playerEl = document.getElementById('reportTotalPlayers');
         if (playerEl) playerEl.textContent = stats.total_players || 0;
-        
+
         const soldEl = document.getElementById('reportSoldPlayers');
         if (soldEl) soldEl.textContent = stats.purchased_players || 0;
-        
+
     } catch (e) {
         console.error('Error loading reports:', e);
     }
@@ -3177,46 +3416,73 @@ function openCreateSportModal() {
     const name = prompt("Enter Sport Name:");
     if (!name) return;
     const desc = prompt("Enter Description:");
-    
+
     fetch('/api/admin/sports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name, description: desc })
     })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            loadSports();
-        } else {
-            alert("Error creating sport");
-        }
-    })
-    .catch(console.error);
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                loadSports();
+            } else {
+                alert("Error creating sport");
+            }
+        })
+        .catch(console.error);
 }
+// Global helper for programmatic tab switching (used by Home button and navigation)
+window.switchAdminTab = function (tabId) {
+    const targetTab = tabId || 'dashboard';
+    const btn = document.querySelector(`.tab-btn[data-tab="${targetTab}"]`);
+    if (btn) {
+        btn.click();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+};
 
 // Consolidated DOMContentLoaded listener
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
     console.log('Admin dashboard loading...');
 
-    // Check if user is authenticated via localStorage
-    const userStr = localStorage.getItem('user');
-    if (!userStr) {
-        console.log('No user found in localStorage, redirecting to login');
+    try {
+        const response = await fetch('/api/me');
+        if (!response.ok) throw new Error('Session invalid');
+
+        const data = await response.json();
+        if (!data.authenticated || data.user.role !== 'admin') {
+            throw new Error('Unauthorized');
+        }
+
+        // Synchronize local storage
+        sessionStorage.setItem('user', JSON.stringify(data.user));
+        sessionStorage.setItem('isAuthenticated', 'true');
+        sessionStorage.setItem('username', data.user.username || 'Admin');
+
+        // Update welcome message
+        const welcomeMessage = document.querySelector('.dashboard-header h1');
+        if (welcomeMessage) {
+            welcomeMessage.textContent = `Welcome, ${data.user.username || 'Admin'}`;
+        }
+
+        // Update User Dropdown
+        const headerUserName = document.getElementById('headerUserName');
+        const dropdownUserName = document.getElementById('dropdownUserName');
+        const dropdownUserRole = document.getElementById('dropdownUserRole');
+        if (headerUserName) headerUserName.textContent = data.user.username || 'Admin';
+        if (dropdownUserName) dropdownUserName.textContent = data.user.username || 'Admin';
+        if (dropdownUserRole) dropdownUserRole.textContent = (data.user.role || 'Admin').replace('_', ' ');
+        console.log('Current user:', data.user);
+    } catch (error) {
+        console.log('Session verification failed, redirecting to login', error);
+        // Clean up
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('isAuthenticated');
+        sessionStorage.removeItem('username');
         window.location.replace('/');
         return;
     }
-
-    const user = JSON.parse(userStr);
-    console.log('Current user:', user);
-
-    // Update welcome message with admin name
-    const welcomeMessage = document.querySelector('.dashboard-header h1');
-    if (welcomeMessage) {
-        welcomeMessage.textContent = `Welcome, ${user.username || 'Admin'}`;
-    }
-
-    // Store username for display purposes
-    sessionStorage.setItem('username', user.username || 'Admin');
 
     // Load events
     loadEvents();
@@ -3263,6 +3529,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // Load registrations
     loadPlayerRegistrations();
     loadTeamOwnerRegistrations();
+
+    // Load sports to populate Create Event dropdown globally
+    if (typeof loadSports === 'function') {
+        loadSports();
+    }
 
     // Set up event listeners for tab switching
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -3344,11 +3615,15 @@ function fetchCurrentAdmin() {
             return response.json();
         })
         .then(data => {
-            if (data.user_type !== 'admin') {
+            const role = (data.user && data.user.user_type) ? data.user.user_type : data.user_type;
+            if (role !== 'admin') {
                 console.log('User is not an admin, redirecting to login');
                 window.location.replace('/');
             } else {
                 console.log('Admin authenticated successfully');
+                if (data.user) {
+                    sessionStorage.setItem('user', JSON.stringify(data.user));
+                }
             }
         })
         .catch(error => {
@@ -3388,7 +3663,7 @@ async function openAuctionPrepModal(eventId) {
     const subtitle = document.getElementById('auctionPrepSubtitle');
 
     modal.classList.add('active');
-    
+
     // Add custom styling for the modal-content if needed to prevent overlap
     const modalContent = modal.querySelector('.modal-content');
     if (modalContent) {
@@ -3398,10 +3673,10 @@ async function openAuctionPrepModal(eventId) {
         modalContent.style.overflow = 'hidden';
         modalContent.classList.add('auction-prep-modal-content');
     }
-    
+
     body.style.overflowY = 'auto';
     body.style.flex = '1';
-    
+
     body.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 0; color: var(--text-muted, #64748b);">
             <div style="width: 50px; height: 50px; border: 3px solid rgba(59, 130, 246, 0.2); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem;"></div>
@@ -3414,14 +3689,14 @@ async function openAuctionPrepModal(eventId) {
     if (auctionPrepPollingInterval) {
         clearInterval(auctionPrepPollingInterval);
     }
-    
+
     await fetchAndRenderAuctionPrep();
     auctionPrepPollingInterval = setInterval(fetchAndRenderAuctionPrep, 5000);
 }
 
 async function fetchAndRenderAuctionPrep() {
     if (!currentPrepEventId) return;
-    
+
     const modal = document.getElementById('auctionPrepModal');
     if (!modal || !modal.classList.contains('active')) {
         // Modal is closed, stop polling
@@ -3431,10 +3706,10 @@ async function fetchAndRenderAuctionPrep() {
         }
         return;
     }
-    
+
     const body = document.getElementById('auctionPrepBody');
     const subtitle = document.getElementById('auctionPrepSubtitle');
-    
+
     try {
         const response = await fetch(`/api/admin/events/${currentPrepEventId}/auction-prep`, {
             credentials: 'include',
@@ -3445,7 +3720,7 @@ async function fetchAndRenderAuctionPrep() {
             if (response.status === 401 || response.status === 403) {
                 if (auctionPrepPollingInterval) clearInterval(auctionPrepPollingInterval);
                 alert("Your Admin session is no longer valid.");
-                window.location.href = '/index.html';
+                window.location.replace('/index.html');
                 return;
             }
             const err = await response.json().catch(() => ({}));
@@ -3490,7 +3765,7 @@ async function fetchAndRenderAuctionPrep() {
                         </div>
                         <div class="prep-list-body">
                             ${data.teams.length === 0 ? '<div class="prep-empty-msg">No teams registered</div>' :
-                              '<div style="display: flex; flex-direction: column; gap: 0.25rem;">' + data.teams.map(t => `
+                '<div style="display: flex; flex-direction: column; gap: 0.25rem;">' + data.teams.map(t => `
                                 <div class="prep-list-item">
                                     <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
                                         <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -3503,15 +3778,15 @@ async function fetchAndRenderAuctionPrep() {
                                             </div>
                                         </div>
                                         <div>
-                                            ${t.active 
-                                                ? '<span style="color: #34d399; font-weight: bold; font-size: 0.85rem;">🟢 ACTIVE</span>'
-                                                : '<span style="color: #f87171; font-weight: bold; font-size: 0.85rem;">🔴 INACTIVE</span>'
-                                            }
+                                            ${t.active
+                        ? '<span style="color: #34d399; font-weight: bold; font-size: 0.85rem;">🟢 ACTIVE</span>'
+                        : '<span style="color: #f87171; font-weight: bold; font-size: 0.85rem;">🔴 INACTIVE</span>'
+                    }
                                         </div>
                                     </div>
                                 </div>
                               `).join('') + '</div>'
-                            }
+            }
                         </div>
                     </div>
 
@@ -3525,7 +3800,7 @@ async function fetchAndRenderAuctionPrep() {
                         </div>
                         <div class="prep-list-body">
                             ${data.players.length === 0 ? '<div class="prep-empty-msg">No players registered</div>' :
-                              '<div style="display: flex; flex-direction: column; gap: 0.25rem;">' + data.players.map(p => `
+                '<div style="display: flex; flex-direction: column; gap: 0.25rem;">' + data.players.map(p => `
                                 <div class="prep-list-item">
                                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                                         <div class="prep-avatar prep-avatar-player">
@@ -3533,45 +3808,48 @@ async function fetchAndRenderAuctionPrep() {
                                         </div>
                                         <div>
                                             <div class="prep-item-title">${p.name}</div>
-                                            <div class="prep-item-subtitle">Base Price: ₹${(p.base_price || 0).toLocaleString()}</div>
+                                            <div class="prep-item-subtitle">
+                                                ${p.category ? `<span style="color: #10b981; font-weight: 500; margin-right: 0.5rem; text-transform: capitalize;">[${p.category}]</span>` : ''}
+                                                Base Price: ₹${(p.base_price || 0).toLocaleString()}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                               `).join('') + '</div>'
-                            }
+            }
                         </div>
                     </div>
 
                 </div>
                 
                 <!-- Status Bar -->
-                ${isReady 
-                    ? `<div style="margin-top: 0.5rem; padding: 1rem; border-radius: 0.5rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); display: flex; align-items: center; gap: 1rem; color: #34d399;">
+                ${isReady
+                ? `<div style="margin-top: 0.5rem; padding: 1rem; border-radius: 0.5rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); display: flex; align-items: center; gap: 1rem; color: #34d399;">
                         <i class="fas fa-check-circle fa-lg"></i>
                         <div>
                             <div style="font-weight: 600;">🟢 Auction Ready to Start</div>
                             <div style="font-size: 0.85rem; opacity: 0.8;">All registered team owners are online. The lobby is ready.</div>
                         </div>
                        </div>`
-                    : (data.teams_count === 0 || data.players_count === 0)
-                        ? `<div style="margin-top: 0.5rem; padding: 1rem; border-radius: 0.5rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); display: flex; align-items: center; gap: 1rem; color: #f87171;">
+                : (data.teams_count === 0 || data.players_count === 0)
+                    ? `<div style="margin-top: 0.5rem; padding: 1rem; border-radius: 0.5rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); display: flex; align-items: center; gap: 1rem; color: #f87171;">
                             <i class="fas fa-exclamation-triangle fa-lg"></i>
                             <div>
                                 <div style="font-weight: 600;">Action Required</div>
                                 <div style="font-size: 0.85rem; opacity: 0.8;">You must have at least one active team and one player registered to begin the auction.</div>
                             </div>
                            </div>`
-                        : `<div style="margin-top: 0.5rem; padding: 1rem; border-radius: 0.5rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); display: flex; align-items: center; gap: 1rem; color: #f59e0b;">
+                    : `<div style="margin-top: 0.5rem; padding: 1rem; border-radius: 0.5rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); display: flex; align-items: center; gap: 1rem; color: #f59e0b;">
                             <i class="fas fa-hourglass-half fa-lg"></i>
                             <div>
                                 <div style="font-weight: 600;">⚠ Waiting for Team Owners</div>
                                 <div style="font-size: 0.85rem; opacity: 0.8;">${data.active_team_count} of ${data.teams_count} team owners are online. All registered team owners must be online before the auction can start.</div>
                             </div>
                            </div>`
-                }
+            }
             </div>
         `;
-        
+
         // Only update innerHTML if it has changed to prevent UI flickering during polling
         if (body.innerHTML !== html) {
             body.innerHTML = html;
@@ -3617,7 +3895,7 @@ async function proceedWithAuction() {
     if (!currentPrepEventId) return;
     const proceedBtn = document.getElementById('btnProceedAuction');
     if (proceedBtn.disabled) return;
-    
+
     proceedBtn.disabled = true;
     proceedBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Initializing...';
 
@@ -3638,7 +3916,7 @@ async function proceedWithAuction() {
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
                 alert("Your Admin session is no longer valid. This usually happens if you logged into another account (like Team Owner) in a different tab. You will be redirected to the login page.");
-                window.location.href = '/index.html';
+                window.location.replace('/index.html');
                 return;
             }
             if (response.status === 409) {
@@ -3651,20 +3929,20 @@ async function proceedWithAuction() {
             }
             const rawText = await response.text();
             let errData = {};
-            try { errData = JSON.parse(rawText); } catch(e) {}
-            
+            try { errData = JSON.parse(rawText); } catch (e) { }
+
             console.error("Auction initialization failed:", {
                 status: response.status,
                 rawResponse: rawText,
                 parsedData: errData
             });
-            
+
             const errMsg = errData.message || errData.description || rawText || 'Failed to initialize auction';
             throw new Error(`Server Error: ${errMsg}`);
         }
 
         const data = await response.json();
-        
+
         if (!data.success) {
             console.error("Auction initialization returned success: false", data);
             throw new Error(data.message || 'Failed to initialize auction');
@@ -3678,7 +3956,7 @@ async function proceedWithAuction() {
         alert('Error: ' + err.message);
         proceedBtn.disabled = false;
         proceedBtn.innerHTML = 'Proceed With Auction';
-        
+
         // Resume polling on error
         if (!auctionPrepPollingInterval) {
             auctionPrepPollingInterval = setInterval(fetchAndRenderAuctionPrep, 5000);
@@ -3693,17 +3971,17 @@ async function handleSportSelectionChange(sportId) {
     try {
         const response = await fetch(`/api/sports/${sportId}`);
         const data = await response.json();
-        
+
         if (data.success && data.sport) {
             const sport = data.sport;
-            
+
             // Auto-fill Default Rules (Budget, Timer)
             if (sport.default_auction_rules) {
                 const rules = sport.default_auction_rules;
                 if (rules.default_budget) document.getElementById('editMaxBudget').value = rules.default_budget;
                 if (rules.default_timer) document.getElementById('editBidTime').value = rules.default_timer;
             }
-            
+
             // Auto-fill Base Prices from Categories Config
             if (sport.categories_config) {
                 const cats = sport.categories_config;
@@ -3724,10 +4002,26 @@ async function handleSportSelectionChange(sportId) {
                     if (cats.silver) document.getElementById('editPriceSilver').value = cats.silver;
                 }
             }
-            
+
             console.log(`Auto-filled defaults for ${sport.name}`);
         }
     } catch (e) {
         console.error("Failed to load sport defaults:", e);
     }
 }
+
+// User Menu Toggle Logic
+window.toggleUserMenu = function () {
+    const menu = document.getElementById('userDropdownMenu');
+    if (menu) {
+        menu.style.display = menu.style.display === 'none' || menu.style.display === '' ? 'block' : 'none';
+    }
+};
+
+document.addEventListener('click', function (event) {
+    const container = document.querySelector('.user-dropdown-container');
+    const menu = document.getElementById('userDropdownMenu');
+    if (container && menu && !container.contains(event.target)) {
+        menu.style.display = 'none';
+    }
+});

@@ -84,9 +84,13 @@ def manage_auctions_sync():
                     )
                     auction.current_player_id = next_player.player_id
                     auction.current_player_bid_start = now
-                    auction.current_bid_amount = (
-                        event.base_prices.get('Standard', 0) if event.base_prices else 0
-                    )
+                    # Phase 6: Read starting price from pre-resolved AuctionPlayer
+                    next_ap = db.query(models.AuctionPlayer).filter(
+                        models.AuctionPlayer.auction_id == auction.auction_id,
+                        models.AuctionPlayer.player_id == next_player.player_id
+                    ).first()
+                    
+                    auction.current_bid_amount = float(next_ap.base_price) if next_ap and next_ap.base_price is not None else 0.0
                     db.commit()
                 else:
                     logger.info(f"Auction {auction.auction_id} concluded. No more players.")

@@ -37,15 +37,39 @@ let remainingBudget = 0;
 
 document.addEventListener('DOMContentLoaded', function() {
     // 1. Verify Auth
-    const userStr = localStorage.getItem('user');
+    const userStr = sessionStorage.getItem('user');
     if (!userStr) {
         console.log('No user found in localStorage, redirecting to login');
-        window.location.href = '/';
+        window.location.replace('/');
         return;
     }
 
     currentUser = JSON.parse(userStr);
     console.log('Current user:', currentUser);
+
+    // Verify active session with backend
+    fetch('/api/me')
+        .then(res => {
+            if (!res.ok) throw new Error('Unauthenticated');
+            return res.json();
+        })
+        .then(data => {
+            if (!data.authenticated) {
+                sessionStorage.removeItem('user');
+                sessionStorage.removeItem('session_token');
+                sessionStorage.clear();
+                window.location.replace('/');
+            } else if (data.user) {
+                currentUser = data.user;
+                sessionStorage.setItem('user', JSON.stringify(data.user));
+            }
+        })
+        .catch(() => {
+            sessionStorage.removeItem('user');
+            sessionStorage.removeItem('session_token');
+            sessionStorage.clear();
+            window.location.replace('/');
+        });
 
     // Get Event ID from URL or localStorage
     const urlParams = new URLSearchParams(window.location.search);
@@ -53,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (!currentEventId) {
         alert("No event ID provided");
-        window.location.href = '/team-owner-dashboard.html';
+        window.location.replace('/team-owner-dashboard.html');
         return;
     }
 

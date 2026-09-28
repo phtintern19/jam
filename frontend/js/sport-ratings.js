@@ -34,35 +34,48 @@ async function loadSportRatingsForEvent(eventId) {
 
         // Create rating input for each sport
         for (const sport of sports) {
-            const ratingDiv = document.createElement('div');
-            ratingDiv.className = 'form-group';
-            ratingDiv.style.marginBottom = '1rem';
+            const isCricket = sport.name.toLowerCase() === 'cricket';
 
-            ratingDiv.innerHTML = `
-                <label for="sport_${sport.sport_id}" style="color: #e2e8f0; margin-bottom: 0.5rem; display: block;">
-                    ${sport.name} *
-                </label>
-                <input 
-                    type="number" 
-                    id="sport_${sport.sport_id}" 
-                    name="sport_${sport.sport_id}"
-                    data-sport-id="${sport.sport_id}"
-                    data-sport-name="${sport.name}"
-                    class="form-input sport-rating-input" 
-                    min="0" 
-                    max="10" 
-                    step="1"
-                    required
-                    placeholder="Rate 0-10"
-                    style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0;"
-                />
-                <small style="color: #94a3b8; font-size: 0.85rem;">0 = No experience, 10 = Expert</small>
-            `;
+            if (!isCricket) {
+                const ratingDiv = document.createElement('div');
+                ratingDiv.className = 'form-group';
+                ratingDiv.style.marginBottom = '1rem';
 
-            inputsContainer.appendChild(ratingDiv);
+                ratingDiv.innerHTML = `
+                    <label for="sport_${sport.sport_id}" style="color: #e2e8f0; margin-bottom: 0.5rem; display: block;">
+                        ${sport.name} *
+                    </label>
+                    <input 
+                        type="number" 
+                        id="sport_${sport.sport_id}" 
+                        name="sport_${sport.sport_id}"
+                        data-sport-id="${sport.sport_id}"
+                        data-sport-name="${sport.name}"
+                        class="form-input sport-rating-input" 
+                        min="0" 
+                        max="10" 
+                        step="1"
+                        required
+                        placeholder="Rate 0-10"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0;"
+                    />
+                    <small style="color: #94a3b8; font-size: 0.85rem;">0 = No experience, 10 = Expert</small>
+                `;
+
+                inputsContainer.appendChild(ratingDiv);
+            }
             
             // --- CRICKET SPORT MASTER INTEGRATION ---
-            if (sport.name.toLowerCase() === 'cricket') {
+            if (isCricket) {
+                // Add a header for Cricket
+                const headerDiv = document.createElement('div');
+                headerDiv.style.marginTop = '1rem';
+                headerDiv.style.marginBottom = '1rem';
+                headerDiv.style.borderBottom = '1px solid #334155';
+                headerDiv.style.paddingBottom = '0.5rem';
+                headerDiv.innerHTML = `<h5 style="color: #38bdf8; margin: 0; font-size: 1.05rem;"><i class="fas fa-cricket-bat-ball"></i> Cricket Information</h5>`;
+                inputsContainer.appendChild(headerDiv);
+
                 try {
                     const masterRes = await fetch(`/api/sports/${sport.sport_id}`);
                     if (masterRes.ok) {
@@ -84,7 +97,7 @@ async function loadSportRatingsForEvent(eventId) {
                                 
                                 roleDiv.innerHTML = `
                                     <label for="profile_${sport.name}_role" style="color: #e2e8f0; margin-bottom: 0.5rem; display: block;">
-                                        ${sport.name} Role *
+                                        Playing Role *
                                     </label>
                                     ${selectHtml}
                                 `;
@@ -110,7 +123,7 @@ async function loadSportRatingsForEvent(eventId) {
                                     
                                     attrDiv.innerHTML = `
                                         <label for="profile_${sport.name}_${attrName}" style="color: #e2e8f0; margin-bottom: 0.5rem; display: block;">
-                                            ${sport.name} ${niceName} *
+                                            ${niceName} *
                                         </label>
                                         ${selectHtml}
                                     `;
@@ -122,6 +135,59 @@ async function loadSportRatingsForEvent(eventId) {
                 } catch(e) {
                     console.error("Failed to load sport master attributes schema", e);
                 }
+
+                // 3. Add Factual Information Fields
+                const isBadminton = sport.name.toLowerCase() === 'badminton';
+                const factualFields = isBadminton 
+                    ? [
+                        { id: 'matches_played', label: 'Matches Played', type: 'number', min: '0' },
+                        { id: 'win_rate', label: 'Win Rate (%)', type: 'number', min: '0' },
+                        { id: 'tournaments_won', label: 'Tournaments Won', type: 'number', min: '0' },
+                        { id: 'years_experience', label: 'Years of Experience', type: 'number', min: '0' }
+                    ]
+                    : [
+                        { id: 'matches_played', label: 'Matches Played', type: 'number', min: '0' },
+                        { id: 'runs', label: 'Runs', type: 'number', min: '0' },
+                        { id: 'wickets', label: 'Wickets', type: 'number', min: '0' },
+                        { id: 'years_experience', label: 'Years of Experience', type: 'number', min: '0' }
+                    ];
+                
+                factualFields.forEach(field => {
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.className = 'form-group';
+                    fieldDiv.style.marginBottom = '1rem';
+                    fieldDiv.innerHTML = `
+                        <label for="profile_${sport.name}_${field.id}" style="color: #e2e8f0; margin-bottom: 0.5rem; display: block;">
+                            ${field.label} *
+                        </label>
+                        <input type="${field.type}" id="profile_${sport.name}_${field.id}" 
+                               data-sport="${sport.name}" data-attr="${field.id}" 
+                               class="form-input sport-profile-input" min="${field.min}" required 
+                               placeholder="Enter ${field.label.toLowerCase()}"
+                               style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0;">
+                    `;
+                    inputsContainer.appendChild(fieldDiv);
+                });
+                
+                // 4. Add Highest Level Played Dropdown
+                const levelDiv = document.createElement('div');
+                levelDiv.className = 'form-group';
+                levelDiv.style.marginBottom = '1rem';
+                levelDiv.innerHTML = `
+                    <label for="profile_${sport.name}_highest_level" style="color: #e2e8f0; margin-bottom: 0.5rem; display: block;">
+                        Highest Level Played *
+                    </label>
+                    <select id="profile_${sport.name}_highest_level" data-sport="${sport.name}" data-attr="highest_level" class="form-input sport-profile-input" required style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0;">
+                        <option value="">Select Level</option>
+                        <option value="Local">Local / Club</option>
+                        <option value="District">District</option>
+                        <option value="State">State</option>
+                        <option value="National">National</option>
+                        <option value="Professional">Professional</option>
+                        <option value="International">International</option>
+                    </select>
+                `;
+                inputsContainer.appendChild(levelDiv);
             }
         }
 

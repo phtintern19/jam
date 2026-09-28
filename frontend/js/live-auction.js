@@ -14,16 +14,27 @@ let teamsMap = {}; // Maps team_id to team data
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Verify Auth
-    const userStr = localStorage.getItem('user');
+    const userStr = sessionStorage.getItem('user');
     if (!userStr) {
-        window.location.href = '/';
+        window.location.replace('/');
         return;
     }
     user = JSON.parse(userStr);
     
-    // Determine user's team if they are an owner
-    if (user.user_type === 'team_owner' && user.team && user.team.team_id) {
-        userTeamId = user.team.team_id;
+    // Verify active session with backend
+    try {
+        const authRes = await fetch('/api/me');
+        if (!authRes.ok) throw new Error('Unauthenticated');
+        const authData = await authRes.json();
+        if (!authData.authenticated) throw new Error('Not authenticated');
+        user = authData.user || user;
+    } catch (e) {
+        console.warn('Session expired for live auction room. Redirecting to home...');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('session_token');
+        sessionStorage.clear();
+        window.location.replace('/');
+        return;
     }
 
     // Adjust UI based on Role
@@ -36,7 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentEventId = urlParams.get('id');
     if (!currentEventId) {
         alert("No event ID provided");
-        window.location.href = '/';
+        window.location.replace('/');
         return;
     }
 
@@ -54,7 +65,7 @@ async function loadAuctionData() {
     try {
         const response = await fetch(`/api/events/${currentEventId}/auction`, {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${sessionStorage.getItem('token')}`
             }
         });
         const data = await response.json();
@@ -490,7 +501,7 @@ async function placeBid() {
         const response = await fetch(`/api/events/${currentEventId}/auction/bid`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ team_id: userTeamId, amount: amount })
@@ -506,7 +517,7 @@ async function startAuction() {
     try {
         const response = await fetch(`/api/events/${currentEventId}/auction/start`, {
             method: 'POST',
-            headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}
+            headers: {'Authorization': `Bearer ${sessionStorage.getItem('token')}`}
         });
         const res = await response.json();
         if(!res.success) showToast(res.message, true);
@@ -518,7 +529,7 @@ async function pauseAuction() {
     try {
         const response = await fetch(`/api/events/${currentEventId}/auction/pause`, {
             method: 'POST',
-            headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}
+            headers: {'Authorization': `Bearer ${sessionStorage.getItem('token')}`}
         });
         const res = await response.json();
         if(!res.success) showToast(res.message, true);
@@ -530,7 +541,7 @@ async function resumeAuction() {
     try {
         const response = await fetch(`/api/events/${currentEventId}/auction/resume`, {
             method: 'POST',
-            headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}
+            headers: {'Authorization': `Bearer ${sessionStorage.getItem('token')}`}
         });
         const res = await response.json();
         if(!res.success) showToast(res.message, true);
@@ -543,7 +554,7 @@ async function stopAuction() {
         try {
             const response = await fetch(`/api/events/${currentEventId}/auction/stop`, {
                 method: 'POST',
-                headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}
+                headers: {'Authorization': `Bearer ${sessionStorage.getItem('token')}`}
             });
             const res = await response.json();
             if(!res.success) showToast(res.message, true);
@@ -570,7 +581,7 @@ async function nextPlayer() {
         const response = await fetch(`/api/events/${currentEventId}/auction/player/start`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ player_id: nextPlayerId })
@@ -586,7 +597,7 @@ async function markSold() {
         try {
             const response = await fetch(`/api/events/${currentEventId}/auction/player/sell`, {
                 method: 'POST',
-                headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}
+                headers: {'Authorization': `Bearer ${sessionStorage.getItem('token')}`}
             });
             const res = await response.json();
             if(!res.success) showToast(res.message, true);
@@ -600,7 +611,7 @@ async function markUnsold() {
         try {
             const response = await fetch(`/api/events/${currentEventId}/auction/player/unsold`, {
                 method: 'POST',
-                headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}
+                headers: {'Authorization': `Bearer ${sessionStorage.getItem('token')}`}
             });
             const res = await response.json();
             if(!res.success) showToast(res.message, true);
@@ -609,7 +620,7 @@ async function markUnsold() {
 }
 
 function goBack() {
-    window.location.href = '/index.html';
+    window.location.replace('/index.html');
 }
 
 function showToast(message, isError = false) {

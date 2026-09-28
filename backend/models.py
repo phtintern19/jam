@@ -1,7 +1,7 @@
 from typing import List, Dict, Optional, Any, TYPE_CHECKING
 from sqlalchemy import (
     Column, Integer, String, Text, Date, Enum as SQLEnum, DECIMAL, ForeignKey,
-    Boolean, DateTime, Index, UniqueConstraint, Table, JSON, CheckConstraint, BigInteger
+    Boolean, DateTime, Index, UniqueConstraint, Table, JSON, CheckConstraint, BigInteger, Time
 )
 from sqlalchemy.dialects.mysql import BIGINT as APP_BIGINT
 from sqlalchemy.sql import func, text
@@ -60,7 +60,9 @@ player_events = Table(
     Base.metadata,
     Column("player_id", Integer, ForeignKey("players.player_id", ondelete="CASCADE"), primary_key=True),
     Column("event_id", Integer, ForeignKey("events.event_id", ondelete="CASCADE"), primary_key=True),
-    Column("registered_at", DateTime, server_default=func.current_timestamp(), nullable=False)
+    Column("registered_at", DateTime, server_default=func.current_timestamp(), nullable=False),
+    Column("evaluation_score", DECIMAL(5, 2), nullable=True),
+    Column("category", String(50), nullable=True)
 )
 
 
@@ -395,6 +397,8 @@ class Sport(Base):
     categories_config = Column(JSON, nullable=True)
     attributes_schema = Column(JSON, nullable=True)
     default_auction_rules = Column(JSON, nullable=True)
+    evaluation_rules = Column(JSON, nullable=True)
+    training_config = Column(JSON, nullable=True)
 
     # relationships
     skills = relationship("PlayerSkill", back_populates="sport", cascade="all, delete-orphan")
@@ -791,3 +795,47 @@ class Notification(Base):
     created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False, index=True)
 
     user = relationship("User", foreign_keys=[user_id])
+
+# -------------------------
+# Training / Calendar
+# -------------------------
+class TrainingSession(Base):
+    __tablename__ = "training_sessions"
+
+    training_session_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    team_id = Column(BigInteger, ForeignKey("teams.team_id", ondelete="CASCADE"), nullable=False, index=True)
+    manager_id = Column(BigInteger, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False)
+    title = Column(String(255), nullable=False)
+    training_type = Column(String(100), nullable=False)
+    date = Column(Date, nullable=False, index=True)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+    location = Column(String(255), nullable=True)
+    coach = Column(String(100), nullable=True)
+    description = Column(Text, nullable=True)
+    status = Column(String(50), default="Scheduled") # Scheduled, In Progress, Completed, Cancelled
+    created_at = Column(DateTime, server_default=func.current_timestamp())
+    updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
+
+    team = relationship("Team")
+    manager = relationship("User", foreign_keys=[manager_id])
+    attendance = relationship("TrainingAttendance", back_populates="training_session", cascade="all, delete-orphan")
+
+
+class TrainingAttendance(Base):
+    __tablename__ = "training_attendance"
+
+    attendance_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    training_session_id = Column(BigInteger, ForeignKey("training_sessions.training_session_id", ondelete="CASCADE"), nullable=False, index=True)
+    player_id = Column(Integer, ForeignKey("players.player_id", ondelete="RESTRICT"), nullable=False, index=True)
+    status = Column(String(50), default="Pending") # Pending, Present, Absent, Late, Excused
+    remarks = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.current_timestamp())
+    updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
+
+    training_session = relationship("TrainingSession", back_populates="attendance")
+    player = relationship("Player")
+
+    __table_args__ = (
+        UniqueConstraint('training_session_id', 'player_id', name='uq_session_player'),
+    )

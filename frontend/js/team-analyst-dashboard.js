@@ -42,9 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // Authentication check
 document.addEventListener('DOMContentLoaded', function () {
 
+
     // Check if user is authenticated via localStorage
     const userStr = sessionStorage.getItem('user');
     if (!userStr) {
+
         window.location.replace('/');
         return;
     }
@@ -58,14 +60,17 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
+
     // Check if user is team owner, manager, or analyst
     if (!['team_owner', 'team_manager', 'team_analyst'].includes(user.user_type)) {
+
         showModal('Access Denied', 'Please login as a team owner, manager, or analyst to access this page.');
         setTimeout(() => {
             window.location.replace('/');
         }, 2000);
         return;
     }
+
 
     // Apply role-based UI restrictions
     applyRolePermissions(user);
@@ -114,29 +119,42 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (adminBidTime) {
         currentAuction.bidTimeLimit = parseInt(adminBidTime);
+
     } else if (teamBidTime) {
         currentAuction.bidTimeLimit = parseInt(teamBidTime);
+
     }
 
     if (currentAuctionStatus === 'NOT_STARTED' && auctionStarting === 'true') {
+
         return;
     } else if (currentAuctionStatus === 'NOT_STARTED' && !auctionStarting) {
+
     }
 
     if (user.user_type === 'team_owner') {
+
         loadTeamOwnerData();
+
         loadSquad();
+
         loadAuctionPool();
+
         initTrainingCalendar();
+
         initializeAuction();
+
         startAuctionTimer();
 
         // As a superset role, Team Owner also needs Analyst and Manager data loaded
+
         if (typeof loadAnalystDashboard === 'function') loadAnalystDashboard();
     } else if (user.user_type === 'team_analyst') {
+
         if (typeof loadAnalystDashboard === 'function') loadAnalystDashboard();
         // Setup analyst specific initializations if needed
     } else if (user.user_type === 'team_manager') {
+
         loadTeamOwnerData();
         loadSquad();
         loadAuctionPool();
@@ -145,8 +163,11 @@ document.addEventListener('DOMContentLoaded', function () {
         startAuctionTimer();
     }
 
+
     setupEventListeners();
+
     startHeartbeat();
+
     // Initial view rendering based on hash
     setTimeout(() => {
         let defaultHash = '#dashboard';
@@ -510,12 +531,16 @@ async function loadReportsView() {
 
 async function loadStaffSettings() {
     try {
+
         const response = await fetch('/api/owner/staff');
+
+
 
 
         if (response.status === 401 || response.status === 403) return;
 
         const text = await response.text();
+
 
         let data;
         try {
@@ -524,8 +549,9 @@ async function loadStaffSettings() {
             console.error('[STAFF DEBUG] Failed to parse JSON', err);
             return;
         }
-
         if (data.success) {
+
+
 
             const manager = data.manager;
             if (manager) {
@@ -1567,13 +1593,25 @@ window.switchView = function (hashOrPath) {
     // Use currentPath to determine if Team Owner or Manager is trying to view a sub-panel
     const currentPath = (hashOrPath && hashOrPath.includes('/')) ? hashOrPath : (window.location.pathname + hashOrPath);
 
+
     // Show target view or panel based strictly on user role (and path for superset owner role)
     if (role === 'team_analyst' || (role === 'team_owner' && currentPath.includes('/dashboard/analyst'))) {
         isRolePanel = true;
         targetPanel = document.getElementById('analyst-panel');
         if (targetPanel) {
             targetPanel.style.display = 'grid'; // Analyst panel uses display: grid
-            targetElement = document.getElementById(`section-${viewName}`);
+
+            // Map analyst sidebar nav names to section IDs in the analyst panel
+            const analystSectionMap = {
+                'analytics': 'section-analytics',
+                'performance': 'section-performance',
+                'reports': 'section-reports',
+                'predictions': 'section-predictions',
+                'settings': 'section-analyst-settings'
+            };
+
+            const sectionId = analystSectionMap[viewName] || `section-${viewName}`;
+            targetElement = document.getElementById(sectionId);
             if (!targetElement) targetElement = targetPanel;
         }
     } else if (currentPath.startsWith('/dashboard/manager') || (role === 'team_manager' && !currentPath.includes('/dashboard/'))) {
@@ -1663,7 +1701,10 @@ window.switchView = function (hashOrPath) {
 
         // Trigger specific loads based on view
         if (isRolePanel && targetPanel && targetPanel.id === 'analyst-panel') {
-            if (typeof loadAnalystDashboard === 'function') loadAnalystDashboard();
+            if (typeof loadAnalystDashboard === 'function' && !window._analystDashboardLoaded) {
+                window._analystDashboardLoaded = true;
+                loadAnalystDashboard();
+            }
         } else if (isRolePanel && targetPanel && targetPanel.id === 'manager-panel') {
             if (typeof initTrainingCalendar === 'function') initTrainingCalendar();
         }
@@ -1677,6 +1718,9 @@ window.switchView = function (hashOrPath) {
             loadReportsView();
         } else if (viewName === 'settings') {
             if (typeof loadStaffSettings === 'function') loadStaffSettings();
+            if (isRolePanel && targetPanel && targetPanel.id === 'analyst-panel') {
+                loadAnalystProfileSettings();
+            }
         } else if (viewName === 'auction') {
             // Already updated via polling, but could force refresh
         }
@@ -2152,6 +2196,7 @@ function initializeLobbySocket(auctionId, teamId) {
         socket = io({ transports: ['polling'], upgrade: false }); // Connects to the host using polling only
 
         socket.on('connect', () => {
+
             socket.emit('join_lobby', {
                 auction_id: auctionId,
                 team_id: teamId
@@ -2159,6 +2204,7 @@ function initializeLobbySocket(auctionId, teamId) {
         });
 
         socket.on('team_status_update', (data) => {
+
             if (data.team_id == teamId && data.status === 'READY') {
                 const btn = document.getElementById('btn-team-ready');
                 if (btn) {
@@ -2170,6 +2216,7 @@ function initializeLobbySocket(auctionId, teamId) {
         });
 
         socket.on('auction_update', (data) => {
+
             if (data.status === 'RUNNING') {
                 // Transition from lobby to live auction UI
                 const lobbyContainer = document.getElementById('auction-lobby-container');
@@ -2204,6 +2251,7 @@ function initializeLobbySocket(auctionId, teamId) {
         });
 
         socket.on('bid_placed', (data) => {
+
             const bidAmountEl = document.getElementById('currentBidAmount') || document.getElementById('currentBid');
             if (bidAmountEl) bidAmountEl.textContent = `₹${data.amount}`;
 
@@ -2222,11 +2270,8 @@ window.placeBid = function (amount) {
     const auctionId = teamSelector ? teamSelector.value : localStorage.getItem('currentAuctionId');
 
     if (auctionId && user.team_id) {
-        socket.emit('place_bid', {
-            auction_id: parseInt(auctionId),
-            team_id: user.team_id,
-            amount: amount
-        });
+        // analysts cannot bid
+
     }
 };
 
@@ -2734,6 +2779,62 @@ function updateTrainingStatus(status) {
 // ANALYST DASHBOARD FUNCTIONS
 // ==========================================
 
+
+// ---- Analyst Profile Settings ----
+async function loadAnalystProfileSettings() {
+    try {
+        const res = await fetch('/api/me', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const nameEl = document.getElementById('analyst-profile-name');
+        const emailEl = document.getElementById('analyst-profile-email');
+        if (nameEl && data.username) nameEl.value = data.username;
+        if (emailEl && data.email) emailEl.value = data.email;
+    } catch (e) {
+        console.warn('Could not load analyst profile:', e);
+    }
+}
+
+window.saveAnalystProfile = async function (e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; btn.disabled = true; }
+
+    const name = document.getElementById('analyst-profile-name')?.value;
+    const email = document.getElementById('analyst-profile-email')?.value;
+    const password = document.getElementById('analyst-profile-password')?.value;
+
+    const payload = {};
+    if (name) payload.username = name;
+    if (email) payload.email = email;
+    if (password) payload.password = password;
+
+    try {
+        const res = await fetch('/api/analyst/update_profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+                showNotification('Profile updated successfully!', 'success');
+                document.getElementById('analyst-profile-password').value = '';
+            } else {
+                showNotification(data.error || 'Failed to update profile.', 'error');
+            }
+        } else {
+            showNotification('Server error updating profile.', 'error');
+        }
+    } catch (err) {
+        showNotification('Network error.', 'error');
+    } finally {
+        if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
+    }
+};
+
 let analystHeatmapChart = null;
 
 let analystPoolData = [];
@@ -2990,11 +3091,7 @@ window.generateAnalystReport = async function () {
             btn.disabled = false;
         }
 
-        if (typeof showNotification === 'function') {
-            showNotification('Success', 'Analyst Report generated successfully.');
-        } else {
-            alert('Analyst Report generated successfully.');
-        }
+        showNotification('Analyst Report generated successfully.', 'success');
 
     } catch (error) {
         console.error('Error generating report:', error);
@@ -3010,14 +3107,18 @@ window.generateAnalystReport = async function () {
 // Handle smooth scrolling for Analyst dashboard sections
 window.addEventListener('viewChanged', (e) => {
     const path = e.detail.path;
-    if (path.startsWith('/dashboard/analyst#')) {
-        const hash = path.split('#')[1];
-        if (hash === 'analytics') {
-            document.getElementById('section-analytics')?.scrollIntoView({ behavior: 'smooth' });
-        } else if (hash === 'performance') {
-            document.getElementById('section-performance')?.scrollIntoView({ behavior: 'smooth' });
-        } else if (hash === 'reports' || hash === 'predictions') {
-            document.getElementById('section-reports')?.scrollIntoView({ behavior: 'smooth' });
+    if (path.startsWith('/dashboard/analyst')) {
+        const hash = path.includes('#') ? path.split('#')[1] : '';
+        const analystSectionMap = {
+            'analytics': 'section-analytics',
+            'performance': 'section-performance',
+            'reports': 'section-reports',
+            'predictions': 'section-predictions',
+            'settings': 'section-analyst-settings'
+        };
+        const sectionId = analystSectionMap[hash] || (hash ? `section-${hash}` : null);
+        if (sectionId) {
+            document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }

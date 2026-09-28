@@ -1344,6 +1344,17 @@ html[data-theme="light"] .form-group label {
     text-shadow: none !important;
 }
 
+html[data-theme="light"] select {
+    background-color: #FFFFFF !important;
+    border-color: #E5E7EB !important;
+    color: #111827 !important;
+}
+
+html[data-theme="light"] select:focus {
+    border-color: #2563EB !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
 html[data-theme="light"] select option {
     background: #FFFFFF !important;
     color: #111827 !important;

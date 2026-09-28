@@ -1759,7 +1759,7 @@
                                     <p>Select a player to view performance radar chart.</p>
                                 </div>
                                 <div id="radarCanvasContainer"
-                                    style="display: none; height: 300px; position: relative; display: flex; justify-content: center;">
+                                    style="display: none; height: 300px; position: relative;">
                                     <canvas id="playerRadarChart"></canvas>
                                 </div>
                             </div>
@@ -1807,7 +1807,37 @@
                                     </p>
                                 </div>
                             </div>
-                        </div>
+                        </div> <!-- End Predictions Section -->
+
+                        <!-- ANALYST SETTINGS SECTION -->
+                        <div id="section-analyst-settings" class="center-panel"
+                            style="grid-column: span 12; padding-top: 1rem;">
+                            <div class="glass-card" style="max-width: 600px; margin: 0 auto;">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-user-circle"></i> My Profile &amp; Settings</h3>
+                                </div>
+                                <form id="analyst-profile-form" autocomplete="off" onsubmit="saveAnalystProfile(event)">
+                                    <div class="form-group" style="margin-bottom:1rem;">
+                                        <label class="form-label" for="analyst-profile-name">Name</label>
+                                        <input type="text" id="analyst-profile-name" class="saas-input" placeholder="Your name">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:1rem;">
+                                        <label class="form-label" for="analyst-profile-email">Email (Login ID)</label>
+                                        <input type="email" id="analyst-profile-email" class="saas-input" placeholder="Email" readonly
+                                            onfocus="this.removeAttribute('readonly');">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:1.5rem;">
+                                        <label class="form-label" for="analyst-profile-password">New Password</label>
+                                        <input type="password" id="analyst-profile-password" class="saas-input"
+                                            placeholder="Leave blank to keep current" autocomplete="new-password">
+                                    </div>
+                                    <button type="submit" class="btn-premium" style="width:100%;">
+                                        <i class="fas fa-save"></i> Save Changes
+                                    </button>
+                                </form>
+                            </div>
+                        </div> <!-- End Analyst Settings Section -->
+
                     </div> <!-- End Analyst Panel -->
 
                 </div> <!-- Live Auction Container End -->
@@ -1997,7 +2027,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <script src="/js/rbac-router.js?v=26"></script>
-    <script src="/js/team-owner-dashboard.js?v=26"></script>
+    <script src="/js/team-analyst-dashboard.js?v=26"></script>
     <script>
         // Defeat bfcache so back button properly re-verifies auth
         window.addEventListener('pageshow', function (event) {

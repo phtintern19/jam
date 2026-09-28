@@ -40,14 +40,17 @@ def migrate():
             else:
                 logger.info("Skipped sport_id in events (already exists).")
 
-            # Add foreign key safely
+            # Add foreign key safely (MySQL only, SQLite does not support ADD CONSTRAINT)
             fk_name = "fk_events_sports"
-            if not fk_exists(conn, 'events', fk_name):
-                # Ensure sport_id matches sports.sport_id type (INT)
-                conn.execute(text(f"ALTER TABLE events ADD CONSTRAINT {fk_name} FOREIGN KEY (sport_id) REFERENCES sports(sport_id) ON DELETE SET NULL"))
-                logger.info(f"Added foreign key {fk_name} to events table.")
+            if engine.dialect.name != 'sqlite':
+                if not fk_exists(conn, 'events', fk_name):
+                    # Ensure sport_id matches sports.sport_id type (INT)
+                    conn.execute(text(f"ALTER TABLE events ADD CONSTRAINT {fk_name} FOREIGN KEY (sport_id) REFERENCES sports(sport_id) ON DELETE SET NULL"))
+                    logger.info(f"Added foreign key {fk_name} to events table.")
+                else:
+                    logger.info(f"Skipped foreign key {fk_name} (already exists).")
             else:
-                logger.info(f"Skipped foreign key {fk_name} (already exists).")
+                logger.info(f"Skipped foreign key {fk_name} (SQLite does not support ALTER TABLE ADD CONSTRAINT).")
 
             if not column_exists(conn, 'events', 'event_config'):
                 conn.execute(text("ALTER TABLE events ADD COLUMN event_config JSON NULL"))

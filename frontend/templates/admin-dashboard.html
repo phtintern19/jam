@@ -10,7 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* Admin Dashboard Specific Styles - Modern Neon Theme */
-        html, body {
+        html,
+        body {
             width: 100%;
             max-width: 100%;
             overflow-x: hidden;
@@ -38,7 +39,7 @@
             background: rgba(0, 0, 0, 0.95);
             backdrop-filter: blur(15px);
             border-bottom: 2px solid #00ffff;
-            box-shadow: 
+            box-shadow:
                 0 0 3px rgba(0, 255, 255, 0.08),
                 0 0 6px rgba(0, 255, 255, 0.04);
         }
@@ -49,7 +50,7 @@
             font-weight: 700;
             letter-spacing: 1px;
             transition: all 0.3s ease;
-            text-shadow: 
+            text-shadow:
                 0 0 1px #00ffff,
                 0 0 2px #00ffff;
         }
@@ -65,7 +66,7 @@
 
         .nav-link:hover {
             color: #00ffff !important;
-            text-shadow: 
+            text-shadow:
                 0 0 1px #00ffff,
                 0 0 2px #00ffff;
         }
@@ -73,7 +74,7 @@
         .nav-buttons .btn-outline {
             color: #00ffff;
             border-color: #00ffff;
-            box-shadow: 
+            box-shadow:
                 0 0 1px rgba(0, 255, 255, 0.06),
                 0 0 2px rgba(0, 255, 255, 0.04);
         }
@@ -82,7 +83,7 @@
             background-color: #00ffff;
             color: #000000;
             border-color: #00ffff;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(0, 255, 255, 0.1),
                 0 0 4px rgba(0, 255, 255, 0.06);
         }
@@ -108,7 +109,8 @@
         }
 
         .dashboard-container {
-            margin-left: 240px; /* Sidebar width */
+            margin-left: 240px;
+            /* Sidebar width */
             padding: 28px 32px 40px;
             transition: margin-left 0.3s ease;
             width: calc(100% - 240px);
@@ -116,12 +118,13 @@
             box-sizing: border-box;
             overflow-x: hidden;
         }
-        
+
         @media (max-width: 1024px) {
             .dashboard-container {
                 margin-left: 0;
                 width: 100%;
             }
+
             .header {
                 width: 100%;
                 margin-left: 0;
@@ -143,7 +146,7 @@
             font-size: 2rem;
             margin: 0;
             color: #00ffff;
-            text-shadow: 
+            text-shadow:
                 0 0 1px #00ffff,
                 0 0 2px #00ffff;
         }
@@ -159,13 +162,13 @@
             align-items: center;
             gap: 0.5rem;
             transition: all 0.3s;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(0, 255, 255, 0.06),
                 0 0 4px rgba(0, 255, 255, 0.04);
         }
 
         .create-event-btn:hover {
-            box-shadow: 
+            box-shadow:
                 0 0 3px rgba(0, 255, 255, 0.1),
                 0 0 6px rgba(0, 255, 255, 0.06);
             border-color: #00ff00;
@@ -189,7 +192,7 @@
             gap: 0.5rem;
             transition: all 0.3s;
             font-weight: 600;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(34, 197, 94, 0.06),
                 0 0 4px rgba(34, 197, 94, 0.04);
         }
@@ -197,7 +200,7 @@
         .auction-control-btn:hover {
             background: linear-gradient(135deg, #16a34a, #15803d);
             transform: translateY(-1px);
-            box-shadow: 
+            box-shadow:
                 0 0 3px rgba(34, 197, 94, 0.1),
                 0 0 6px rgba(34, 197, 94, 0.06);
         }
@@ -205,14 +208,14 @@
         .auction-control-btn.secondary {
             background: linear-gradient(135deg, #f59e0b, #d97706);
             border-color: #f59e0b;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(245, 158, 11, 0.06),
                 0 0 4px rgba(245, 158, 11, 0.04);
         }
 
         .auction-control-btn.secondary:hover {
             background: linear-gradient(135deg, #d97706, #b45309);
-            box-shadow: 
+            box-shadow:
                 0 0 3px rgba(245, 158, 11, 0.1),
                 0 0 6px rgba(245, 158, 11, 0.06);
         }
@@ -220,14 +223,14 @@
         .auction-control-btn.danger {
             background: linear-gradient(135deg, #ef4444, #dc2626);
             border-color: #ef4444;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(239, 68, 68, 0.06),
                 0 0 4px rgba(239, 68, 68, 0.04);
         }
 
         .auction-control-btn.danger:hover {
             background: linear-gradient(135deg, #dc2626, #b91c1c);
-            box-shadow: 
+            box-shadow:
                 0 0 3px rgba(239, 68, 68, 0.1),
                 0 0 6px rgba(239, 68, 68, 0.06);
         }
@@ -238,7 +241,7 @@
             border-radius: 1rem;
             padding: 2rem;
             margin-bottom: 2rem;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(0, 255, 255, 0.06),
                 0 0 4px rgba(0, 255, 255, 0.04);
         }
@@ -249,7 +252,7 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            text-shadow: 
+            text-shadow:
                 0 0 1px #00ffff,
                 0 0 2px #00ffff;
         }
@@ -272,7 +275,7 @@
             border-radius: 0.75rem;
             padding: 1.5rem;
             position: relative;
-            box-shadow: 
+            box-shadow:
                 0 0 1px rgba(0, 255, 255, 0.04),
                 inset 0 0 2px rgba(0, 255, 255, 0.01);
         }
@@ -312,7 +315,7 @@
             border-radius: 0.75rem;
             padding: 2rem;
             margin-top: 2rem;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(0, 255, 255, 0.06),
                 0 0 4px rgba(0, 255, 255, 0.04);
         }
@@ -349,7 +352,7 @@
             display: flex;
             align-items: center;
             gap: 1rem;
-            box-shadow: 
+            box-shadow:
                 0 0 1px rgba(0, 255, 255, 0.04),
                 inset 0 0 2px rgba(0, 255, 255, 0.01);
         }
@@ -357,7 +360,7 @@
         .time-option:hover {
             border-color: #00ff00;
             background: rgba(0, 255, 255, 0.1);
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(0, 255, 0, 0.06),
                 inset 0 0 3px rgba(0, 255, 0, 0.02);
         }
@@ -369,7 +372,7 @@
         .time-option.selected {
             border-color: #00ff00;
             background: rgba(0, 255, 0, 0.15);
-            box-shadow: 
+            box-shadow:
                 0 0 3px rgba(0, 255, 0, 0.08),
                 inset 0 0 4px rgba(0, 255, 0, 0.03);
         }
@@ -405,14 +408,14 @@
             gap: 0.5rem;
             margin: 0 auto;
             transition: all 0.3s;
-            box-shadow: 
+            box-shadow:
                 0 0 10px rgba(34, 197, 94, 0.3),
                 0 0 20px rgba(34, 197, 94, 0.2);
         }
 
         .set-bid-time-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 
+            box-shadow:
                 0 0 15px rgba(34, 197, 94, 0.5),
                 0 0 30px rgba(34, 197, 94, 0.3);
         }
@@ -440,7 +443,7 @@
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(0, 255, 255, 0.06),
                 0 0 4px rgba(0, 255, 255, 0.04);
         }
@@ -448,7 +451,7 @@
         .event-card:hover {
             border-color: #00ff00;
             transform: translateY(-2px);
-            box-shadow: 
+            box-shadow:
                 0 0 3px rgba(0, 255, 0, 0.1),
                 0 0 6px rgba(0, 255, 0, 0.06);
         }
@@ -655,7 +658,7 @@
             max-height: 90vh;
             overflow-y: auto;
             position: relative;
-            box-shadow: 
+            box-shadow:
                 0 0 3px rgba(0, 255, 255, 0.08),
                 0 0 6px rgba(0, 255, 255, 0.04);
         }
@@ -728,7 +731,7 @@
             border-radius: 0.375rem;
             color: #ffffff;
             font-size: 0.875rem;
-            box-shadow: 
+            box-shadow:
                 0 0 1px rgba(0, 255, 255, 0.04),
                 inset 0 0 2px rgba(0, 255, 255, 0.01);
         }
@@ -738,7 +741,7 @@
         .form-group textarea:focus {
             outline: none;
             border-color: #00ff00;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(0, 255, 0, 0.08),
                 0 0 4px rgba(0, 255, 0, 0.06),
                 inset 0 0 3px rgba(0, 255, 0, 0.02);
@@ -759,7 +762,7 @@
             background: rgba(0, 0, 0, 0.8);
             border: 2px solid #00ffff;
             border-radius: 0.375rem;
-            box-shadow: 
+            box-shadow:
                 0 0 1px rgba(0, 255, 255, 0.04),
                 inset 0 0 2px rgba(0, 255, 255, 0.01);
         }
@@ -854,14 +857,14 @@
             cursor: pointer;
             transition: all 0.3s;
             font-weight: 600;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(249, 115, 22, 0.06),
                 0 0 4px rgba(249, 115, 22, 0.04);
         }
 
         .btn-save:hover {
             background: linear-gradient(135deg, #ea580c, #c2410c);
-            box-shadow: 
+            box-shadow:
                 0 0 3px rgba(249, 115, 22, 0.1),
                 0 0 6px rgba(249, 115, 22, 0.06);
         }
@@ -879,7 +882,7 @@
             border-radius: 0.75rem;
             overflow: hidden;
             position: relative;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(0, 255, 255, 0.06),
                 0 0 4px rgba(0, 255, 255, 0.04);
         }
@@ -1028,14 +1031,14 @@
             margin-top: 1rem;
             font-weight: 600;
             transition: all 0.3s;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(249, 115, 22, 0.06),
                 0 0 4px rgba(249, 115, 22, 0.04);
         }
 
         .close-players-btn:hover {
             background: linear-gradient(135deg, #ea580c, #c2410c);
-            box-shadow: 
+            box-shadow:
                 0 0 3px rgba(249, 115, 22, 0.1),
                 0 0 6px rgba(249, 115, 22, 0.06);
         }
@@ -1046,7 +1049,7 @@
             border-radius: 1rem;
             padding: 2rem;
             margin-top: 2rem;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(0, 255, 255, 0.06),
                 0 0 4px rgba(0, 255, 255, 0.04);
         }
@@ -1135,14 +1138,14 @@
             cursor: pointer;
             font-size: 0.875rem;
             transition: all 0.3s;
-            box-shadow: 
+            box-shadow:
                 0 0 2px rgba(239, 68, 68, 0.06),
                 0 0 4px rgba(239, 68, 68, 0.04);
         }
 
         .clear-log-btn:hover {
             background: linear-gradient(135deg, #dc2626, #b91c1c);
-            box-shadow: 
+            box-shadow:
                 0 0 3px rgba(239, 68, 68, 0.1),
                 0 0 6px rgba(239, 68, 68, 0.06);
         }
@@ -1303,7 +1306,7 @@
 
         .admin-sidebar .tab-btn:hover i {
             opacity: 1;
-            text-shadow: 0 0 5px rgba(255,255,255,0.5);
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
         }
 
         .admin-sidebar .tab-btn.active {
@@ -1319,7 +1322,7 @@
             opacity: 1;
             text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
         }
-        
+
         /* Mobile Hamburger & Sidebar Toggle */
         .mobile-nav-toggle {
             display: none;
@@ -1332,7 +1335,7 @@
             margin-right: 1rem;
             transition: all 0.3s;
         }
-        
+
         .mobile-nav-toggle:hover {
             text-shadow: 0 0 5px #00ffff;
         }
@@ -1341,12 +1344,15 @@
             .mobile-nav-toggle {
                 display: block;
             }
+
             .admin-sidebar {
                 transform: translateX(-100%);
             }
+
             .admin-sidebar.sidebar-open {
                 transform: translateX(0);
             }
+
             .header {
                 width: 100%;
                 margin-left: 0;
@@ -1500,6 +1506,7 @@
                 justify-content: center;
             }
         }
+
         /* Dark Theme Dropdown Select Styling */
         select.form-control,
         select {
@@ -1533,26 +1540,31 @@
 
         /* --- HEADER & NAV --- */
         html[data-theme="light"] .header {
-            background: rgba(255,255,255,0.96) !important;
+            background: rgba(255, 255, 255, 0.96) !important;
             border-bottom: 2px solid #E5E7EB !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
         }
+
         html[data-theme="light"] .nav-logo {
             color: #2563EB !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .nav-link {
             color: #4B5563 !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .nav-link:hover {
             color: #2563EB !important;
         }
+
         html[data-theme="light"] .nav-buttons .btn-outline {
             color: #4B5563 !important;
             border-color: #D1D5DB !important;
             box-shadow: none !important;
         }
+
         html[data-theme="light"] .nav-buttons .btn-outline:hover {
             background-color: #F3F4F6 !important;
             color: #111827 !important;
@@ -1562,41 +1574,49 @@
         html[data-theme="light"] .admin-sidebar {
             background: #FFFFFF !important;
             border-right: 1px solid #E5E7EB !important;
-            box-shadow: 1px 0 3px rgba(0,0,0,0.05) !important;
+            box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05) !important;
         }
 
         html[data-theme="light"] .sidebar-section-title {
             color: #6B7280 !important;
         }
+
         html[data-theme="light"] .admin-sidebar .tab-btn {
             color: #4B5563 !important;
         }
+
         html[data-theme="light"] .admin-sidebar .tab-btn:hover {
             background: #F3F4F6 !important;
             color: #111827 !important;
         }
+
         html[data-theme="light"] .admin-sidebar .tab-btn.active {
             background: #EEF2FF !important;
             color: #2563EB !important;
             border-left: 4px solid #2563EB !important;
         }
+
         html[data-theme="light"] .nav-logo {
             color: #2563EB !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .nav-link {
             color: #374151 !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .nav-link:hover {
             color: #2563EB !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .nav-buttons .btn-outline {
             color: #2563EB !important;
             border-color: #2563EB !important;
             box-shadow: none !important;
         }
+
         html[data-theme="light"] .nav-buttons .btn-outline:hover {
             background-color: #EEF2FF !important;
             color: #1D4ED8 !important;
@@ -1614,10 +1634,11 @@
             background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
             border: none !important;
             color: #FFFFFF !important;
-            box-shadow: 0 2px 8px rgba(37,99,235,0.25) !important;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
         }
+
         html[data-theme="light"] .create-event-btn:hover {
-            box-shadow: 0 4px 16px rgba(37,99,235,0.35) !important;
+            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35) !important;
             border-color: transparent !important;
         }
 
@@ -1626,6 +1647,7 @@
             color: #111827 !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .section-header p {
             color: #6B7280 !important;
         }
@@ -1634,15 +1656,19 @@
         html[data-theme="light"] .responses-tabs {
             border-bottom: 1px solid #E5E7EB !important;
         }
+
         html[data-theme="light"] .tab-btn {
             color: #6B7280 !important;
         }
+
         html[data-theme="light"] .tab-btn:hover {
             color: #111827 !important;
         }
+
         html[data-theme="light"] .tab-btn.active {
             color: #2563EB !important;
         }
+
         html[data-theme="light"] .tab-btn.active::after {
             background-color: #2563EB !important;
         }
@@ -1651,8 +1677,9 @@
         html[data-theme="light"] .activity-log-section {
             background: #FFFFFF !important;
             border: 1px solid #E5E7EB !important;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
         }
+
         html[data-theme="light"] .activity-log-header h3 {
             color: #111827 !important;
             text-shadow: none !important;
@@ -1668,29 +1695,36 @@
         html[data-theme="light"] .activity-log-table {
             background: #FFFFFF !important;
         }
+
         html[data-theme="light"] .activity-log-table th,
         html[data-theme="light"] .activity-log-table td {
             border-bottom: 1px solid #F3F4F6 !important;
             color: #374151 !important;
         }
+
         html[data-theme="light"] .activity-log-table th {
             background: #F8FAFC !important;
             color: #374151 !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .activity-log-table tbody tr:hover {
             background: #EEF2FF !important;
         }
+
         html[data-theme="light"] .activity-timestamp {
             color: #6B7280 !important;
         }
+
         html[data-theme="light"] .activity-action {
             color: #16A34A !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .activity-details {
             color: #4B5563 !important;
         }
+
         html[data-theme="light"] .no-logs {
             color: #9CA3AF !important;
         }
@@ -1701,14 +1735,16 @@
         html[data-theme="light"] .filter-controls span {
             color: #374151 !important;
         }
+
         html[data-theme="light"] .sort-controls select {
             background-color: #FFFFFF !important;
             border: 1px solid #D1D5DB !important;
             color: #111827 !important;
         }
+
         html[data-theme="light"] .sort-controls select:focus {
             border-color: #2563EB !important;
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.1) !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
         }
 
         /* --- FILTER BUTTONS --- */
@@ -1717,11 +1753,13 @@
             border: 1px solid #D1D5DB !important;
             color: #374151 !important;
         }
+
         html[data-theme="light"] .filter-btn:hover {
             background-color: #EEF2FF !important;
             color: #2563EB !important;
             border-color: #C7D2FE !important;
         }
+
         html[data-theme="light"] .filter-btn.active {
             background-color: #2563EB !important;
             border-color: #2563EB !important;
@@ -1738,14 +1776,16 @@
         html[data-theme="light"] .page-size-selector label {
             color: #6B7280 !important;
         }
+
         html[data-theme="light"] .page-size-selector select {
             background: #FFFFFF !important;
             border: 1px solid #D1D5DB !important;
             color: #111827 !important;
         }
+
         html[data-theme="light"] .page-size-selector select:focus {
             border-color: #2563EB !important;
-            box-shadow: 0 0 0 2px rgba(37,99,235,0.1) !important;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1) !important;
         }
 
         /* --- RESPONSES SECTION --- */
@@ -1753,13 +1793,16 @@
             background-color: #FFFFFF !important;
             border: 1px solid #E5E7EB !important;
         }
+
         html[data-theme="light"] .responses-section .section-header h3 {
             color: #111827 !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .responses-section .section-header p {
             color: #6B7280 !important;
         }
+
         html[data-theme="light"] .responses-tabs {
             border-bottom: 1px solid #E5E7EB !important;
         }
@@ -1768,15 +1811,18 @@
         html[data-theme="light"] .responses-table {
             background-color: #FFFFFF !important;
         }
+
         html[data-theme="light"] .responses-table th {
             background-color: #F8FAFC !important;
             color: #374151 !important;
         }
+
         html[data-theme="light"] .responses-table th,
         html[data-theme="light"] .responses-table td {
             border-bottom: 1px solid #F3F4F6 !important;
             color: #374151 !important;
         }
+
         html[data-theme="light"] .responses-table tbody tr:hover {
             background-color: #EEF2FF !important;
         }
@@ -1786,6 +1832,7 @@
             color: #374151 !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .form-group input,
         html[data-theme="light"] .form-group select,
         html[data-theme="light"] .form-group textarea {
@@ -1795,23 +1842,28 @@
             box-shadow: none !important;
             caret-color: #111827 !important;
         }
+
         html[data-theme="light"] .form-group input:focus,
         html[data-theme="light"] .form-group select:focus,
         html[data-theme="light"] .form-group textarea:focus {
             border-color: #2563EB !important;
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.1) !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
         }
+
         html[data-theme="light"] .checkbox-item {
             background: #F8FAFC !important;
             border: 1px solid #D1D5DB !important;
         }
+
         html[data-theme="light"] .checkbox-item label {
             color: #374151 !important;
         }
+
         html[data-theme="light"] .add-sport-btn {
             border-color: #2563EB !important;
             color: #2563EB !important;
         }
+
         html[data-theme="light"] .add-sport-btn:hover {
             border-color: #1D4ED8 !important;
             color: #1D4ED8 !important;
@@ -1822,104 +1874,137 @@
         html[data-theme="light"] .modal-content {
             background: #FFFFFF !important;
             border: 1px solid #E5E7EB !important;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15) !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
         }
+
         html[data-theme="light"] .modal-header {
             border-bottom: 1px solid #F3F4F6 !important;
         }
+
         html[data-theme="light"] .modal-header h2 {
             color: #111827 !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .modal-subtitle {
             color: #6B7280 !important;
         }
+
         html[data-theme="light"] .modal-close {
             color: #6B7280 !important;
             background: #F3F4F6 !important;
         }
+
         html[data-theme="light"] .modal-close:hover {
             background: #E5E7EB !important;
             color: #111827 !important;
         }
+
         html[data-theme="light"] .modal-footer {
             border-top: 1px solid #F3F4F6 !important;
         }
+
         html[data-theme="light"] .btn-cancel {
             border: 1px solid #D1D5DB !important;
             color: #374151 !important;
             background: #FFFFFF !important;
         }
+
         html[data-theme="light"] .btn-cancel:hover {
             background: #F9FAFB !important;
             color: #111827 !important;
             border-color: #9CA3AF !important;
         }
+
         html[data-theme="light"] .btn-save {
             background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
             border: none !important;
             color: #FFFFFF !important;
-            box-shadow: 0 2px 8px rgba(37,99,235,0.25) !important;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
         }
+
         html[data-theme="light"] .btn-save:hover {
             background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
-            box-shadow: 0 4px 16px rgba(37,99,235,0.35) !important;
+            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35) !important;
         }
 
         /* --- EVENT CARDS --- */
         html[data-theme="light"] .event-card {
             background: #FFFFFF !important;
             border: 1px solid #E5E7EB !important;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
         }
+
         html[data-theme="light"] .event-card:hover {
             border-color: #C7D2FE !important;
-            box-shadow: 0 6px 20px rgba(37,99,235,0.10) !important;
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.10) !important;
         }
+
         html[data-theme="light"] .event-card-header h3 {
             color: #111827 !important;
             text-shadow: none !important;
         }
-        html[data-theme="light"] .event-meta { color: #4B5563 !important; }
+
+        html[data-theme="light"] .event-meta {
+            color: #4B5563 !important;
+        }
+
         html[data-theme="light"] .sport-badge {
             background: #EEF2FF !important;
             color: #4338CA !important;
             border: 1px solid #C7D2FE !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .event-budget {
             background: #F0FDF4 !important;
             border: 1px solid #BBF7D0 !important;
         }
-        html[data-theme="light"] .budget-label { color: #6B7280 !important; }
+
+        html[data-theme="light"] .budget-label {
+            color: #6B7280 !important;
+        }
+
         html[data-theme="light"] .budget-amount {
             color: #16A34A !important;
             text-shadow: none !important;
         }
-        html[data-theme="light"] .price-label { color: #6B7280 !important; }
-        html[data-theme="light"] .price-value { color: #111827 !important; }
+
+        html[data-theme="light"] .price-label {
+            color: #6B7280 !important;
+        }
+
+        html[data-theme="light"] .price-value {
+            color: #111827 !important;
+        }
+
         html[data-theme="light"] .action-btn {
             background: #FFFFFF !important;
             border: 1px solid #D1D5DB !important;
             color: #374151 !important;
         }
+
         html[data-theme="light"] .action-btn:hover {
             background: #EEF2FF !important;
             color: #2563EB !important;
             border-color: #2563EB !important;
         }
+
         html[data-theme="light"] .action-btn-danger {
             color: #DC2626 !important;
             border-color: #FCA5A5 !important;
         }
+
         html[data-theme="light"] .action-btn-danger:hover {
             background: #FEE2E2 !important;
         }
+
         html[data-theme="light"] .link-btn {
             background: #FFFFFF !important;
             border: 1px solid #D1D5DB !important;
             color: #374151 !important;
         }
+
         html[data-theme="light"] .link-btn:hover {
             background: #F9FAFB !important;
             color: #111827 !important;
@@ -1929,31 +2014,40 @@
         html[data-theme="light"] .player-card {
             background: #FFFFFF !important;
             border: 1px solid #E5E7EB !important;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
         }
+
         html[data-theme="light"] .player-name {
             color: #111827 !important;
             text-shadow: none !important;
         }
-        html[data-theme="light"] .stat-value { color: #111827 !important; }
+
+        html[data-theme="light"] .stat-value {
+            color: #111827 !important;
+        }
+
         html[data-theme="light"] .player-price {
             background: #F0FDF4 !important;
             border: 1px solid #BBF7D0 !important;
         }
+
         html[data-theme="light"] .price-amount-large {
             color: #16A34A !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .view-profile-btn {
             background: #FFFFFF !important;
             border: 1px solid #D1D5DB !important;
             color: #374151 !important;
         }
+
         html[data-theme="light"] .view-profile-btn:hover {
             background: #EEF2FF !important;
             border-color: #2563EB !important;
             color: #2563EB !important;
         }
+
         html[data-theme="light"] .close-players-btn {
             background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
             border: none !important;
@@ -1965,61 +2059,84 @@
         html[data-theme="light"] .admin-decision-panel {
             background: #FFFFFF !important;
             border: 1px solid #E5E7EB !important;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
         }
+
         html[data-theme="light"] .preference-card {
             background: #F8FAFC !important;
             border: 1px solid #E5E7EB !important;
             box-shadow: none !important;
         }
+
         html[data-theme="light"] .team-name {
             color: #2563EB !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .preference-time {
             color: #16A34A !important;
             text-shadow: none !important;
         }
-        html[data-theme="light"] .preference-label { color: #6B7280 !important; }
-        html[data-theme="light"] .submitted-time { color: #9CA3AF !important; }
+
+        html[data-theme="light"] .preference-label {
+            color: #6B7280 !important;
+        }
+
+        html[data-theme="light"] .submitted-time {
+            color: #9CA3AF !important;
+        }
+
         html[data-theme="light"] .decision-info h4 {
             color: #2563EB !important;
             text-shadow: none !important;
         }
-        html[data-theme="light"] .decision-info p { color: #6B7280 !important; }
+
+        html[data-theme="light"] .decision-info p {
+            color: #6B7280 !important;
+        }
+
         html[data-theme="light"] .time-option {
             background: #FFFFFF !important;
             border: 1px solid #D1D5DB !important;
             box-shadow: none !important;
         }
+
         html[data-theme="light"] .time-option:hover {
             border-color: #2563EB !important;
             background: #EEF2FF !important;
             box-shadow: none !important;
         }
+
         html[data-theme="light"] .time-option.selected {
             border-color: #2563EB !important;
             background: #EEF2FF !important;
             box-shadow: none !important;
         }
+
         html[data-theme="light"] .option-time {
             color: #2563EB !important;
             text-shadow: none !important;
         }
-        html[data-theme="light"] .option-label { color: #6B7280 !important; }
+
+        html[data-theme="light"] .option-label {
+            color: #6B7280 !important;
+        }
 
         /* --- SYSTEM MONITORING --- */
         html[data-theme="light"] .system-monitoring-section {
             background-color: #FFFFFF !important;
             border: 1px solid #E5E7EB !important;
         }
+
         html[data-theme="light"] .system-monitoring-section .section-header h3 {
             color: #111827 !important;
             text-shadow: none !important;
         }
+
         html[data-theme="light"] .system-monitoring-section .section-header p {
             color: #6B7280 !important;
         }
+
         html[data-theme="light"] .monitoring-card {
             background: #F8FAFC !important;
             border: 1px solid #E5E7EB !important;
@@ -2052,13 +2169,16 @@
             border-top: 4px solid #8b5cf6 !important;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
         }
+
         html[data-theme="light"] .manage-events-container.premium-view .section-title {
             color: #4f46e5 !important;
         }
+
         html[data-theme="light"] .manage-events-container.premium-view .glass-card {
             background: #F8FAFC !important;
             border: 1px solid #E5E7EB !important;
         }
+
         html[data-theme="light"] .manage-events-container.premium-view .events-toolbar.glass-card {
             background: #F1F5F9 !important;
         }
@@ -2071,23 +2191,118 @@
 
     <!-- LIGHT MODE PAGINATION OVERRIDES -->
     <style>
-        html[data-theme="light"] .pagination-controls { border-top: 1px solid #E5E7EB !important; background: transparent !important; }
-        html[data-theme="light"] button.pagination-btn, html[data-theme="light"] #activityLogPrevBtn, html[data-theme="light"] #activityLogNextBtn { background: #FFFFFF !important; background-color: #FFFFFF !important; border: 1px solid #D1D5DB !important; color: #374151 !important; }
-        html[data-theme="light"] button.pagination-btn:not(:disabled):hover { background: #EEF2FF !important; color: #2563EB !important; border-color: #2563EB !important; }
-        html[data-theme="light"] #activityLogInfo, html[data-theme="light"] #activityLogPageNumber, html[data-theme="light"] #playerPaginationInfo, html[data-theme="light"] #teamOwnerPaginationInfo, html[data-theme="light"] #messagePageInfo, html[data-theme="light"] span.page-number, html[data-theme="light"] span.page-info { color: #374151 !important; background: transparent !important; }
-        html[data-theme="light"] #activityLogPageSize, html[data-theme="light"] #sortOrder { background: #FFFFFF !important; background-color: #FFFFFF !important; border: 1px solid #D1D5DB !important; color: #111827 !important; }
-        html[data-theme="light"] div.page-size-selector { background: transparent !important; border: none !important; padding: 0 !important; box-shadow: none !important; }
-        html[data-theme="light"] select.page-size-selector { background: #FFFFFF !important; background-color: #FFFFFF !important; border: 1px solid #D1D5DB !important; color: #111827 !important; }
-        html[data-theme="light"] button.filter-btn { background-color: #FFFFFF !important; border: 1px solid #D1D5DB !important; color: #374151 !important; }
-        html[data-theme="light"] button.filter-btn:hover { background-color: #EEF2FF !important; color: #2563EB !important; border-color: #C7D2FE !important; }
-        html[data-theme="light"] button.filter-btn.active { background-color: #2563EB !important; border-color: #2563EB !important; color: #FFFFFF !important; }
-        html[data-theme="light"] button.refresh-log-btn { background-color: #EEF2FF !important; color: #2563EB !important; border: 1px solid #C7D2FE !important; }
-        html[data-theme="light"] .activity-log-section { background: #FFFFFF !important; background-color: #FFFFFF !important; border: 1px solid #E5E7EB !important; }
-        html[data-theme="light"] .activity-log-table-container { background: #FFFFFF !important; background-color: #FFFFFF !important; border: 1px solid #E5E7EB !important; }
-        html[data-theme="light"] table#activityLogTable th { background: #F8FAFC !important; color: #374151 !important; border-bottom: 2px solid #E5E7EB !important; }
-        html[data-theme="light"] table#activityLogTable td { background: #FFFFFF !important; color: #374151 !important; border-bottom: 1px solid #F3F4F6 !important; }
-        html[data-theme="light"] table#activityLogTable tbody tr:hover td { background: #EEF2FF !important; }
-        html[data-theme="light"] #eventFilterDropdown, html[data-theme="light"] #teamOwnerEventFilterDropdown { background: #FFFFFF !important; background-color: #FFFFFF !important; border: 1px solid #D1D5DB !important; color: #111827 !important; }
+        html[data-theme="light"] .pagination-controls {
+            border-top: 1px solid #E5E7EB !important;
+            background: transparent !important;
+        }
+
+        html[data-theme="light"] button.pagination-btn,
+        html[data-theme="light"] #activityLogPrevBtn,
+        html[data-theme="light"] #activityLogNextBtn {
+            background: #FFFFFF !important;
+            background-color: #FFFFFF !important;
+            border: 1px solid #D1D5DB !important;
+            color: #374151 !important;
+        }
+
+        html[data-theme="light"] button.pagination-btn:not(:disabled):hover {
+            background: #EEF2FF !important;
+            color: #2563EB !important;
+            border-color: #2563EB !important;
+        }
+
+        html[data-theme="light"] #activityLogInfo,
+        html[data-theme="light"] #activityLogPageNumber,
+        html[data-theme="light"] #playerPaginationInfo,
+        html[data-theme="light"] #teamOwnerPaginationInfo,
+        html[data-theme="light"] #messagePageInfo,
+        html[data-theme="light"] span.page-number,
+        html[data-theme="light"] span.page-info {
+            color: #374151 !important;
+            background: transparent !important;
+        }
+
+        html[data-theme="light"] #activityLogPageSize,
+        html[data-theme="light"] #sortOrder {
+            background: #FFFFFF !important;
+            background-color: #FFFFFF !important;
+            border: 1px solid #D1D5DB !important;
+            color: #111827 !important;
+        }
+
+        html[data-theme="light"] div.page-size-selector {
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="light"] select.page-size-selector {
+            background: #FFFFFF !important;
+            background-color: #FFFFFF !important;
+            border: 1px solid #D1D5DB !important;
+            color: #111827 !important;
+        }
+
+        html[data-theme="light"] button.filter-btn {
+            background-color: #FFFFFF !important;
+            border: 1px solid #D1D5DB !important;
+            color: #374151 !important;
+        }
+
+        html[data-theme="light"] button.filter-btn:hover {
+            background-color: #EEF2FF !important;
+            color: #2563EB !important;
+            border-color: #C7D2FE !important;
+        }
+
+        html[data-theme="light"] button.filter-btn.active {
+            background-color: #2563EB !important;
+            border-color: #2563EB !important;
+            color: #FFFFFF !important;
+        }
+
+        html[data-theme="light"] button.refresh-log-btn {
+            background-color: #EEF2FF !important;
+            color: #2563EB !important;
+            border: 1px solid #C7D2FE !important;
+        }
+
+        html[data-theme="light"] .activity-log-section {
+            background: #FFFFFF !important;
+            background-color: #FFFFFF !important;
+            border: 1px solid #E5E7EB !important;
+        }
+
+        html[data-theme="light"] .activity-log-table-container {
+            background: #FFFFFF !important;
+            background-color: #FFFFFF !important;
+            border: 1px solid #E5E7EB !important;
+        }
+
+        html[data-theme="light"] table#activityLogTable th {
+            background: #F8FAFC !important;
+            color: #374151 !important;
+            border-bottom: 2px solid #E5E7EB !important;
+        }
+
+        html[data-theme="light"] table#activityLogTable td {
+            background: #FFFFFF !important;
+            color: #374151 !important;
+            border-bottom: 1px solid #F3F4F6 !important;
+        }
+
+        html[data-theme="light"] table#activityLogTable tbody tr:hover td {
+            background: #EEF2FF !important;
+        }
+
+        html[data-theme="light"] #eventFilterDropdown,
+        html[data-theme="light"] #teamOwnerEventFilterDropdown {
+            background: #FFFFFF !important;
+            background-color: #FFFFFF !important;
+            border: 1px solid #D1D5DB !important;
+            color: #111827 !important;
+        }
     </style>
 </head>
 
@@ -2102,18 +2317,44 @@
                     <button class="mobile-nav-toggle" onclick="toggleSidebar()" aria-label="Toggle Sidebar">
                         <i class="fas fa-bars"></i>
                     </button>
-                    <div class="nav-logo">
+                    <div class="nav-logo" onclick="window.location.href='/index.html'" style="cursor: pointer;">
                         <i class="fas fa-trophy"></i>
                         <span>JamRig</span>
                     </div>
                 </div>
-                <ul class="nav-menu">
-                    <li><a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
-                </ul>
-                <div class="nav-buttons" style="display: flex; align-items: center;">
-                    <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle Light/Dark Mode">
+                <div class="nav-buttons" style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle Light/Dark Mode"
+                        title="Toggle Theme"
+                        style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; transition: color 0.2s;">
                         <i class="theme-icon fas fa-moon"></i>
                     </button>
+
+                    <!-- User Dropdown -->
+                    <div class="user-dropdown-container" style="position: relative;">
+                        <button onclick="toggleUserMenu()"
+                            style="display: flex; align-items: center; gap: 0.5rem; background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.2); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; color: var(--text-primary); font-weight: 600; transition: all 0.2s ease;">
+                            <i class="fas fa-user-shield" style="color: var(--accent-blue); font-size: 1.2rem;"></i>
+                            <span id="headerUserName">Admin</span>
+                            <i class="fas fa-chevron-down" style="font-size: 0.8rem; margin-left: 0.25rem;"></i>
+                        </button>
+                        <div id="userDropdownMenu"
+                            style="display: none; position: absolute; top: 120%; right: 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; min-width: 200px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 1000; overflow: hidden;">
+                            <div style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                                <div id="dropdownUserName" style="font-weight: 600; color: var(--text-primary);">Admin
+                                </div>
+                                <div id="dropdownUserRole"
+                                    style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-top: 0.25rem;">
+                                    Administrator</div>
+                            </div>
+                            <div style="padding: 0.5rem 0;">
+                                <button onclick="logout()" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'"
+                                    onmouseout="this.style.background='transparent'"
+                                    style="width: 100%; text-align: left; padding: 0.75rem 1rem; background: transparent; border: none; color: #ef4444; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: background 0.2s;">
+                                    <i class="fas fa-sign-out-alt"></i> Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -2149,7 +2390,8 @@
             <i class="fas fa-file-invoice"></i> Reports
         </button>
 
-        <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; width: 100%;">
+        <div
+            style="margin-top: auto; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; width: 100%;">
             <button class="tab-btn" onclick="logout()" style="color: #ef4444; justify-content: flex-start;">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
@@ -2161,7 +2403,8 @@
         <div class="dashboard-header">
             <div>
                 <h1>Welcome back, Admin 👋</h1>
-                <p style="color: #94a3b8; margin-top: 0.5rem; font-size: 1.1rem;">Manage your events, teams, and live auctions.</p>
+                <p style="color: #94a3b8; margin-top: 0.5rem; font-size: 1.1rem;">Manage your events, teams, and live
+                    auctions.</p>
             </div>
             <div class="admin-controls">
                 <button class="create-event-btn" onclick="openCreateEventModal()">
@@ -2187,7 +2430,10 @@
         <div id="dashboardSection">
             <!-- Activity Log Modal Trigger (FAB) -->
             <div style="position: fixed; bottom: 30px; right: 30px; z-index: 9999;">
-                <button onclick="document.getElementById('activityLogModal').classList.add('active')" title="View Activity Logs" style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #000; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 1.5rem; cursor: pointer; box-shadow: 0 0 15px rgba(0,255,255,0.5); display: flex; align-items: center; justify-content: center; transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                <button onclick="document.getElementById('activityLogModal').classList.add('active')"
+                    title="View Activity Logs"
+                    style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #000; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 1.5rem; cursor: pointer; box-shadow: 0 0 15px rgba(0,255,255,0.5); display: flex; align-items: center; justify-content: center; transition: transform 0.3s ease;"
+                    onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
                     <i class="fas fa-history"></i>
                 </button>
             </div>
@@ -2626,7 +2872,10 @@
                     </thead>
                     <tbody>
                         <!-- Bids will be loaded here -->
-                        <tr><td colspan="6" style="text-align:center">Bidding history will appear here once an auction starts.</td></tr>
+                        <tr>
+                            <td colspan="6" style="text-align:center">Bidding history will appear here once an auction
+                                starts.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -2643,206 +2892,256 @@
                     <i class="fas fa-file-pdf"></i> Export PDF
                 </button>
             </div>
-            <div class="events-summary-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="events-summary-cards"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
                 <div class="stat-card glass-card">
-                    <div class="stat-info"><div class="stat-value" id="reportTotalRevenue">$0</div><div class="stat-label">Total Auction Revenue</div></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="reportTotalRevenue">$0</div>
+                        <div class="stat-label">Total Auction Revenue</div>
+                    </div>
                 </div>
                 <div class="stat-card glass-card">
-                    <div class="stat-info"><div class="stat-value" id="reportTotalTeams">0</div><div class="stat-label">Total Registered Teams</div></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="reportTotalTeams">0</div>
+                        <div class="stat-label">Total Registered Teams</div>
+                    </div>
                 </div>
                 <div class="stat-card glass-card">
-                    <div class="stat-info"><div class="stat-value" id="reportTotalPlayers">0</div><div class="stat-label">Total Players</div></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="reportTotalPlayers">0</div>
+                        <div class="stat-label">Total Players</div>
+                    </div>
                 </div>
                 <div class="stat-card glass-card">
-                    <div class="stat-info"><div class="stat-value" id="reportSoldPlayers">0</div><div class="stat-label">Players Sold</div></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="reportSoldPlayers">0</div>
+                        <div class="stat-label">Players Sold</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-    <style>
-        .manage-events-container.premium-view {
-            background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(10, 10, 10, 0.98));
-            border: 1px solid rgba(139, 92, 246, 0.4);
-            border-top: 4px solid #8b5cf6;
-            border-radius: 1.5rem;
-            padding: 2.5rem;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1);
-            width: 100%;
-            max-width: 100%;
-            box-sizing: border-box;
-        }
-        .manage-events-container.premium-view .section-title {
-            color: #c4b5fd;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-size: 1.75rem;
-            text-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
-            margin-bottom: 2.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        .manage-events-container.premium-view .section-title::before {
-            content: '\f073';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            color: #8b5cf6;
-        }
-        .manage-events-container.premium-view .glass-card {
-            background: rgba(30, 41, 59, 0.6);
-            border: 1px solid rgba(139, 92, 246, 0.2);
-            backdrop-filter: blur(10px);
-        }
-        
-        /* Fix Manage Events Statistics Cards Layout */
-        .events-summary-cards .stat-card {
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            padding: 1.5rem !important;
-            gap: 1rem !important;
-            position: relative !important;
-            overflow: hidden !important; /* Ensure nothing escapes card boundaries */
-            height: 100% !important;
-            box-sizing: border-box !important;
-        }
-        
-        .events-summary-cards .stat-card .stat-icon-wrapper {
-            width: 48px !important;
-            height: 48px !important;
-            border-radius: 12px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            font-size: 1.5rem !important;
-            margin: 0 !important;
-            flex-shrink: 0 !important;
-        }
-        
-        .events-summary-cards .stat-card .stat-info {
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 0.25rem !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
-        }
-        
-        .events-summary-cards .stat-card .stat-value {
-            font-size: 1.75rem !important;
-            font-weight: 700 !important;
-            line-height: 1.2 !important;
-            margin: 0 !important;
-        }
-        
-        .events-summary-cards .stat-card .stat-label {
-            font-size: 0.875rem !important;
-            opacity: 0.8 !important;
-            font-weight: 500 !important;
-            margin: 0 !important;
-        }
+        <style>
+            .manage-events-container.premium-view {
+                background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(10, 10, 10, 0.98));
+                border: 1px solid rgba(139, 92, 246, 0.4);
+                border-top: 4px solid #8b5cf6;
+                border-radius: 1.5rem;
+                padding: 2.5rem;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+            }
 
-        @media (min-width: 1025px) {
-            .events-summary-cards { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
-        }
-        @media (max-width: 1024px) {
-            .events-summary-cards { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-        }
-        @media (max-width: 640px) {
-            .events-summary-cards { grid-template-columns: minmax(0, 1fr) !important; }
-        }
-        @media (max-width: 768px) {
-            .events-toolbar { grid-template-columns: 1fr !important; }
-            .events-toolbar select { width: 100% !important; }
-        }
-    </style>
-    <div class="manage-events-container premium-view" id="manageEventsContainer">
-        <h2 class="section-title">Manage Events Center</h2>
-        
-        <!-- Summary Cards -->
-        <div class="events-summary-cards" style="display: grid; gap: 1.5rem; margin-bottom: 2rem;">
-            <div class="stat-card glass-card">
-                <div class="stat-icon-wrapper" style="color: #3b82f6; background: rgba(59, 130, 246, 0.1);"><i class="fas fa-calendar-alt"></i></div>
-                <div class="stat-info"><div class="stat-value" id="summaryTotalEvents">0</div><div class="stat-label">Total Events</div></div>
+            .manage-events-container.premium-view .section-title {
+                color: #c4b5fd;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                font-size: 1.75rem;
+                text-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+                margin-bottom: 2.5rem;
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            }
+
+            .manage-events-container.premium-view .section-title::before {
+                content: '\f073';
+                font-family: 'Font Awesome 6 Free';
+                font-weight: 900;
+                color: #8b5cf6;
+            }
+
+            .manage-events-container.premium-view .glass-card {
+                background: rgba(30, 41, 59, 0.6);
+                border: 1px solid rgba(139, 92, 246, 0.2);
+                backdrop-filter: blur(10px);
+            }
+
+            /* Fix Manage Events Statistics Cards Layout */
+            .events-summary-cards .stat-card {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                padding: 1.5rem !important;
+                gap: 1rem !important;
+                position: relative !important;
+                overflow: hidden !important;
+                /* Ensure nothing escapes card boundaries */
+                height: 100% !important;
+                box-sizing: border-box !important;
+            }
+
+            .events-summary-cards .stat-card .stat-icon-wrapper {
+                width: 48px !important;
+                height: 48px !important;
+                border-radius: 12px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 1.5rem !important;
+                margin: 0 !important;
+                flex-shrink: 0 !important;
+            }
+
+            .events-summary-cards .stat-card .stat-info {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 0.25rem !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+            }
+
+            .events-summary-cards .stat-card .stat-value {
+                font-size: 1.75rem !important;
+                font-weight: 700 !important;
+                line-height: 1.2 !important;
+                margin: 0 !important;
+            }
+
+            .events-summary-cards .stat-card .stat-label {
+                font-size: 0.875rem !important;
+                opacity: 0.8 !important;
+                font-weight: 500 !important;
+                margin: 0 !important;
+            }
+
+            @media (min-width: 1025px) {
+                .events-summary-cards {
+                    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+                }
+            }
+
+            @media (max-width: 1024px) {
+                .events-summary-cards {
+                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                }
+            }
+
+            @media (max-width: 640px) {
+                .events-summary-cards {
+                    grid-template-columns: minmax(0, 1fr) !important;
+                }
+            }
+
+            @media (max-width: 768px) {
+                .events-toolbar {
+                    grid-template-columns: 1fr !important;
+                }
+
+                .events-toolbar select {
+                    width: 100% !important;
+                }
+            }
+        </style>
+        <div class="manage-events-container premium-view" id="manageEventsContainer">
+            <h2 class="section-title">Manage Events Center</h2>
+
+            <!-- Summary Cards -->
+            <div class="events-summary-cards" style="display: grid; gap: 1.5rem; margin-bottom: 2rem;">
+                <div class="stat-card glass-card">
+                    <div class="stat-icon-wrapper" style="color: #3b82f6; background: rgba(59, 130, 246, 0.1);"><i
+                            class="fas fa-calendar-alt"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="summaryTotalEvents">0</div>
+                        <div class="stat-label">Total Events</div>
+                    </div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-icon-wrapper" style="color: #10b981; background: rgba(16, 185, 129, 0.1);"><i
+                            class="fas fa-play-circle"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="summaryActiveEvents">0</div>
+                        <div class="stat-label">Active Events</div>
+                    </div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-icon-wrapper" style="color: #8b5cf6; background: rgba(139, 92, 246, 0.1);"><i
+                            class="fas fa-clock"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="summaryUpcomingEvents">0</div>
+                        <div class="stat-label">Upcoming Events</div>
+                    </div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-icon-wrapper" style="color: #6366f1; background: rgba(99, 102, 241, 0.1);"><i
+                            class="fas fa-check-circle"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="summaryCompletedEvents">0</div>
+                        <div class="stat-label">Completed Events</div>
+                    </div>
+                </div>
             </div>
-            <div class="stat-card glass-card">
-                <div class="stat-icon-wrapper" style="color: #10b981; background: rgba(16, 185, 129, 0.1);"><i class="fas fa-play-circle"></i></div>
-                <div class="stat-info"><div class="stat-value" id="summaryActiveEvents">0</div><div class="stat-label">Active Events</div></div>
+
+            <!-- Toolbar (Search & Filter) -->
+            <div class="events-toolbar glass-card"
+                style="display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 16px; align-items: center; margin-bottom: 2rem; padding: 1.5rem; box-sizing: border-box;">
+                <div class="search-box">
+                    <input type="text" id="eventSearch" placeholder="Search events by name or venue..."
+                        class="form-control" style="width: 100%;">
+                </div>
+                <select id="filterSport" class="form-control" style="width: auto; min-width: 150px;">
+                    <option value="">All Sports</option>
+                </select>
+                <select id="filterStatus" class="form-control" style="width: auto; min-width: 150px;">
+                    <option value="">All Statuses</option>
+                    <option value="UPCOMING">Upcoming</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="COMPLETED">Completed</option>
+                </select>
             </div>
-            <div class="stat-card glass-card">
-                <div class="stat-icon-wrapper" style="color: #8b5cf6; background: rgba(139, 92, 246, 0.1);"><i class="fas fa-clock"></i></div>
-                <div class="stat-info"><div class="stat-value" id="summaryUpcomingEvents">0</div><div class="stat-label">Upcoming Events</div></div>
-            </div>
-            <div class="stat-card glass-card">
-                <div class="stat-icon-wrapper" style="color: #6366f1; background: rgba(99, 102, 241, 0.1);"><i class="fas fa-check-circle"></i></div>
-                <div class="stat-info"><div class="stat-value" id="summaryCompletedEvents">0</div><div class="stat-label">Completed Events</div></div>
+
+            <div class="events-grid" id="eventsGrid"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+                <!-- Events will be dynamically loaded here -->
             </div>
         </div>
 
-        <!-- Toolbar (Search & Filter) -->
-        <div class="events-toolbar glass-card" style="display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 16px; align-items: center; margin-bottom: 2rem; padding: 1.5rem; box-sizing: border-box;">
-            <div class="search-box">
-                <input type="text" id="eventSearch" placeholder="Search events by name or venue..." class="form-control" style="width: 100%;">
-            </div>
-            <select id="filterSport" class="form-control" style="width: auto; min-width: 150px;">
-                <option value="">All Sports</option>
-            </select>
-            <select id="filterStatus" class="form-control" style="width: auto; min-width: 150px;">
-                <option value="">All Statuses</option>
-                <option value="UPCOMING">Upcoming</option>
-                <option value="ACTIVE">Active</option>
-                <option value="COMPLETED">Completed</option>
-            </select>
-        </div>
-
-        <div class="events-grid" id="eventsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
-            <!-- Events will be dynamically loaded here -->
-        </div>
-    </div>
 
 
+        <style>
+            .system-monitoring-section {
+                background-color: rgba(10, 10, 10, 0.95);
+                border: 2px solid #00ffff;
+                border-radius: 1rem;
+                padding: 2rem;
+                margin-bottom: 2rem;
+            }
 
-    <style>
-        .system-monitoring-section {
-            background-color: rgba(10, 10, 10, 0.95);
-            border: 2px solid #00ffff;
-            border-radius: 1rem;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
+            .system-monitoring-section .section-header h3 {
+                color: #00ffff;
+                font-size: 1.5rem;
+                margin: 0 0 0.5rem 0;
+                display: flex;
+                text-shadow: 0 0 1px #00ffff;
+                align-items: center;
+                gap: 0.75rem;
+            }
 
-        .system-monitoring-section .section-header h3 {
-            color: #00ffff;
-            font-size: 1.5rem;
-            margin: 0 0 0.5rem 0;
-            display: flex;
-            text-shadow: 0 0 1px #00ffff;
-            align-items: center;
-            gap: 0.75rem;
-        }
+            .system-monitoring-section .section-header p {
+                color: #94a3b8;
+                margin: 0 0 1.5rem 0;
+            }
 
-        .system-monitoring-section .section-header p {
-            color: #94a3b8;
-            margin: 0 0 1.5rem 0;
-        }
+            .monitoring-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 1.5rem;
+            }
 
-        .monitoring-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .monitoring-card {
-            background: rgba(0, 0, 0, 0.8);
-            border: 2px solid #00ffff;
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-        }
-    </style>
-    <!-- Removed Activity Log Section -->
-    <!-- Removed Messages Section -->
+            .monitoring-card {
+                background: rgba(0, 0, 0, 0.8);
+                border: 2px solid #00ffff;
+                border-radius: 0.75rem;
+                padding: 1.5rem;
+                transition: all 0.3s ease;
+            }
+        </style>
+        <!-- Removed Activity Log Section -->
+        <!-- Removed Messages Section -->
     </div>
 
     <!-- Edit Event Modal -->
@@ -2863,8 +3162,11 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="editSportId" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #94a3b8;">Sport Category</label>
-                        <select id="editSportId" class="form-control" required onchange="handleSportSelectionChange(this.value)">
+                        <label for="editSportId"
+                            style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #94a3b8;">Sport
+                            Category</label>
+                        <select id="editSportId" class="form-control" required
+                            onchange="handleSportSelectionChange(this.value)">
                             <option value="">Select a Sport...</option>
                         </select>
                         <small style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem; display: block;">
@@ -2930,8 +3232,8 @@
                     <!-- Set Time Section -->
                     <div class="form-group">
                         <label for="editBidTime">Set Time Per Bid (seconds)</label>
-                        <input type="number" id="editBidTime" name="editBidTime" min="10" max="60" value="20" required class="form-control"
-                            placeholder="Enter time in seconds (10-60)">
+                        <input type="number" id="editBidTime" name="editBidTime" min="10" max="60" value="20" required
+                            class="form-control" placeholder="Enter time in seconds (10-60)">
                         <small style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem; display: block;">
                             Range: 10-60 seconds
                         </small>
@@ -2961,8 +3263,7 @@
                     <!-- Extra Information -->
                     <div class="form-group">
                         <label for="editExtraInfo">Extra Information</label>
-                        <textarea id="editExtraInfo" rows="3" class="form-control"
-                            style="resize: vertical;"
+                        <textarea id="editExtraInfo" rows="3" class="form-control" style="resize: vertical;"
                             placeholder="Additional event details, rules, prizes, etc." autocomplete="off"></textarea>
                     </div>
 
@@ -3102,7 +3403,8 @@
             <div class="modal-header">
                 <div>
                     <h2><i class="fas fa-cogs"></i> Configure Cricket</h2>
-                    <p class="modal-subtitle" id="configureSportModalSubtitle">Set the default auction configuration for Cricket events.</p>
+                    <p class="modal-subtitle" id="configureSportModalSubtitle">Set the default auction configuration for
+                        Cricket events.</p>
                 </div>
                 <button class="modal-close" onclick="closeConfigureSportModal()">&times;</button>
             </div>
@@ -3111,22 +3413,29 @@
                 <input type="hidden" id="configRolesHidden">
                 <input type="hidden" id="configAttributesHidden">
                 <input type="hidden" id="configRulesHidden">
-                
+
                 <div class="form-section">
-                    <h3 style="margin-bottom: 1rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">Team Budget</h3>
+                    <h3
+                        style="margin-bottom: 1rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">
+                        Team Budget</h3>
                     <div class="form-group">
                         <label>Default Team Budget (₹)</label>
-                        <input type="number" id="configDefaultBudget" class="form-control" placeholder="e.g. 10000000" min="1" required>
+                        <input type="number" id="configDefaultBudget" class="form-control" placeholder="e.g. 10000000"
+                            min="1" required>
                     </div>
                 </div>
 
                 <div class="form-section" style="margin-top: 2rem;">
-                    <h3 style="margin-bottom: 1rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">Player Categories</h3>
-                    
+                    <h3
+                        style="margin-bottom: 1rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">
+                        Player Categories</h3>
+
                     <table class="table" style="width: 100%; margin-bottom: 1rem; text-align: left;">
                         <thead>
                             <tr style="border-bottom: 1px solid #334155; color: #94a3b8;">
                                 <th style="padding-bottom: 0.5rem;">Category</th>
+                                <th style="padding-bottom: 0.5rem;">Min Score</th>
+                                <th style="padding-bottom: 0.5rem;">Max Score</th>
                                 <th style="padding-bottom: 0.5rem;">Base Price (₹)</th>
                                 <th style="padding-bottom: 0.5rem; text-align: right;">Action</th>
                             </tr>
@@ -3136,24 +3445,104 @@
                         </tbody>
                     </table>
 
-                    <div style="background: #1e293b; padding: 1rem; border-radius: 0.5rem; display: flex; gap: 1rem; align-items: flex-end;">
-                        <div style="flex: 1;">
+                    <div
+                        style="background: #1e293b; padding: 1rem; border-radius: 0.5rem; display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 120px;">
                             <label style="font-size: 0.875rem;">Category Name</label>
-                            <input type="text" id="newCategoryName" class="form-control" placeholder="e.g. Marquee">
+                            <input type="text" id="newCategoryName" class="form-control" placeholder="e.g. Diamond">
                         </div>
-                        <div style="flex: 1;">
+                        <div style="flex: 1; min-width: 100px;">
+                            <label style="font-size: 0.875rem;">Min Score</label>
+                            <input type="number" id="newCategoryMinScore" class="form-control" placeholder="e.g. 90"
+                                min="0" max="100" step="0.01">
+                        </div>
+                        <div style="flex: 1; min-width: 100px;">
+                            <label style="font-size: 0.875rem;">Max Score</label>
+                            <input type="number" id="newCategoryMaxScore" class="form-control" placeholder="e.g. 100"
+                                min="0" max="100" step="0.01">
+                        </div>
+                        <div style="flex: 1; min-width: 120px;">
                             <label style="font-size: 0.875rem;">Base Price (₹)</label>
-                            <input type="number" id="newCategoryPrice" class="form-control" placeholder="e.g. 100000" min="0">
+                            <input type="number" id="newCategoryPrice" class="form-control" placeholder="e.g. 100000"
+                                min="0">
                         </div>
-                        <button class="btn btn-primary" onclick="addSportCategory()" type="button" style="padding: 0.75rem 1.5rem; height: 42px;">+ Add</button>
+                        <button class="btn btn-primary" onclick="addSportCategory()" type="button"
+                            style="padding: 0.75rem 1.5rem; height: 42px; min-width: 100px;">+ Add</button>
                     </div>
                 </div>
-                
-                <div class="form-section" style="margin-top: 2rem; background: #0f172a; padding: 1rem; border-radius: 0.5rem; border: 1px dashed #334155;">
-                    <h4 style="color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem;"><i class="fas fa-info-circle"></i> Cricket Configuration</h4>
-                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>Roles:</strong> Batsman · Bowler · All-Rounder · Wicket-Keeper</p>
-                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>Player Attributes:</strong> Automatically configured for Cricket</p>
-                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0;"><strong>Auction Rules:</strong> Automatically configured</p>
+
+                <div class="form-section" style="margin-top: 2rem;">
+                    <h3
+                        style="margin-bottom: 1rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">
+                        Evaluation Rules (Score weights out of 100%)</h3>
+
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                        <div class="form-group">
+                            <label>Matches Played Weight (%)</label>
+                            <input type="number" id="configWeightMatches" class="form-control" value="15" min="0"
+                                max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Runs Weight (%)</label>
+                            <input type="number" id="configWeightRuns" class="form-control" value="25" min="0"
+                                max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Wickets Weight (%)</label>
+                            <input type="number" id="configWeightWickets" class="form-control" value="25" min="0"
+                                max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Experience Weight (%)</label>
+                            <input type="number" id="configWeightExperience" class="form-control" value="15" min="0"
+                                max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Highest Level Weight (%)</label>
+                            <input type="number" id="configWeightLevel" class="form-control" value="20" min="0"
+                                max="100">
+                        </div>
+                    </div>
+
+                    <div
+                        style="background: #1e293b; padding: 1rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <span style="color: #94a3b8; font-weight: bold;">Total Weight:</span>
+                        <span id="configWeightTotalDisplay"
+                            style="font-size: 1.25rem; font-weight: bold; color: #10b981;">100%</span>
+                    </div>
+
+                    <h4 style="margin-bottom: 1rem; color: #cbd5e1; font-size: 1rem;">Normalization Thresholds (Max
+                        expected values for 100/100 score)</h4>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                        <div class="form-group">
+                            <label>Max Matches Played</label>
+                            <input type="number" id="configNormMatches" class="form-control" value="150" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Max Runs</label>
+                            <input type="number" id="configNormRuns" class="form-control" value="5000" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Max Wickets</label>
+                            <input type="number" id="configNormWickets" class="form-control" value="200" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Max Experience (Years)</label>
+                            <input type="number" id="configNormExperience" class="form-control" value="15" min="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section"
+                    style="margin-top: 2rem; background: #0f172a; padding: 1rem; border-radius: 0.5rem; border: 1px dashed #334155;">
+                    <h4 style="color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem;"><i
+                            class="fas fa-info-circle"></i> Cricket Configuration</h4>
+                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>Roles:</strong>
+                        Batsman · Bowler · All-Rounder · Wicket-Keeper</p>
+                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>Player
+                            Attributes:</strong> Automatically configured for Cricket</p>
+                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0;"><strong>Auction Rules:</strong>
+                        Automatically configured</p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -3235,16 +3624,21 @@
             <div class="modal-header">
                 <div>
                     <h2><i class="fas fa-gavel"></i> Auction Preparation</h2>
-                    <p class="modal-subtitle" id="auctionPrepSubtitle">Review registered teams and players before starting the auction.</p>
+                    <p class="modal-subtitle" id="auctionPrepSubtitle">Review registered teams and players before
+                        starting the auction.</p>
                 </div>
-                <button class="modal-close" onclick="document.getElementById('auctionPrepModal').classList.remove('active')">&times;</button>
+                <button class="modal-close"
+                    onclick="document.getElementById('auctionPrepModal').classList.remove('active')">&times;</button>
             </div>
             <div class="modal-body" style="padding: 1.5rem;" id="auctionPrepBody">
                 <div style="text-align: center; color: #94a3b8;">Loading preparation data...</div>
             </div>
             <div class="modal-footer">
-                <button class="btn-cancel" onclick="document.getElementById('auctionPrepModal').classList.remove('active')">Cancel</button>
-                <button class="btn-save" id="btnProceedAuction" style="background: linear-gradient(135deg, #00ffff 0%, #0080ff 100%); color: black;" onclick="proceedWithAuction()">Proceed With Auction</button>
+                <button class="btn-cancel"
+                    onclick="document.getElementById('auctionPrepModal').classList.remove('active')">Cancel</button>
+                <button class="btn-save" id="btnProceedAuction"
+                    style="background: linear-gradient(135deg, #00ffff 0%, #0080ff 100%); color: black;"
+                    onclick="proceedWithAuction()">Proceed With Auction</button>
             </div>
         </div>
     </div>
@@ -3257,7 +3651,8 @@
                     <h2><i class="fas fa-history"></i> Activity Logs</h2>
                     <p class="modal-subtitle">Review recent actions and events.</p>
                 </div>
-                <button class="modal-close" onclick="document.getElementById('activityLogModal').classList.remove('active')">&times;</button>
+                <button class="modal-close"
+                    onclick="document.getElementById('activityLogModal').classList.remove('active')">&times;</button>
             </div>
             <div class="modal-body" style="padding: 1rem;">
                 <div class="activity-log-section" style="border: none; box-shadow: none; padding: 0;">
@@ -3272,19 +3667,25 @@
                         <div class="filter-controls">
                             <span style="font-weight: 600; color: #6b7280; font-size: 0.875rem;">Filter:</span>
                             <div class="filter-buttons">
-                                <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
-                                <button class="filter-btn" data-filter="admin" onclick="setFilter('admin')">Admin</button>
-                                <button class="filter-btn" data-filter="team_owner" onclick="setFilter('team_owner')">Team Owners</button>
-                                <button class="filter-btn" data-filter="player" onclick="setFilter('player')">Players</button>
+                                <button class="filter-btn active" data-filter="all"
+                                    onclick="setFilter('all')">All</button>
+                                <button class="filter-btn" data-filter="admin"
+                                    onclick="setFilter('admin')">Admin</button>
+                                <button class="filter-btn" data-filter="team_owner"
+                                    onclick="setFilter('team_owner')">Team Owners</button>
+                                <button class="filter-btn" data-filter="player"
+                                    onclick="setFilter('player')">Players</button>
                             </div>
                             <div class="pagination-controls activity-log-pagination" style="margin-top: 10px;">
                                 <div class="pagination-info">
                                     <span id="activityLogInfo">Showing 0-0 of 0</span>
                                 </div>
                                 <div class="pagination-buttons">
-                                    <button class="pagination-btn" id="activityLogPrevBtn" onclick="changeActivityLogPage(-1)">Prev</button>
+                                    <button class="pagination-btn" id="activityLogPrevBtn"
+                                        onclick="changeActivityLogPage(-1)">Prev</button>
                                     <span class="page-number" id="activityLogPageNumber">Page 1</span>
-                                    <button class="pagination-btn" id="activityLogNextBtn" onclick="changeActivityLogPage(1)">Next</button>
+                                    <button class="pagination-btn" id="activityLogNextBtn"
+                                        onclick="changeActivityLogPage(1)">Next</button>
                                 </div>
                                 <div class="page-size-selector">
                                     <label for="activityLogPageSize">Page size:</label>
@@ -3320,12 +3721,21 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn-cancel" onclick="document.getElementById('activityLogModal').classList.remove('active')">Close</button>
+                <button class="btn-cancel"
+                    onclick="document.getElementById('activityLogModal').classList.remove('active')">Close</button>
             </div>
         </div>
     </div>
 
-    <script src="/js/admin-dashboard.js?v=21"></script>
+    <script src="/js/admin-dashboard.js?v=26"></script>
+    <script>
+        // Defeat bfcache so back button properly re-verifies auth
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
 </body>
 
 </html>

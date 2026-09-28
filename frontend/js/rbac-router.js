@@ -5,14 +5,24 @@ document.addEventListener('DOMContentLoaded', () => {
     initRBAC();
 });
 
+
+// Remove the loading shield smoothly once RBAC is ready
+function removeShield() {
+    const shield = document.getElementById('rbac-shield');
+    if (!shield) return;
+    shield.classList.add('hidden');
+    setTimeout(() => shield.remove(), 300);
+}
+
 function initRBAC() {
-    const userStr = localStorage.getItem('user');
+    const userStr = sessionStorage.getItem('user');
     let path = window.location.pathname + window.location.hash;
 
     if (!userStr) {
         if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
-            window.location.href = '/index.html';
+            window.location.replace('/index.html');
         }
+        removeShield();
         return;
     }
     
@@ -21,8 +31,9 @@ function initRBAC() {
         user = JSON.parse(userStr);
     } catch(e) {
         if (path !== '/' && path !== '/index.html') {
-            window.location.href = '/index.html';
+            window.location.replace('/index.html');
         }
+        removeShield();
         return;
     }
 
@@ -73,6 +84,9 @@ function initRBAC() {
     // 3. Render Panels
     renderPanels(role, path);
 
+    // 4. Remove the loading shield now that the correct content is shown
+    removeShield();
+
     // Handle Browser Back/Forward navigation
     window.addEventListener('popstate', () => {
         const newPath = window.location.pathname + window.location.hash;
@@ -84,11 +98,11 @@ function initRBAC() {
 function renderPanels(role, path) {
     // Hide all panels first
     document.querySelectorAll('.role-panel').forEach(p => p.style.display = 'none');
-    
-    if (path.includes('/dashboard/manager') || (role === 'team_manager' && path.includes('team-owner-dashboard.html'))) {
+
+    if (path.startsWith('/dashboard/manager') || (role === 'team_manager' && path.includes('dashboard'))) {
         let p = document.getElementById('manager-panel');
-        if (p) p.style.display = 'grid'; // Grid to maintain layout
-    } else if (path.includes('/dashboard/analyst') || (role === 'team_analyst' && path.includes('team-owner-dashboard.html'))) {
+        if (p) p.style.display = 'grid';
+    } else if (path.startsWith('/dashboard/analyst') || (role === 'team_analyst' && path.includes('dashboard'))) {
         let p = document.getElementById('analyst-panel');
         if (p) p.style.display = 'grid';
     } else {
@@ -98,6 +112,7 @@ function renderPanels(role, path) {
 }
 
 function renderAccessDenied(msg) {
+    removeShield();
     const dashboard = document.querySelector('.saas-dashboard');
     if (dashboard) {
         dashboard.innerHTML = `
@@ -118,29 +133,32 @@ function renderSidebar(role, currentPath) {
     let items = [];
     if (role === 'team_owner') {
         items = [
-            { title: 'Dashboard', icon: 'fa-home', path: '/dashboard#dashboard' },
+            { title: 'Dashboard', icon: 'fa-tachometer-alt', path: '/dashboard' },
             { title: 'Players / Squad', icon: 'fa-users', path: '/dashboard#players' },
             { title: 'Auction', icon: 'fa-gavel', path: '/dashboard#auction' },
             { title: 'Wallet', icon: 'fa-wallet', path: '/dashboard#wallet' },
             { title: 'Reports', icon: 'fa-file-alt', path: '/dashboard#reports' },
-            { title: 'Manager Panel', icon: 'fa-user-tie', path: '/dashboard/manager' },
-            { title: 'Analyst Panel', icon: 'fa-chart-pie', path: '/dashboard/analyst' }
+            { title: 'Team Manager Panel', icon: 'fa-user-tie', path: '/dashboard/manager' },
+            { title: 'Analyst Panel', icon: 'fa-chart-pie', path: '/dashboard/analyst' },
+            { title: 'Settings', icon: 'fa-cog', path: '/dashboard#settings' }
         ];
     } else if (role === 'team_manager') {
         items = [
-            { title: 'Dashboard', icon: 'fa-home', path: '/dashboard/manager' },
-            { title: 'Players', icon: 'fa-users', path: '/dashboard/manager#players' },
+            { title: 'Dashboard', icon: 'fa-tachometer-alt', path: '/dashboard/manager' },
+            { title: 'Players / Squad', icon: 'fa-users', path: '/dashboard/manager#players' },
             { title: 'Auction', icon: 'fa-gavel', path: '/dashboard/manager#auction' },
-            { title: 'Squad', icon: 'fa-shield-alt', path: '/dashboard/manager#squad' },
-            { title: 'Reports', icon: 'fa-file-alt', path: '/dashboard/manager#reports' }
+            { title: 'Wallet', icon: 'fa-wallet', path: '/dashboard/manager#wallet' },
+            { title: 'Reports', icon: 'fa-file-alt', path: '/dashboard/manager#reports' },
+            { title: 'Settings', icon: 'fa-cog', path: '/dashboard/manager#settings' }
         ];
     } else if (role === 'team_analyst') {
         items = [
-            { title: 'Dashboard', icon: 'fa-home', path: '/dashboard/analyst' },
-            { title: 'Analytics', icon: 'fa-chart-line', path: '/dashboard/analyst#analytics' },
-            { title: 'Performance', icon: 'fa-bolt', path: '/dashboard/analyst#performance' },
-            { title: 'Reports', icon: 'fa-file-alt', path: '/dashboard/analyst#reports' },
-            { title: 'Predictions', icon: 'fa-brain', path: '/dashboard/analyst#predictions' }
+            { title: 'Dashboard', icon: 'fa-tachometer-alt', path: '/dashboard/analyst' },
+            { title: 'Analytics', icon: 'fa-chart-pie', path: '/dashboard/analyst#analytics' },
+            { title: 'Performance', icon: 'fa-fire', path: '/dashboard/analyst#performance' },
+            { title: 'Scout Pool', icon: 'fa-users', path: '/dashboard/analyst#reports' },
+            { title: 'Predictions', icon: 'fa-brain', path: '/dashboard/analyst#predictions' },
+            { title: 'Settings', icon: 'fa-cog', path: '/dashboard/analyst#settings' }
         ];
     }
 

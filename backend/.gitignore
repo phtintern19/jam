@@ -56,3 +56,6 @@ uploads/
 
 # Temporary files
 tmp/
+
+add_*_columns.py
+
