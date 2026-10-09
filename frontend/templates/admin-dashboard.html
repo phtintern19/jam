@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - JamRig</title>
-    <link rel="stylesheet" href="/css/styles.css?v=premium-animated-v1">
-    <link rel="stylesheet" href="/css/saas-theme.css?v=global-v2">
+    <link rel="stylesheet" href="/css/styles.css?v=30">
+    <link rel="stylesheet" href="/css/saas-theme.css?v=30">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* Admin Dashboard Specific Styles - Modern Neon Theme */
@@ -2811,6 +2811,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Sport Name</th>
+                            <th>Category</th>
                             <th>Description</th>
                             <th>Actions</th>
                         </tr>
@@ -2888,15 +2889,21 @@
                     <h3><i class="fas fa-file-invoice"></i> Reports & Wallet</h3>
                     <p>System-wide aggregate reports and statistics</p>
                 </div>
-                <button class="btn btn-outline" onclick="alert('Exporting PDF...')">
-                    <i class="fas fa-file-pdf"></i> Export PDF
-                </button>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-outline" onclick="exportReportsCSV()">
+                        <i class="fas fa-file-csv"></i> Export CSV
+                    </button>
+                    <button class="btn btn-outline" onclick="alert('Exporting PDF...')">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </button>
+                </div>
             </div>
+            
             <div class="events-summary-cards"
-                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
                 <div class="stat-card glass-card">
                     <div class="stat-info">
-                        <div class="stat-value" id="reportTotalRevenue">$0</div>
+                        <div class="stat-value" id="reportTotalRevenue" style="color: #10b981;">₹0</div>
                         <div class="stat-label">Total Auction Revenue</div>
                     </div>
                 </div>
@@ -2917,6 +2924,32 @@
                         <div class="stat-value" id="reportSoldPlayers">0</div>
                         <div class="stat-label">Players Sold</div>
                     </div>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="panel-header" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
+                    <h3 class="panel-title" style="margin: 0; color: #fff;"><i class="fas fa-history"></i> Recent Transactions</h3>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="saas-table" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>Team</th>
+                                <th>Event</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportRecentTransactions">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                                    <i class="fas fa-spinner fa-spin" style="margin-right: 0.5rem;"></i> Loading transactions...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -3727,7 +3760,75 @@
         </div>
     </div>
 
-    <script src="/js/admin-dashboard.js?v=26"></script>
+    <!-- View Team Modal -->
+    <div class="admin-modal" id="viewTeamModal">
+        <div class="modal-content" style="max-width: 900px; width: 95%;">
+            <div class="modal-header">
+                <div>
+                    <h2 id="vtTeamName"><i class="fas fa-users"></i> Team Details</h2>
+                    <p class="modal-subtitle" id="vtOwnerName">Owner: Loading...</p>
+                </div>
+                <button class="modal-close" onclick="document.getElementById('viewTeamModal').classList.remove('active')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem; max-height: 70vh; overflow-y: auto;">
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                    <!-- Staff Section -->
+                    <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 0.5rem; padding: 1rem;">
+                        <h3 style="color: #cbd5e1; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; margin-top: 0;"><i class="fas fa-user-tie"></i> Team Staff</h3>
+                        <div id="vtStaffList" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Team Stats Section -->
+                    <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 0.5rem; padding: 1rem;">
+                        <h3 style="color: #cbd5e1; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; margin-top: 0;"><i class="fas fa-chart-pie"></i> Team Overview</h3>
+                        <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #94a3b8;">Total Budget Remaining</span>
+                                <span style="color: #10b981; font-weight: bold; font-size: 1.25rem;" id="vtBudget">₹0</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #94a3b8;">Squad Size</span>
+                                <span style="color: #f8fafc; font-weight: bold; font-size: 1.25rem;" id="vtSquadSize">0</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #94a3b8;">Contact</span>
+                                <span style="color: #f8fafc; font-size: 0.9rem;" id="vtOwnerContact">...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Squad Section -->
+                <div>
+                    <h3 style="color: #f8fafc; margin-bottom: 1rem;"><i class="fas fa-running"></i> Squad Members (Purchased Players)</h3>
+                    <div class="admin-table-container">
+                        <table class="admin-table" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Player ID</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Purchase Price</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vtSquadList">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="document.getElementById('viewTeamModal').classList.remove('active')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/admin-dashboard.js?v=30"></script>
     <script>
         // Defeat bfcache so back button properly re-verifies auth
         window.addEventListener('pageshow', function (event) {

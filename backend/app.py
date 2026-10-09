@@ -3481,6 +3481,7 @@ def register_team_owner():
 
                 # Process staff invitations (Team Manager and Team Analyst)
                 staff_invitations = []
+                staff_errors = []
                 
                 # Team Manager invitation
                 team_manager_name = team_owner_data.get('teamManagerName')
@@ -3493,7 +3494,9 @@ def register_team_owner():
                             models.User.email == team_manager_email
                         ).first()
                         
-                        if not existing_manager:
+                        if existing_manager:
+                            staff_errors.append(f"Team Manager email '{team_manager_email}' is already in use.")
+                        else:
                             # Generate verification token
                             verification_token = secrets.token_urlsafe(32)
                             
@@ -3549,7 +3552,9 @@ def register_team_owner():
                             models.User.email == team_analyst_email
                         ).first()
                         
-                        if not existing_analyst:
+                        if existing_analyst:
+                            staff_errors.append(f"Team Analyst email '{team_analyst_email}' is already in use.")
+                        else:
                             # Generate verification token
                             verification_token = secrets.token_urlsafe(32)
                             
@@ -3628,14 +3633,15 @@ def register_team_owner():
                         'verification_link': verification_url
                     })
                 
-                return {
+                return jsonify({
                     "message": "Team owner registration successful. Waiting for admin approval.",
                     "success": True,
                     "user_id": db_user.user_id,
                     "team_owner_id": db_team_owner.team_owner_id,
                     "team_id": new_team.team_id,
-                    "staff_invitations": invitation_links
-                }
+                    "staff_invitations": invitation_links,
+                    "staff_errors": staff_errors
+                })
                 
             except SQLAlchemyError as e:
                 db.rollback()
@@ -3674,6 +3680,84 @@ def register_team_owner():
         error_msg = f"Unexpected error in team owner registration: {str(e)}"
         logger.error(error_msg, exc_info=True)
         return jsonify({"success": False, "message": f"An unexpected error occurred: {str(e)}"}), 500
+    finally:
+        db.close()
+
+@app.route("/api/staff/check-invitation", methods=['POST'])
+def check_staff_invitation():
+    data = request.get_json()
+    email = data.get('email')
+    
+    if not email:
+        return jsonify({"has_invitation": False, "message": "Email is required"}), 400
+        
+    db = SessionLocal()
+    try:
+        user = db.query(models.User).filter(
+            models.User.email == email,
+            models.User.is_invited == True,
+            models.User.invitation_status == 'pending'
+        ).first()
+        
+        if not user:
+            return jsonify({"has_invitation": False, "message": "No pending invitation found for this email."})
+            
+        owner_name = "Unknown Owner"
+        if user.parent_user_id:
+            parent = db.query(models.User).filter(models.User.user_id == user.parent_user_id).first()
+            if parent and parent.team_owner:
+                owner_name = parent.team_owner.owner_name
+                
+        return jsonify({
+            "has_invitation": True,
+            "role": user.user_type.value if hasattr(user.user_type, 'value') else str(user.user_type),
+            "team_owner_name": owner_name
+        })
+    finally:
+        db.close()
+
+@app.route("/api/staff/complete-registration", methods=['POST'])
+def complete_staff_registration():
+    data = request.get_json()
+    email = data.get('email')
+    username = data.get('username')
+    password = data.get('password')
+    
+    if not email or not username or not password:
+        return jsonify({"message": "Missing required fields"}), 400
+        
+    db = SessionLocal()
+    try:
+        existing_username = db.query(models.User).filter(
+            models.User.username == username,
+            models.User.email != email
+        ).first()
+        
+        if existing_username:
+            return jsonify({"message": "Username is already taken"}), 400
+            
+        user = db.query(models.User).filter(
+            models.User.email == email,
+            models.User.is_invited == True,
+            models.User.invitation_status == 'pending'
+        ).first()
+        
+        if not user:
+            return jsonify({"message": "No pending invitation found"}), 404
+            
+        user.username = username
+        user.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        user.invitation_status = 'accepted'
+        user.is_active = True
+        user.is_verified = True
+        user.verification_token = None
+        
+        db.commit()
+        return jsonify({"message": "Registration successful", "success": True})
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error completing staff registration: {e}")
+        return jsonify({"message": "An error occurred during registration"}), 500
     finally:
         db.close()
 
@@ -5261,32 +5345,113 @@ def auction_resume(auction_id: int):
 
 @app.route("/api/dashboard/admin/stats", methods=['GET'])
 def get_admin_dashboard_stats():
-    # current_user = get_current_user()
-    # if current_user.user_type != models.UserType.admin:
-    #     abort(403, description="Admin access required")
-        
     db = SessionLocal()
     try:
-        total_sports = db.query(func.count(models.Sport.sport_id)).scalar() or 0
-        total_teams = db.query(func.count(models.Team.team_id)).scalar() or 0
-        total_players = db.query(func.count(models.Player.player_id)).scalar() or 0
-        total_owners = db.query(func.count(models.User.user_id)).filter(models.User.user_type == 'team_owner').scalar() or 0
-        total_managers = db.query(func.count(models.User.user_id)).filter(models.User.user_type == 'team_manager').scalar() or 0
-        total_analysts = db.query(func.count(models.User.user_id)).filter(models.User.user_type == 'team_analyst').scalar() or 0
-        total_events = db.query(func.count(models.Event.event_id)).scalar() or 0
-        
-        active_auctions = db.query(func.count(models.Auction.auction_id)).filter(models.Auction.status.in_(['IN_PROGRESS', 'PAUSED'])).scalar() or 0
-        completed_auctions = db.query(func.count(models.Auction.auction_id)).filter(models.Auction.status == 'COMPLETED').scalar() or 0
-        
-        purchased_players = db.query(func.count(models.TeamPlayer.team_player_id)).scalar() or 0
-        available_players = total_players - purchased_players
-        
-        # Calculate auction revenue (sum of all winning bids)
-        auction_revenue = db.query(func.sum(models.Bid.amount)).filter(models.Bid.status == 'won').scalar() or 0
-        
-        # Pending approvals (users where is_active is False)
-        pending_approvals = db.query(func.count(models.User.user_id)).filter(models.User.is_active == False).scalar() or 0
-        
+        # Wrap each query individually so one bad column doesn't kill all stats
+        try:
+            total_sports = db.query(func.count(models.Sport.sport_id)).scalar() or 0
+        except Exception:
+            total_sports = 0
+
+        try:
+            total_teams = db.query(func.count(models.Team.team_id)).scalar() or 0
+        except Exception:
+            total_teams = 0
+
+        try:
+            total_players = db.query(func.count(models.Player.player_id)).scalar() or 0
+        except Exception:
+            total_players = 0
+
+        try:
+            total_owners = db.query(func.count(models.User.user_id)).filter(models.User.user_type == models.UserType.team_owner).scalar() or 0
+        except Exception:
+            total_owners = 0
+
+        try:
+            total_managers = db.query(func.count(models.User.user_id)).filter(models.User.user_type == models.UserType.team_manager).scalar() or 0
+        except Exception:
+            total_managers = 0
+
+        try:
+            total_analysts = db.query(func.count(models.User.user_id)).filter(models.User.user_type == models.UserType.team_analyst).scalar() or 0
+        except Exception:
+            total_analysts = 0
+
+        try:
+            total_events = db.query(func.count(models.Event.event_id)).scalar() or 0
+        except Exception:
+            total_events = 0
+
+        try:
+            active_auctions = db.query(func.count(models.Auction.auction_id)).filter(
+                models.Auction.status.in_(['IN_PROGRESS', 'PAUSED', 'live', 'paused'])
+            ).scalar() or 0
+        except Exception:
+            active_auctions = 0
+
+        try:
+            completed_auctions = db.query(func.count(models.Auction.auction_id)).filter(
+                models.Auction.status.in_(['COMPLETED', 'completed'])
+            ).scalar() or 0
+        except Exception:
+            completed_auctions = 0
+
+        try:
+            purchased_players = db.query(func.count(models.TeamPlayer.team_player_id)).scalar() or 0
+        except Exception:
+            purchased_players = 0
+
+        available_players = max(0, total_players - purchased_players)
+
+        try:
+            auction_revenue = db.query(func.sum(models.AuctionPlayer.final_price)).filter(
+                models.AuctionPlayer.status == 'SOLD'
+            ).scalar() or 0
+        except Exception:
+            auction_revenue = 0
+
+        try:
+            pending_approvals = db.query(func.count(models.User.user_id)).filter(
+                models.User.is_active == False
+            ).scalar() or 0
+        except Exception:
+            pending_approvals = 0
+
+        # Recent transactions - use explicit join to avoid lazy-load issues
+        recent_transactions = []
+        try:
+            recent_sold_rows = db.query(
+                models.AuctionPlayer,
+                models.Player.first_name,
+                models.Player.last_name,
+                models.Team.team_name,
+                models.Auction.title
+            ).join(
+                models.Player, models.AuctionPlayer.player_id == models.Player.player_id, isouter=True
+            ).join(
+                models.Team, models.AuctionPlayer.sold_to_team_id == models.Team.team_id, isouter=True
+            ).join(
+                models.Auction, models.AuctionPlayer.auction_id == models.Auction.auction_id, isouter=True
+            ).filter(
+                models.AuctionPlayer.status == 'SOLD'
+            ).order_by(
+                models.AuctionPlayer.ended_at.desc()
+            ).limit(10).all()
+
+            for row in recent_sold_rows:
+                ap, first_name, last_name, team_name, event_title = row
+                player_name = f"{first_name or ''} {last_name or ''}".strip() or "Unknown"
+                recent_transactions.append({
+                    "player_name": player_name,
+                    "team_name": team_name or "Unknown",
+                    "event_title": event_title or "Unknown",
+                    "amount": float(ap.final_price) if ap.final_price else 0.0,
+                    "date": ap.ended_at.isoformat() if ap.ended_at else ""
+                })
+        except Exception as tx_err:
+            app.logger.warning(f"Could not load recent transactions: {tx_err}")
+
         return jsonify({
             "total_sports": total_sports,
             "total_teams": total_teams,
@@ -5300,13 +5465,14 @@ def get_admin_dashboard_stats():
             "purchased_players": purchased_players,
             "available_players": available_players,
             "auction_revenue": float(auction_revenue),
-            "pending_approvals": pending_approvals
+            "pending_approvals": pending_approvals,
+            "recent_transactions": recent_transactions
         })
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.error(f"Error fetching admin stats: {str(e)}")
-        abort(500, description="Error fetching stats")
+        import traceback
+        traceback.print_exc()
+        app.logger.error(f"Error fetching admin stats: {str(e)}")
+        abort(500, description=f"Error fetching stats: {str(e)}")
     finally:
         db.close()
 
@@ -5366,6 +5532,7 @@ def admin_manage_sports():
                 
             new_sport = models.Sport(
                 name=name,
+                category=(data.get('category') or '').strip() or None,
                 description=data.get('description', ''),
                 icon_class=data.get('icon_class', 'fas fa-trophy')
             )
@@ -5379,6 +5546,11 @@ def admin_manage_sports():
                 "sport_id": s.sport_id,
                 "name": s.name,
                 "description": s.description,
+                "category": s.category,
+                "tier": s.tier,
+                "players_equipment": s.players_equipment,
+                "scoring_format": s.scoring_format,
+                "exact_rules": s.exact_rules,
                 "icon_class": s.icon_class
             } for s in sports
         ])
@@ -5395,11 +5567,28 @@ def admin_manage_sports():
 def get_sports():
     db = SessionLocal()
     try:
-        sports = db.query(models.Sport).all()
+        query = db.query(models.Sport)
+        tier = request.args.get("tier", type=int)
+        search = request.args.get("search", "").strip()
+        if tier is not None:
+            query = query.filter(models.Sport.tier == tier)
+        if search:
+            pattern = f"%{search}%"
+            query = query.filter(or_(
+                models.Sport.name.ilike(pattern),
+                models.Sport.category.ilike(pattern),
+                models.Sport.description.ilike(pattern),
+            ))
+        sports = query.order_by(models.Sport.name).all()
         sports_data = [{
             "sport_id": s.sport_id,
             "name": s.name,
             "description": s.description,
+            "category": s.category,
+            "tier": s.tier,
+            "players_equipment": s.players_equipment,
+            "scoring_format": s.scoring_format,
+            "exact_rules": s.exact_rules,
             "icon_class": s.icon_class,
             "roles_config": s.roles_config,
             "categories_config": s.categories_config,
@@ -5426,7 +5615,13 @@ def get_sport(sport_id: int):
             "sport": {
                 "sport_id": sport.sport_id,
                 "name": sport.name,
+                "category": sport.category,
+                "tier": sport.tier,
                 "description": sport.description,
+                "players_equipment": sport.players_equipment,
+                "scoring_format": sport.scoring_format,
+                "exact_rules": sport.exact_rules,
+                "icon_class": sport.icon_class,
                 "roles_config": sport.roles_config,
                 "categories_config": sport.categories_config,
                 "attributes_schema": sport.attributes_schema,
@@ -5576,11 +5771,11 @@ def admin_get_teams():
             # Fetch staff
             managers = db.query(models.User).filter(
                 models.User.parent_user_id == (owner_user.user_id if owner_user else None),
-                models.User.user_type == 'team_manager'
+                models.User.user_type == models.UserType.team_manager
             ).all()
             analysts = db.query(models.User).filter(
                 models.User.parent_user_id == (owner_user.user_id if owner_user else None),
-                models.User.user_type == 'team_analyst'
+                models.User.user_type == models.UserType.team_analyst
             ).all()
 
             result.append({
@@ -5594,6 +5789,72 @@ def admin_get_teams():
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error fetching admin teams: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+    finally:
+        db.close()
+
+@app.route("/api/admin/teams/<int:team_id>", methods=['GET'])
+def admin_get_team_details(team_id: int):
+    db = SessionLocal()
+    try:
+        team = db.query(models.Team).filter(models.Team.team_id == team_id).first()
+        if not team:
+            return jsonify({"success": False, "message": "Team not found"}), 404
+            
+        owner = db.query(models.TeamOwner).filter(models.TeamOwner.team_owner_id == team.owner_id).first()
+        owner_user = db.query(models.User).filter(models.User.user_id == owner.user_id).first() if owner else None
+        
+        # Fetch staff only if we have an owner_user
+        staff = []
+        if owner_user:
+            staff_query = db.query(models.User).filter(
+                models.User.parent_user_id == owner_user.user_id,
+                models.User.user_type.in_([models.UserType.team_manager, models.UserType.team_analyst])
+            ).all()
+            
+            for s in staff_query:
+                staff.append({
+                    "user_id": s.user_id,
+                    "name": f"{s.first_name or ''} {s.last_name or ''}".strip() or s.username,
+                    "email": s.email,
+                    "role": str(s.user_type).replace('UserType.', '').replace('_', ' ').title()
+                })
+            
+
+        # Fetch squad (from AuctionPlayer where status is SOLD to this team)
+        squad_query = db.query(models.AuctionPlayer).join(models.Player).filter(
+            models.AuctionPlayer.sold_to_team_id == team_id,
+            models.AuctionPlayer.status == 'SOLD'
+        ).all()
+        
+        squad = []
+        for p in squad_query:
+            player_details = p.player
+            squad.append({
+                "player_id": player_details.player_id,
+                "name": f"{player_details.first_name or ''} {player_details.last_name or ''}".strip(),
+                "price": float(p.final_price) if p.final_price else 0,
+                "category": player_details.category or "Unknown"
+            })
+            
+        return jsonify({
+            "success": True,
+            "team": {
+                "team_id": team.team_id,
+                "team_name": team.team_name,
+                "budget": float(owner.wallet_balance) if owner and owner.wallet_balance else 0,
+                "owner": {
+                    "name": owner_user.username if owner_user else "N/A",
+                    "email": owner_user.email if owner_user else "N/A",
+                    "phone": owner_user.phone if owner_user else "N/A"
+                }
+            },
+            "staff": staff,
+            "squad": squad
+        })
+    except Exception as e:
+        import traceback
+        logger.error(f"Error fetching team details: {e}\n{traceback.format_exc()}")
         return jsonify({"success": False, "message": str(e)}), 500
     finally:
         db.close()
@@ -5774,6 +6035,103 @@ def player_remove_image():
         player.profile_image_url = None
         db.commit()
         return jsonify({"success": True, "message": "Image removed successfully"})
+    finally:
+        db.close()
+
+@app.route("/api/player/profile", methods=['PUT'])
+def update_player_profile():
+    current_user = get_current_user()
+    if getattr(current_user.user_type, "value", current_user.user_type) != 'player':
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+        
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "message": "No data provided"}), 400
+        
+    db = SessionLocal()
+    try:
+        player = db.query(models.Player).filter(models.Player.user_id == current_user.user_id).first()
+        if not player:
+            return jsonify({"success": False, "message": "Player not found"}), 404
+            
+        # Update user fields
+        if 'phone' in data:
+            current_user.phone = data['phone']
+            
+        # Update player fields
+        if 'first_name' in data: player.first_name = data['first_name']
+        if 'last_name' in data: player.last_name = data['last_name']
+        if 'city' in data: player.city = data['city']
+        if 'country' in data: player.country = data['country']
+        if 'bio' in data: player.bio = data['bio']
+        
+        db.commit()
+        return jsonify({"success": True, "message": "Profile updated successfully"})
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error updating player profile: {e}")
+        return jsonify({"success": False, "message": "Error updating profile"}), 500
+    finally:
+        db.close()
+
+@app.route("/api/player/skills", methods=['PUT'])
+def update_player_skills():
+    current_user = get_current_user()
+    if getattr(current_user.user_type, "value", current_user.user_type) != 'player':
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+        
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "message": "No data provided"}), 400
+        
+    db = SessionLocal()
+    try:
+        player = db.query(models.Player).filter(models.Player.user_id == current_user.user_id).first()
+        if not player:
+            return jsonify({"success": False, "message": "Player not found"}), 404
+            
+        if 'cricket_rating' in data: player.cricket_rating = min(max(int(data['cricket_rating']), 0), 10)
+        if 'football_rating' in data: player.football_rating = min(max(int(data['football_rating']), 0), 10)
+        if 'basketball_rating' in data: player.basketball_rating = min(max(int(data['basketball_rating']), 0), 10)
+        
+        db.commit()
+        return jsonify({"success": True, "message": "Skills updated successfully"})
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error updating player skills: {e}")
+        return jsonify({"success": False, "message": "Error updating skills"}), 500
+    finally:
+        db.close()
+
+@app.route("/api/player/achievements", methods=['PUT'])
+def update_player_achievements():
+    current_user = get_current_user()
+    if getattr(current_user.user_type, "value", current_user.user_type) != 'player':
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+        
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "message": "No data provided"}), 400
+        
+    db = SessionLocal()
+    try:
+        player = db.query(models.Player).filter(models.Player.user_id == current_user.user_id).first()
+        if not player:
+            return jsonify({"success": False, "message": "Player not found"}), 404
+            
+        if 'tournaments_won' in data: player.tournaments_won = int(data['tournaments_won'])
+        if 'mvp_awards' in data: player.mvp_awards = int(data['mvp_awards'])
+        if 'best_player_awards' in data: player.best_player_awards = int(data['best_player_awards'])
+        if 'professional_contracts' in data: player.professional_contracts = int(data['professional_contracts'])
+        if 'state_level_champion' in data: player.state_level_champion = bool(data['state_level_champion'])
+        if 'international_experience' in data: player.international_experience = bool(data['international_experience'])
+        
+        db.commit()
+        return jsonify({"success": True, "message": "Achievements updated successfully"})
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error updating player achievements: {e}")
+        return jsonify({"success": False, "message": "Error updating achievements"}), 500
     finally:
         db.close()
 
@@ -6017,6 +6375,8 @@ def initialize_database():
             except Exception:
                 pass # Column already exists
         Base.metadata.create_all(bind=engine)
+        from seed_tier1_sports import upgrade_and_seed_tier1_sports
+        upgrade_and_seed_tier1_sports()
         logger.info("Database tables initialized successfully")
         return True
     except Exception as e:
@@ -6027,6 +6387,8 @@ def initialize_database():
 # even under Passenger/WSGI where __main__ block never runs.
 try:
     Base.metadata.create_all(bind=engine)
+    from seed_tier1_sports import upgrade_and_seed_tier1_sports
+    upgrade_and_seed_tier1_sports()
     logger.info("Startup: ensured all DB tables are created.")
 except Exception as _e:
     logger.warning(f"Startup create_all skipped: {_e}")
@@ -6286,9 +6648,15 @@ def update_analyst_profile():
             user.username = data['username'].strip()
         if data.get('email'):
             user.email = data['email'].strip().lower()
+            
         if data.get('password'):
-            from werkzeug.security import generate_password_hash
-            user.password_hash = generate_password_hash(data['password'])
+            # Security fix: require and verify current password
+            current_pwd = data.get('current_password')
+            if not current_pwd or not user.verify_password(current_pwd):
+                return jsonify({"success": False, "error": "Incorrect current password"}), 401
+                
+            # Security fix: use bcrypt via set_password instead of werkzeug
+            user.set_password(data['password'])
 
         session.commit()
         return jsonify({"success": True, "message": "Profile updated successfully"})
@@ -7524,7 +7892,7 @@ def manage_training_sessions():
                 err_str = str(table_err).lower()
                 if "no such table" in err_str or "doesn't exist" in err_str or "does not exist" in err_str or "relation" in err_str:
                     # Table missing — create it now and retry
-                    logger.warning(f"training_sessions table missing, creating now: {table_err}")
+                    app.logger.warning(f"training_sessions table missing, creating now: {table_err}")
                     try:
                         from database import Base, engine
                         Base.metadata.create_all(bind=engine)
@@ -7532,7 +7900,7 @@ def manage_training_sessions():
                         db = SessionLocal()
                         sessions = db.query(TrainingSession).filter(TrainingSession.team_id == team_id).all()
                     except Exception as create_err:
-                        logger.error(f"Failed to auto-create training tables: {create_err}")
+                        app.logger.error(f"Failed to auto-create training tables: {create_err}")
                         return jsonify({"success": True, "sessions": [], "message": "Training table being initialized"})
                 else:
                     raise  # re-raise non-table errors
@@ -7747,10 +8115,10 @@ def get_owner_staff():
         current_user = db.merge(current_user)
         user_type_str = current_user.user_type.value if hasattr(current_user.user_type, 'value') else str(current_user.user_type)
         
-        # Resolve owner user_id: team_owner uses own id; team_manager uses parent_user_id
+        # Resolve owner user_id: team_owner uses own id; team_manager / team_analyst uses parent_user_id
         if user_type_str == 'team_owner':
             owner_user_id = current_user.user_id
-        elif user_type_str == 'team_manager':
+        elif user_type_str in ('team_manager', 'team_analyst'):
             owner_user_id = current_user.parent_user_id
             if not owner_user_id:
                 return jsonify({"success": True, "manager": None, "analyst": None})
@@ -7845,18 +8213,30 @@ def serve_frontend_static_catchall(path):
 
 # Local development only — Passenger imports `app` and never hits this block
 application=app
+
 if __name__ == "__main__":
     initialize_database()
+
     try:
         from auction_engine import start_auction_engine
         start_auction_engine()
     except Exception as e:
         print(f"Failed to start auction engine: {e}")
 
+    host = os.getenv('HOST', '0.0.0.0')
+    port = int(os.getenv('PORT', 8000))
+
+    print("=" * 60)
+    print("JAMRIG SERVER STARTED")
+    print(f"Local URL:   http://127.0.0.1:{port}")
+    print(f"Browser URL: http://localhost:{port}")
+    print(f"Server Host:  {host}")
+    print("=" * 60)
+
     socketio.run(
         app,
-        host=os.getenv('HOST', '0.0.0.0'),
-        port=int(os.getenv('PORT', 8000)),
+        host=host,
+        port=port,
         debug=os.getenv('FLASK_DEBUG', 'false').lower() == 'true',
         allow_unsafe_werkzeug=True
     )

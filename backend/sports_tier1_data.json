@@ -1,0 +1,218 @@
+[
+  {
+    "name": "Sprinting",
+    "category": "Athletics & Track and Field",
+    "tier": 1,
+    "description": "Flat races of 100 m, 200 m and 400 m won on speed and explosive power.",
+    "players_equipment": "Individual; 400 m oval track with 8 lanes (1.22 m wide); starting blocks; electronic timing.",
+    "scoring_format": "Ranked by finishing time (0.01 s); heats, semi-finals and final.",
+    "exact_rules": "Start from blocks on the gun; a false start (reaction under 0.100 s or moving early) means disqualification; stay in own lane; the torso crossing the line decides the finish."
+  },
+  {
+    "name": "Middle-distance running",
+    "category": "Athletics & Track and Field",
+    "tier": 1,
+    "description": "Races of 800 m to 3000 m combining speed with endurance.",
+    "players_equipment": "Individual; 400 m track; spikes; standing start.",
+    "scoring_format": "Ranked by finish order / time over 800 m, 1500 m, mile, 3000 m.",
+    "exact_rules": "800 m starts in lanes for the first bend then runners break to the inside; no pushing or impeding; stepping on or inside the inner kerb is a disqualification."
+  },
+  {
+    "name": "Long-distance running",
+    "category": "Athletics & Track and Field",
+    "tier": 1,
+    "description": "Track races of 5000 m (12.5 laps) and 10,000 m (25 laps) testing sustained endurance.",
+    "players_equipment": "Individual; 400 m track; standing mass start; spikes.",
+    "scoring_format": "Ranked by finish order / time.",
+    "exact_rules": "No lanes after the start; deliberately jostling or leaving the track is a disqualification; lapped runners may be stopped by officials."
+  },
+  {
+    "name": "Relay races",
+    "category": "Athletics & Track and Field",
+    "tier": 1,
+    "description": "Four-runner team sprints passing a baton (4×100 m and 4×400 m).",
+    "players_equipment": "Teams of 4 plus reserves; 28-30 cm hollow baton; 20 m exchange zone.",
+    "scoring_format": "Ranked by team finishing time.",
+    "exact_rules": "Baton must be handed over inside the 20 m zone (passing outside is a disqualification); a dropped baton must be recovered by the runner who dropped it; the baton, not the torso, is timed at the finish."
+  },
+  {
+    "name": "Marathon",
+    "category": "Athletics & Track and Field",
+    "tier": 1,
+    "description": "A 42.195 km road race (hugely popular through city marathons across India).",
+    "players_equipment": "Individual; marked road course; drink stations about every 5 km.",
+    "scoring_format": "Ranked by finishing time (gun and chip time).",
+    "exact_rules": "Must cover the entire marked course; no pacing by bicycles or vehicles; outside assistance other than official stations is not allowed; cut-off times are enforced."
+  },
+  {
+    "name": "Javelin throw",
+    "category": "Athletics & Track and Field",
+    "tier": 1,
+    "description": "Throwing a spear-like javelin for distance (extremely popular in India).",
+    "players_equipment": "Individual; javelin 800 g men (2.6-2.7 m) / 600 g women (2.2-2.3 m); runway 30-36.5 m; sector 28.96°.",
+    "scoring_format": "Longest valid throw; 3 trials then 3 more for the top 8.",
+    "exact_rules": "Throw over the shoulder or upper arm; no turning the back to the arc; the metal tip must touch the ground before any other part; crossing the foul line is a foul."
+  },
+  {
+    "name": "Football (Soccer)",
+    "category": "Team Ball Sports",
+    "tier": 1,
+    "description": "Two teams use feet and body to put the ball into the opponent's goal.",
+    "players_equipment": "11 v 11 (min 7 to continue); size-5 ball; pitch 100-110 m × 64-75 m (international).",
+    "scoring_format": "Goal = 1; 2×45 min plus stoppage; knockouts use 2×15 min extra time then penalty shoot-out.",
+    "exact_rules": "No handling (except goalkeeper in own area); offside; yellow card (caution) and red card (sending-off); penalty kick from 11 m; throw-in, goal kick and corner kick restarts."
+  },
+  {
+    "name": "Basketball",
+    "category": "Team Ball Sports",
+    "tier": 1,
+    "description": "Two teams shoot a ball through an elevated hoop.",
+    "players_equipment": "5 v 5; court 28 m × 15 m; hoop 3.05 m high; ball size 7 (men).",
+    "scoring_format": "Free throw 1, field goal 2, beyond the 6.75 m arc 3 (FIBA); 4×10 min (FIBA) / 4×12 min (NBA).",
+    "exact_rules": "24 s shot clock; travelling and double-dribble violations; 8 s backcourt; 5 personal fouls and a player fouls out (6 in NBA)."
+  },
+  {
+    "name": "Volleyball",
+    "category": "Team Ball Sports",
+    "tier": 1,
+    "description": "Two teams hit a ball over a net so it lands in the opposing court.",
+    "players_equipment": "6 v 6; court 18 m × 9 m; net 2.43 m (men) / 2.24 m (women).",
+    "scoring_format": "Rally point; sets to 25 (win by 2); 5th set to 15; best of five sets.",
+    "exact_rules": "Max three touches per side (block excluded); no consecutive touches by one player; rotate after winning serve; libero is restricted to back row."
+  },
+  {
+    "name": "Cricket",
+    "category": "Team Ball Sports",
+    "tier": 1,
+    "description": "India's most popular sport: bat-and-ball game between two teams of 11, played in Tests, ODIs, T20Is and leagues such as the IPL.",
+    "players_equipment": "11 v 11; pitch 22 yards (20.12 m); stumps 28 in high; ball 156-163 g; fielding restrictions apply.",
+    "scoring_format": "Runs 1-6 per ball; formats: T20 (20 overs/side), ODI (50), Test (up to 5 days, 2 innings/side). IPL (Indian Premier League): T20 franchise league with 10 teams; each plays 14 league matches, the top 4 go to the playoffs (Qualifier 1, Eliminator, Qualifier 2) and the Final.",
+    "exact_rules": "Six legal balls per over; 10 wickets end an innings; dismissals: bowled, caught, LBW, run out, stumped, hit wicket; no-ball and wide give extras; DRS reviews in major matches. T20/IPL: first 6 overs are the Powerplay (only 2 fielders outside the 30-yard circle) and each bowler may bowl a maximum of 4 overs."
+  },
+  {
+    "name": "Hockey / Field Hockey",
+    "category": "Team Ball Sports",
+    "tier": 1,
+    "description": "Two teams use sticks to hit a ball into the opponent's goal (India's Olympic legacy sport).",
+    "players_equipment": "11 v 11; pitch 91.4 m × 55 m; striking circle 14.63 m; 4×15 min quarters.",
+    "scoring_format": "Goal = 1 (shots must be taken inside the circle); shoot-out if tied in knockouts.",
+    "exact_rules": "Use only the flat side of the stick; no raised ball dangerously; no body-obstruction; green card (2 min), yellow (min 5 min), red (permanent) suspensions."
+  },
+  {
+    "name": "Kabaddi",
+    "category": "Team Ball Sports; Traditional & Indigenous Sports",
+    "tier": 1,
+    "description": "Indian contact sport where a raider tags defenders and returns to their half.",
+    "players_equipment": "7 v 7 on court (12 in squad); court 13 m × 10 m; 2×20 min (men) / 2×15 min (women).",
+    "scoring_format": "Raider scores 1 point per defender touched (bonus point if 6+ defenders and the bonus line is crossed); tackle by defenders = 1 point; 'Super Tackle' (2 points when 3 or fewer defenders).",
+    "exact_rules": "Raid limited to 30 s; the raider must cross the baulk line; 3 consecutive empty raids make the next raid a 'Do-or-Die' raid; out players revive when a point is scored for their team."
+  },
+  {
+    "name": "Tennis",
+    "category": "Racket & Paddle Sports",
+    "tier": 1,
+    "description": "Players hit a ball over a net on a court with strung rackets.",
+    "players_equipment": "Singles 1 v 1 / doubles 2 v 2; court 23.77 m × 8.23 m (10.97 m doubles); net 0.914 m at centre.",
+    "scoring_format": "Points 15-30-40-game (deuce needs 2-point lead); set to 6 games (win by 2; tie-break at 6-6); best of 3 or 5 sets.",
+    "exact_rules": "Two serve attempts; double fault loses the point; ball must land inside lines (line counts in); a ball may bounce only once; let serves are replayed."
+  },
+  {
+    "name": "Table Tennis",
+    "category": "Racket & Paddle Sports",
+    "tier": 1,
+    "description": "Fast indoor racket game on a small table.",
+    "players_equipment": "1 v 1 or 2 v 2; table 2.74 m × 1.525 m, 76 cm high; 40 mm ball of 2.7 g.",
+    "scoring_format": "Rally point; game to 11 (win by 2); matches best of 5 or 7 games.",
+    "exact_rules": "Serves alternate every 2 points; serve must bounce on the server's half then the receiver's; toss at least 16 cm; ball must be visible during service; no hand on table."
+  },
+  {
+    "name": "Badminton",
+    "category": "Racket & Paddle Sports",
+    "tier": 1,
+    "description": "Racket sport hitting a shuttlecock over a high net (a leading Indian Olympic sport).",
+    "players_equipment": "Singles / doubles; court 13.4 m × 6.1 m (5.18 m singles); net 1.55 m at the posts; shuttle 4.74-5.50 g.",
+    "scoring_format": "Rally point; game to 21 (win by 2, cap at 30); best of 3 games.",
+    "exact_rules": "Serve is diagonal and below 1.15 m height at contact; shuttle landing on the line is in; no touching the net; sides change after each game and at 11 in the decider."
+  },
+  {
+    "name": "Pickleball",
+    "category": "Racket & Paddle Sports",
+    "tier": 1,
+    "description": "Paddle sport mixing tennis, badminton and table tennis (booming in India).",
+    "players_equipment": "Singles / doubles; court 6.1 m × 13.41 m; net 91.4 cm (86.4 cm at centre); perforated plastic ball.",
+    "scoring_format": "Only the serving side scores; games to 11 (win by 2); doubles uses a 3-number call.",
+    "exact_rules": "Underhand serve diagonally; two-bounce rule (return and serve-return must bounce); no volleying within the 2.13 m non-volley zone ('kitchen')."
+  },
+  {
+    "name": "Boxing",
+    "category": "Combat & Martial Arts",
+    "tier": 1,
+    "description": "Two fighters exchange punches in a ring (strong Indian Olympic and Commonwealth record).",
+    "players_equipment": "1 v 1; ring 4.9-6.1 m square; gloves 10 oz; 3×3 min rounds (elite), pro up to 12 rounds.",
+    "scoring_format": "10-point must system by 3-5 judges; knockdown count to 10; KO, TKO or decision.",
+    "exact_rules": "Hits only with the knuckle part of the glove, above the belt; no holding, hitting after the bell, low blows or head-butts; referee may stop the fight."
+  },
+  {
+    "name": "Wrestling",
+    "category": "Combat & Martial Arts",
+    "tier": 1,
+    "description": "Grappling sport of takedowns and pins (rooted in Indian akhara culture).",
+    "players_equipment": "1 v 1; mat 9 m circle; singlet; freestyle and Greco-Roman; 2×3 min.",
+    "scoring_format": "Takedown 2, exposure 2, reversal 1, high-amplitude throw 4-5; a fall (pin) wins immediately; technical superiority with a 10-point lead.",
+    "exact_rules": "Greco-Roman allows no hold below the waist; passivity is penalised; illegal holds include twisting fingers and strangling."
+  },
+  {
+    "name": "Karate",
+    "category": "Combat & Martial Arts",
+    "tier": 1,
+    "description": "Striking art using punches, kicks and blocks (widely taught in India).",
+    "players_equipment": "Kumite (sparring) and Kata (forms); mat 8 m × 8 m; mitts and protective gear.",
+    "scoring_format": "Kumite: ippon 3, waza-ari 2, yuko 1; 8-point lead or highest score in 3 min (men) / 2 min (women).",
+    "exact_rules": "Controlled contact only; excessive force, attacks to the face with open hand and throws not followed by a technique are penalised; Kata is scored on technique and athletic performance."
+  },
+  {
+    "name": "MMA (Mixed Martial Arts)",
+    "category": "Combat & Martial Arts",
+    "tier": 1,
+    "description": "Full-contact combat blending striking and grappling (growing fast in India).",
+    "players_equipment": "1 v 1; octagon cage 25-30 ft; 4-6 oz gloves; 3×5 min (5×5 for title fights).",
+    "scoring_format": "10-point must system; KO, submission, TKO, decision or disqualification.",
+    "exact_rules": "Unified rules ban eye-gouging, groin strikes, strikes to the back of the head, fish-hooking and kicks or knees to a grounded opponent's head."
+  },
+  {
+    "name": "Swimming",
+    "category": "Aquatic / Water Sports",
+    "tier": 1,
+    "description": "Racing in a pool using freestyle, backstroke, breaststroke and butterfly.",
+    "players_equipment": "Pool 50 m (8 lanes, 2 m deep); events 50 m to 1500 m and medleys.",
+    "scoring_format": "Ranked by electronic touchpad time.",
+    "exact_rules": "False start disqualifies; backstroke stays on the back; breaststroke and butterfly need simultaneous arm actions and a two-hand touch at turns and finish; max 15 m underwater after start/turn."
+  },
+  {
+    "name": "Shooting",
+    "category": "Precision & Target Sports",
+    "tier": 1,
+    "description": "Precision firing at targets (a leading Indian Olympic sport).",
+    "players_equipment": "10 m air rifle/pistol, 50 m rifle, 25 m pistol, trap and skeet; fixed shooting positions.",
+    "scoring_format": "Scores 0-10.9 per shot; finals use elimination.",
+    "exact_rules": "Safety first: muzzle pointed down range, actions open when not shooting; time limits per series; target changes strictly controlled."
+  },
+  {
+    "name": "Chess",
+    "category": "Mind & Strategy Sports",
+    "tier": 1,
+    "description": "Two-player strategy board game (India produces world-class champions).",
+    "players_equipment": "8×8 board; 16 pieces each; classical time controls (e.g. 90 min + 30 s per move).",
+    "scoring_format": "Win = 1, draw = 0.5, loss = 0.",
+    "exact_rules": "Checkmate wins; draws by stalemate, agreement, threefold repetition, 50-move rule or insufficient material; touch-move rule applies."
+  },
+  {
+    "name": "Esports",
+    "category": "Mind & Strategy Sports",
+    "tier": 1,
+    "description": "Competitive video gaming (booming in India).",
+    "players_equipment": "Game-specific: PC or mobile; teams or individuals.",
+    "scoring_format": "Match formats BO1/BO3/BO5; points by placement and kills in battle royales.",
+    "exact_rules": "Rules depend on the title; anti-cheat enforcement and age limits apply."
+  }
+]

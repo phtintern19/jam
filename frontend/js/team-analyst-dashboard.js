@@ -96,8 +96,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 const headerUserName = document.getElementById('headerUserName');
                 const dropdownUserName = document.getElementById('dropdownUserName');
                 const dropdownUserRole = document.getElementById('dropdownUserRole');
-                if (headerUserName) headerUserName.textContent = data.user.username || 'Team Owner';
-                if (dropdownUserName) dropdownUserName.textContent = data.user.username || 'Team Owner';
+                if (headerUserName) headerUserName.textContent = data.user.username || 'Team Analyst';
+                if (dropdownUserName) dropdownUserName.textContent = data.user.username || 'Team Analyst';
                 if (dropdownUserRole) dropdownUserRole.textContent = (data.user.user_type || 'Owner').replace('_', ' ');
             }
         })
@@ -260,6 +260,140 @@ function adminLogActivity(action, details) {
 // Mock data removed - replaced with API calls
 // const sampleTeamOwners = ...
 
+// --- ANALYST SETTINGS LOGIC ---
+
+window.switchSettingsTab = function(tabName, rolePrefix, e = window.event) {
+    // Hide all tabs for this role
+    document.querySelectorAll(`[id^="${rolePrefix}-settings-tab-"]`).forEach(el => {
+        el.style.display = 'none';
+    });
+
+    // Remove active class from all buttons in this section
+    const sectionId = rolePrefix === 'analyst' ? 'section-analyst-settings' : 'section-settings';
+    const container = document.getElementById(sectionId) || document.body;
+    container.querySelectorAll('.settings-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Show selected tab
+    const targetTab = document.getElementById(`${rolePrefix}-settings-tab-${tabName}`);
+    if (targetTab) {
+        targetTab.style.display = 'block';
+    }
+
+    // Set clicked button to active safely
+    if (e && e.currentTarget) {
+        e.currentTarget.classList.add('active');
+    } else if (e && e.target) {
+        const btn = e.target.closest('.settings-tab-btn');
+        if (btn) btn.classList.add('active');
+    }
+};
+
+async function loadAnalystProfileSettings() {
+    try {
+        const res = await fetch('/api/me', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const nameEl = document.getElementById('analyst-profile-name');
+        const emailEl = document.getElementById('analyst-profile-email');
+        const initialsEl = document.getElementById('analyst-avatar-initials');
+
+        if (nameEl && data.username) nameEl.value = data.username;
+        if (emailEl && data.email) emailEl.value = data.email;
+        if (initialsEl && data.username) {
+            initialsEl.textContent = data.username.substring(0, 1).toUpperCase();
+        }
+    } catch (e) {
+        console.warn('Could not load analyst profile:', e);
+    }
+}
+
+window.saveAnalystProfile = async function (e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; btn.disabled = true; }
+
+    const name = document.getElementById('analyst-profile-name')?.value;
+    const email = document.getElementById('analyst-profile-email')?.value;
+
+    const payload = {};
+    if (name) payload.username = name;
+    if (email) payload.email = email;
+
+    try {
+        const res = await fetch('/api/analyst/update_profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+                showNotification('Profile updated successfully!', 'success');
+                const initialsEl = document.getElementById('analyst-avatar-initials');
+                if (initialsEl && name) initialsEl.textContent = name.substring(0, 1).toUpperCase();
+                loadStaffSettings();
+            } else {
+                showNotification(data.error || 'Failed to update profile.', 'error');
+            }
+        } else {
+            showNotification('Server error updating profile.', 'error');
+        }
+    } catch (err) {
+        showNotification('Network error.', 'error');
+    } finally {
+        if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
+    }
+};
+
+window.saveAnalystSecurity = async function (e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : '';
+
+    const currentPassword = document.getElementById('analyst-current-password')?.value;
+    const newPassword = document.getElementById('analyst-profile-password')?.value;
+
+    if (!currentPassword || !newPassword) {
+        showNotification('Please fill in both password fields.', 'error');
+        return;
+    }
+
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...'; btn.disabled = true; }
+
+    const payload = {
+        current_password: currentPassword,
+        password: newPassword
+    };
+
+    try {
+        const res = await fetch('/api/analyst/update_profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+                showNotification('Password updated successfully!', 'success');
+                document.getElementById('analyst-security-form').reset();
+            } else {
+                showNotification(data.error || 'Failed to update password. Current password may be wrong.', 'error');
+            }
+        } else {
+            showNotification('Server error updating password.', 'error');
+        }
+    } catch (err) {
+        showNotification('Network error.', 'error');
+    } finally {
+        if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
+    }
+};
+
 // --- VIEW LOADERS ---
 
 async function loadPlayersView() {
@@ -383,8 +517,12 @@ function renderPlayerHeatmap(player) {
     let data = [];
 
     const stats = player.stats || {};
+    const isBadminton = (player.role && (player.role.toLowerCase().includes('singles') || player.role.toLowerCase().includes('doubles'))) || stats.win_rate !== undefined;
 
-    if (player.role.toLowerCase().includes('bowler')) {
+    if (isBadminton) {
+        labels = ['Win Rate (%)', 'Tournaments Won', 'Matches', 'Years Exp'];
+        data = [stats.win_rate || 0, stats.tournaments_won || 0, stats.matches || stats.matches_played || 0, stats.years_experience || 0];
+    } else if (player.role.toLowerCase().includes('bowler')) {
         labels = ['Matches', 'Wickets', 'Economy', 'Avg', 'Strike Rate'];
         data = [stats.matches || 0, stats.wickets || 0, stats.economy || 0, stats.average || 0, stats.strike_rate || 0];
     } else if (player.role.toLowerCase().includes('all-rounder')) {
@@ -531,16 +669,11 @@ async function loadReportsView() {
 
 async function loadStaffSettings() {
     try {
-
         const response = await fetch('/api/owner/staff');
-
-
-
 
         if (response.status === 401 || response.status === 403) return;
 
         const text = await response.text();
-
 
         let data;
         try {
@@ -550,9 +683,6 @@ async function loadStaffSettings() {
             return;
         }
         if (data.success) {
-
-
-
             const manager = data.manager;
             if (manager) {
                 if (document.getElementById('manager-name')) {
@@ -572,9 +702,31 @@ async function loadStaffSettings() {
                     document.getElementById('analyst-email').value = analyst.email || '';
                 }
             }
+
+            // Populate the read-only staff reference cards in analyst Settings
+            const staffRef = document.getElementById('analyst-staff-reference') || document.getElementById('manager-staff-reference');
+            if (staffRef && (manager || analyst)) {
+                staffRef.style.display = 'block';
+                if (manager) {
+                    const nameEl = document.getElementById('staff-ref-manager-name');
+                    const emailEl = document.getElementById('staff-ref-manager-email');
+                    if (nameEl) nameEl.textContent = manager.name || '—';
+                    if (emailEl) emailEl.textContent = manager.email || '—';
+                }
+                if (analyst) {
+                    const nameEl = document.getElementById('staff-ref-analyst-name');
+                    const emailEl = document.getElementById('staff-ref-analyst-email');
+                    if (nameEl) nameEl.textContent = analyst.name || '—';
+                    if (emailEl) emailEl.textContent = analyst.email || '—';
+                }
+            }
         }
+
+        // Always load own profile into the analyst Settings form
+        loadAnalystProfileSettings();
     } catch (e) {
         console.error("Error loading staff settings:", e);
+        loadAnalystProfileSettings();
     }
 }
 
@@ -706,7 +858,10 @@ async function loadTeamOwnerData(teamId = null) {
             if (eventTitleEl) eventTitleEl.textContent = currentEventName;
 
             // Update wallet balance
-            document.getElementById('walletAmount').textContent = `₹${data.wallet_balance.toLocaleString()}`;
+            const walletAmountEl = document.getElementById('walletAmount');
+            if (walletAmountEl) {
+                walletAmountEl.textContent = `₹${data.wallet_balance.toLocaleString()}`;
+            }
 
             // Update stats
             const squadSizeEl = document.getElementById('squadSize');
@@ -779,14 +934,21 @@ async function loadTeamOwnerData(teamId = null) {
                         timerEl.style.display = 'block';
                     }
 
-                    document.getElementById('auctionStatus').textContent = 'Starting Soon';
-                    document.getElementById('auctionStatus').className = 'auction-status status-not-started';
-                    document.getElementById('auctionContent').innerHTML = `
-                        <div class="waiting-message">
-                            <h3>Auction Starts Soon</h3>
-                            <p>Please wait for the event to begin.</p>
-                        </div>
-                    `;
+                    const statusEl = document.getElementById('auctionStatus') || document.getElementById('dedicatedAuctionStatus');
+                    const contentEl = document.getElementById('auctionContent') || document.getElementById('dedicatedAuctionContent');
+                    
+                    if (statusEl) {
+                        statusEl.textContent = 'Starting Soon';
+                        statusEl.className = 'auction-status status-not-started';
+                    }
+                    if (contentEl) {
+                        contentEl.innerHTML = `
+                            <div class="waiting-message">
+                                <h3>Auction Starts Soon</h3>
+                                <p>Please wait for the event to begin.</p>
+                            </div>
+                        `;
+                    }
 
                     const startTime = new Date(data.active_auction.start_time).getTime();
                     startCountdown(startTime);
@@ -804,15 +966,27 @@ async function loadTeamOwnerData(teamId = null) {
                         timerEl.style.display = 'block';
                     }
 
-                    document.getElementById('auctionStatus').textContent = 'Waiting';
-                    document.getElementById('auctionStatus').className = 'auction-status status-not-started';
-                    document.getElementById('countdownTimer').textContent = '--:--';
-                    document.getElementById('auctionContent').innerHTML = `
-                        <div class="waiting-message">
-                            <h3>Waiting for Auction</h3>
-                            <p>The auction for your event has not started yet.</p>
-                        </div>
-                     `;
+                    const statusEl = document.getElementById('auctionStatus') || document.getElementById('dedicatedAuctionStatus');
+                    const contentEl = document.getElementById('auctionContent') || document.getElementById('dedicatedAuctionContent');
+                    
+                    if (statusEl) {
+                        statusEl.textContent = 'Waiting';
+                        statusEl.className = 'auction-status status-not-started';
+                    }
+                    
+                    const timerElBottom = document.getElementById('countdownTimer') || document.getElementById('dedicatedCountdownTimer');
+                    if (timerElBottom) {
+                        timerElBottom.textContent = '--:--';
+                    }
+                    
+                    if (contentEl) {
+                        contentEl.innerHTML = `
+                            <div class="waiting-message">
+                                <h3>Waiting for Auction</h3>
+                                <p>The auction for your event has not started yet.</p>
+                            </div>
+                         `;
+                    }
                 }
             }
         } else {
@@ -1728,13 +1902,8 @@ window.switchView = function (hashOrPath) {
         // Scroll smoothly to the target section, accounting for the header
         setTimeout(() => {
             if (targetElement) {
-                const headerOffset = 80;
-                const elementPosition = targetElement.getBoundingClientRect().top;
-                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                window.scrollTo({
-                    top: offsetPosition,
-                    behavior: "smooth"
-                });
+                targetElement.style.scrollMarginTop = "80px";
+                targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
             }
         }, 50);
     }
@@ -2780,16 +2949,52 @@ function updateTrainingStatus(status) {
 // ==========================================
 
 
-// ---- Analyst Profile Settings ----
+// ---- Analyst Settings ----
+window.switchSettingsTab = function(tabName, rolePrefix, e = window.event) {
+    // Hide all tabs for this role
+    document.querySelectorAll(`[id^="${rolePrefix}-settings-tab-"]`).forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    // Remove active class from all buttons in this section
+    const sectionId = rolePrefix === 'analyst' ? 'section-analyst-settings' : `section-${rolePrefix}-settings`;
+    const container = document.getElementById(sectionId) || document.body;
+    container.querySelectorAll('.settings-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    const targetTab = document.getElementById(`${rolePrefix}-settings-tab-${tabName}`);
+    if (targetTab) {
+        targetTab.style.display = 'block';
+    }
+    
+    // Set clicked button to active safely
+    if (e && e.currentTarget) {
+        e.currentTarget.classList.add('active');
+    } else if (e && e.target) {
+        // Fallback for target if currentTarget is missing
+        const btn = e.target.closest('.settings-tab-btn');
+        if (btn) btn.classList.add('active');
+    }
+}
+
 async function loadAnalystProfileSettings() {
     try {
         const res = await fetch('/api/me', { credentials: 'include' });
         if (!res.ok) return;
         const data = await res.json();
+        
         const nameEl = document.getElementById('analyst-profile-name');
         const emailEl = document.getElementById('analyst-profile-email');
+        const initialsEl = document.getElementById('analyst-avatar-initials');
+        
         if (nameEl && data.username) nameEl.value = data.username;
         if (emailEl && data.email) emailEl.value = data.email;
+        
+        if (initialsEl && data.username) {
+            initialsEl.textContent = data.username.substring(0, 1).toUpperCase();
+        }
     } catch (e) {
         console.warn('Could not load analyst profile:', e);
     }
@@ -2803,12 +3008,10 @@ window.saveAnalystProfile = async function (e) {
 
     const name = document.getElementById('analyst-profile-name')?.value;
     const email = document.getElementById('analyst-profile-email')?.value;
-    const password = document.getElementById('analyst-profile-password')?.value;
 
     const payload = {};
     if (name) payload.username = name;
     if (email) payload.email = email;
-    if (password) payload.password = password;
 
     try {
         const res = await fetch('/api/analyst/update_profile', {
@@ -2821,12 +3024,59 @@ window.saveAnalystProfile = async function (e) {
             const data = await res.json();
             if (data.success) {
                 showNotification('Profile updated successfully!', 'success');
-                document.getElementById('analyst-profile-password').value = '';
+                const initialsEl = document.getElementById('analyst-avatar-initials');
+                if (initialsEl && name) initialsEl.textContent = name.substring(0, 1).toUpperCase();
+                loadStaffSettings();
             } else {
                 showNotification(data.error || 'Failed to update profile.', 'error');
             }
         } else {
             showNotification('Server error updating profile.', 'error');
+        }
+    } catch (err) {
+        showNotification('Network error.', 'error');
+    } finally {
+        if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
+    }
+};
+
+window.saveAnalystSecurity = async function (e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : '';
+    
+    const currentPassword = document.getElementById('analyst-current-password')?.value;
+    const newPassword = document.getElementById('analyst-profile-password')?.value;
+    
+    if (!currentPassword || !newPassword) {
+        showNotification('Please fill in both password fields.', 'error');
+        return;
+    }
+    
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...'; btn.disabled = true; }
+    
+    const payload = {
+        current_password: currentPassword,
+        password: newPassword
+    };
+
+    try {
+        const res = await fetch('/api/analyst/update_profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+                showNotification('Password updated successfully!', 'success');
+                document.getElementById('analyst-security-form').reset();
+            } else {
+                showNotification(data.error || 'Failed to update password. Current password may be wrong.', 'error');
+            }
+        } else {
+            showNotification('Server error updating password.', 'error');
         }
     } catch (err) {
         showNotification('Network error.', 'error');
@@ -2926,6 +3176,9 @@ async function loadAnalystDashboard() {
         analystSections.forEach(section => {
             observer.observe(section);
         });
+
+        // 4. Load Staff and Profile Settings
+        loadStaffSettings();
 
     } catch (error) {
         console.error('Error loading analyst dashboard:', error);
@@ -3119,6 +3372,9 @@ window.addEventListener('viewChanged', (e) => {
         const sectionId = analystSectionMap[hash] || (hash ? `section-${hash}` : null);
         if (sectionId) {
             document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (hash === 'settings') {
+                loadStaffSettings();
+            }
         } else {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }

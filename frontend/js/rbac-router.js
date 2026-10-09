@@ -102,9 +102,13 @@ function renderPanels(role, path) {
     if (path.startsWith('/dashboard/manager') || (role === 'team_manager' && path.includes('dashboard'))) {
         let p = document.getElementById('manager-panel');
         if (p) p.style.display = 'grid';
+        let ownerP = document.getElementById('owner-panel');
+        if (ownerP) ownerP.style.display = 'grid';
     } else if (path.startsWith('/dashboard/analyst') || (role === 'team_analyst' && path.includes('dashboard'))) {
         let p = document.getElementById('analyst-panel');
         if (p) p.style.display = 'grid';
+        let ownerP = document.getElementById('owner-panel');
+        if (ownerP) ownerP.style.display = 'grid';
     } else {
         let p = document.getElementById('owner-panel');
         if (p) p.style.display = 'grid';

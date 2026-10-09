@@ -362,8 +362,12 @@ function renderPlayerHeatmap(player) {
     let data = [];
 
     const stats = player.stats || {};
+    const isBadminton = (player.role && (player.role.toLowerCase().includes('singles') || player.role.toLowerCase().includes('doubles'))) || stats.win_rate !== undefined;
 
-    if (player.role.toLowerCase().includes('bowler')) {
+    if (isBadminton) {
+        labels = ['Win Rate (%)', 'Tournaments Won', 'Matches', 'Years Exp'];
+        data = [stats.win_rate || 0, stats.tournaments_won || 0, stats.matches || stats.matches_played || 0, stats.years_experience || 0];
+    } else if (player.role.toLowerCase().includes('bowler')) {
         labels = ['Matches', 'Wickets', 'Economy', 'Avg', 'Strike Rate'];
         data = [stats.matches || 0, stats.wickets || 0, stats.economy || 0, stats.average || 0, stats.strike_rate || 0];
     } else if (player.role.toLowerCase().includes('all-rounder')) {
@@ -1684,13 +1688,8 @@ window.switchView = function (hashOrPath) {
         // Scroll smoothly to the target section, accounting for the header
         setTimeout(() => {
             if (targetElement) {
-                const headerOffset = 80;
-                const elementPosition = targetElement.getBoundingClientRect().top;
-                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                window.scrollTo({
-                    top: offsetPosition,
-                    behavior: "smooth"
-                });
+                targetElement.style.scrollMarginTop = "80px";
+                targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
             }
         }, 50);
     }

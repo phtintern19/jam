@@ -1,7 +1,8 @@
-# Environments
+# Environment files and virtual environments
 .env
-.env.local
-.venv
+.env.*
+!.env.example
+.venv/
 venv/
 env/
 ENV/
@@ -46,7 +47,7 @@ logs/
 ehthumbs.db
 Thumbs.db
 
-# IDEs and Editors
+# IDEs and editors
 .vscode/
 .idea/
 *.swp
@@ -55,11 +56,13 @@ Thumbs.db
 .project
 .settings/
 
-# Frontend / Node (if applicable later)
+# Frontend / Node
 node_modules/
 npm-debug.log
 yarn-error.log
-
-# Uploads / Static cache
-backend/static/uploads/
 frontend/dist/
+
+# Uploaded content
+backend/static/uploads/
+uploads/
+profile_images/

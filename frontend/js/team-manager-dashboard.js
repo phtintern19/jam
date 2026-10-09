@@ -96,8 +96,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 const headerUserName = document.getElementById('headerUserName');
                 const dropdownUserName = document.getElementById('dropdownUserName');
                 const dropdownUserRole = document.getElementById('dropdownUserRole');
-                if (headerUserName) headerUserName.textContent = data.user.username || 'Team Owner';
-                if (dropdownUserName) dropdownUserName.textContent = data.user.username || 'Team Owner';
+                if (headerUserName) headerUserName.textContent = data.user.username || 'Team Manager';
+                if (dropdownUserName) dropdownUserName.textContent = data.user.username || 'Team Manager';
                 if (dropdownUserRole) dropdownUserRole.textContent = (data.user.user_type || 'Owner').replace('_', ' ');
             }
         })
@@ -385,8 +385,12 @@ function renderPlayerHeatmap(player) {
     let data = [];
 
     const stats = player.stats || {};
+    const isBadminton = (player.role && (player.role.toLowerCase().includes('singles') || player.role.toLowerCase().includes('doubles'))) || stats.win_rate !== undefined;
 
-    if (player.role.toLowerCase().includes('bowler')) {
+    if (isBadminton) {
+        labels = ['Win Rate (%)', 'Tournaments Won', 'Matches', 'Years Exp'];
+        data = [stats.win_rate || 0, stats.tournaments_won || 0, stats.matches || stats.matches_played || 0, stats.years_experience || 0];
+    } else if (player.role.toLowerCase().includes('bowler')) {
         labels = ['Matches', 'Wickets', 'Economy', 'Avg', 'Strike Rate'];
         data = [stats.matches || 0, stats.wickets || 0, stats.economy || 0, stats.average || 0, stats.strike_rate || 0];
     } else if (player.role.toLowerCase().includes('all-rounder')) {
@@ -596,6 +600,35 @@ async function loadStaffSettings() {
     }
 }
 
+window.switchSettingsTab = function(tabName, rolePrefix, e = window.event) {
+    // Hide all tabs for this role
+    document.querySelectorAll(`[id^="${rolePrefix}-settings-tab-"]`).forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    // Remove active class from all buttons in this section
+    const sectionId = rolePrefix === 'analyst' ? 'section-analyst-settings' : `section-settings`; // Manager uses section-settings
+    const container = document.getElementById(sectionId) || document.body;
+    container.querySelectorAll('.settings-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    const targetTab = document.getElementById(`${rolePrefix}-settings-tab-${tabName}`);
+    if (targetTab) {
+        targetTab.style.display = 'block';
+    }
+    
+    // Set clicked button to active safely
+    if (e && e.currentTarget) {
+        e.currentTarget.classList.add('active');
+    } else if (e && e.target) {
+        // Fallback for target if currentTarget is missing
+        const btn = e.target.closest('.settings-tab-btn');
+        if (btn) btn.classList.add('active');
+    }
+}
+
 async function loadManagerProfileSettings() {
     try {
         const res = await fetch('/api/me', { credentials: 'include' });
@@ -603,8 +636,13 @@ async function loadManagerProfileSettings() {
         const data = await res.json();
         const nameEl = document.getElementById('manager-profile-name');
         const emailEl = document.getElementById('manager-profile-email');
+        const initialsEl = document.getElementById('manager-avatar-initials');
+        
         if (nameEl && data.username) nameEl.value = data.username;
         if (emailEl && data.email) emailEl.value = data.email;
+        if (initialsEl && data.username) {
+            initialsEl.textContent = data.username.substring(0, 1).toUpperCase();
+        }
     } catch (e) {
         console.warn('Could not load manager profile:', e);
     }
@@ -618,12 +656,10 @@ window.saveManagerProfile = async function (e) {
 
     const name = document.getElementById('manager-profile-name')?.value;
     const email = document.getElementById('manager-profile-email')?.value;
-    const password = document.getElementById('manager-profile-password')?.value;
 
     const payload = {};
     if (name) payload.username = name;
     if (email) payload.email = email;
-    if (password) payload.password = password;
 
     try {
         // Reuse the analyst/update_profile endpoint — it works for any staff role
@@ -637,13 +673,58 @@ window.saveManagerProfile = async function (e) {
             const data = await res.json();
             if (data.success) {
                 showNotification('Profile updated successfully!', 'success');
-                const pwEl = document.getElementById('manager-profile-password');
-                if (pwEl) pwEl.value = '';
+                const initialsEl = document.getElementById('manager-avatar-initials');
+                if (initialsEl && name) initialsEl.textContent = name.substring(0, 1).toUpperCase();
             } else {
                 showNotification(data.error || 'Failed to update profile.', 'error');
             }
         } else {
             showNotification('Server error updating profile.', 'error');
+        }
+    } catch (err) {
+        showNotification('Network error.', 'error');
+    } finally {
+        if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
+    }
+};
+
+window.saveManagerSecurity = async function (e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : '';
+    
+    const currentPassword = document.getElementById('manager-current-password')?.value;
+    const newPassword = document.getElementById('manager-profile-password')?.value;
+    
+    if (!currentPassword || !newPassword) {
+        showNotification('Please fill in both password fields.', 'error');
+        return;
+    }
+    
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...'; btn.disabled = true; }
+    
+    const payload = {
+        current_password: currentPassword,
+        password: newPassword
+    };
+
+    try {
+        const res = await fetch('/api/analyst/update_profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+                showNotification('Password updated successfully!', 'success');
+                document.getElementById('manager-security-form').reset();
+            } else {
+                showNotification(data.error || 'Failed to update password. Current password may be wrong.', 'error');
+            }
+        } else {
+            showNotification('Server error updating password.', 'error');
         }
     } catch (err) {
         showNotification('Network error.', 'error');
@@ -781,7 +862,10 @@ async function loadTeamOwnerData(teamId = null) {
             if (eventTitleEl) eventTitleEl.textContent = currentEventName;
 
             // Update wallet balance
-            document.getElementById('walletAmount').textContent = `₹${data.wallet_balance.toLocaleString()}`;
+            const walletAmountEl = document.getElementById('walletAmount');
+            if (walletAmountEl) {
+                walletAmountEl.textContent = `₹${data.wallet_balance.toLocaleString()}`;
+            }
 
             // Update stats
             const squadSizeEl = document.getElementById('squadSize');
@@ -854,14 +938,21 @@ async function loadTeamOwnerData(teamId = null) {
                         timerEl.style.display = 'block';
                     }
 
-                    document.getElementById('auctionStatus').textContent = 'Starting Soon';
-                    document.getElementById('auctionStatus').className = 'auction-status status-not-started';
-                    document.getElementById('auctionContent').innerHTML = `
-                        <div class="waiting-message">
-                            <h3>Auction Starts Soon</h3>
-                            <p>Please wait for the event to begin.</p>
-                        </div>
-                    `;
+                    const statusEl = document.getElementById('auctionStatus') || document.getElementById('dedicatedAuctionStatus');
+                    const contentEl = document.getElementById('auctionContent') || document.getElementById('dedicatedAuctionContent');
+                    
+                    if (statusEl) {
+                        statusEl.textContent = 'Starting Soon';
+                        statusEl.className = 'auction-status status-not-started';
+                    }
+                    if (contentEl) {
+                        contentEl.innerHTML = `
+                            <div class="waiting-message">
+                                <h3>Auction Starts Soon</h3>
+                                <p>Please wait for the event to begin.</p>
+                            </div>
+                        `;
+                    }
 
                     const startTime = new Date(data.active_auction.start_time).getTime();
                     startCountdown(startTime);
@@ -879,15 +970,27 @@ async function loadTeamOwnerData(teamId = null) {
                         timerEl.style.display = 'block';
                     }
 
-                    document.getElementById('auctionStatus').textContent = 'Waiting';
-                    document.getElementById('auctionStatus').className = 'auction-status status-not-started';
-                    document.getElementById('countdownTimer').textContent = '--:--';
-                    document.getElementById('auctionContent').innerHTML = `
-                        <div class="waiting-message">
-                            <h3>Waiting for Auction</h3>
-                            <p>The auction for your event has not started yet.</p>
-                        </div>
-                     `;
+                    const statusEl = document.getElementById('auctionStatus') || document.getElementById('dedicatedAuctionStatus');
+                    const contentEl = document.getElementById('auctionContent') || document.getElementById('dedicatedAuctionContent');
+                    
+                    if (statusEl) {
+                        statusEl.textContent = 'Waiting';
+                        statusEl.className = 'auction-status status-not-started';
+                    }
+                    
+                    const timerElBottom = document.getElementById('countdownTimer') || document.getElementById('dedicatedCountdownTimer');
+                    if (timerElBottom) {
+                        timerElBottom.textContent = '--:--';
+                    }
+                    
+                    if (contentEl) {
+                        contentEl.innerHTML = `
+                            <div class="waiting-message">
+                                <h3>Waiting for Auction</h3>
+                                <p>The auction for your event has not started yet.</p>
+                            </div>
+                         `;
+                    }
                 }
             }
         } else {
@@ -1655,11 +1758,42 @@ window.switchView = function (hashOrPath) {
     // Squad alias to players
     if (viewName === 'squad') viewName = 'players';
 
-    // We no longer hide .view-section here because we want them all visible for scrolling
-    // We only hide role panels
-    document.querySelectorAll('.role-panel').forEach(el => {
-        el.style.display = 'none';
-    });
+        // We no longer hide .view-section here because we want them all visible for scrolling
+        // We only hide role panels that don't belong to the user
+        document.querySelectorAll('.role-panel').forEach(el => {
+            if (role === 'team_manager' && (el.id === 'owner-panel' || el.id === 'manager-panel')) {
+                // Keep both visible for manager to allow scrolling across shared and specific views
+                el.style.display = 'grid';
+                if (el.id === 'manager-panel') {
+                    el.style.order = '-1'; // Force manager dashboard overview to the top
+                }
+                if (el.id === 'owner-panel') {
+                    el.classList.add('scroll-mode');
+                    const dashView = el.querySelector('#view-dashboard');
+                    if (dashView) { dashView.style.display = 'none'; dashView.classList.add('hidden-for-role'); }
+                    const settingsView = el.querySelector('#view-settings');
+                    if (settingsView) { settingsView.style.display = 'none'; settingsView.classList.add('hidden-for-role'); }
+                }
+            } else if (role === 'team_analyst' && (el.id === 'owner-panel' || el.id === 'analyst-panel')) {
+                // Keep both visible for analyst
+                el.style.display = 'grid';
+                if (el.id === 'analyst-panel') {
+                    el.style.order = '-1';
+                }
+                if (el.id === 'owner-panel') {
+                    el.classList.add('scroll-mode');
+                    const dashView = el.querySelector('#view-dashboard');
+                    if (dashView) { dashView.style.display = 'none'; dashView.classList.add('hidden-for-role'); }
+                    const settingsView = el.querySelector('#view-settings');
+                    if (settingsView) { settingsView.style.display = 'none'; settingsView.classList.add('hidden-for-role'); }
+                }
+            } else if (role === 'team_owner' && el.id === 'owner-panel') {
+                el.style.display = 'grid';
+                el.classList.add('scroll-mode');
+            } else {
+                el.style.display = 'none';
+            }
+        });
 
     let targetElement = null;
     let targetPanel = null;
@@ -1680,21 +1814,21 @@ window.switchView = function (hashOrPath) {
     } else if (currentPath.startsWith('/dashboard/manager') || (role === 'team_manager' && !currentPath.includes('/dashboard/'))) {
         isRolePanel = true;
 
-        // If team manager is navigating to a shared view (players, auction, squad, reports), show that view in owner panel
-        if (['players', 'auction', 'squad', 'reports'].includes(viewName) && hashOrPath.includes('#')) {
+        // If team manager is navigating to a shared view (players, auction, squad, reports, wallet), show that view in owner panel
+        if (['players', 'auction', 'squad', 'reports', 'wallet'].includes(viewName) && hashOrPath.includes('#')) {
             const ownerPanel = document.getElementById('owner-panel');
             if (ownerPanel) {
                 ownerPanel.style.display = 'grid';
                 ownerPanel.classList.add('scroll-mode');
 
-                // First, remove active-view from ALL view-sections (fix: prevents multiple sections showing)
-                ownerPanel.querySelectorAll('.view-section').forEach(v => {
-                    v.classList.remove('active-view');
-                    v.style.display = 'none';
-                });
+                    // First, remove active-view from ALL view-sections
+                    ownerPanel.querySelectorAll('.view-section').forEach(v => {
+                        v.classList.remove('active-view');
+                        v.style.removeProperty('display');
+                    });
 
                 // Always hide owner-only views from manager
-                const ownerOnlyViews = ['view-dashboard', 'view-wallet', 'view-settings'];
+                const ownerOnlyViews = ['view-dashboard', 'view-settings'];
                 ownerOnlyViews.forEach(id => {
                     const el = document.getElementById(id);
                     if (el) {
@@ -1707,7 +1841,6 @@ window.switchView = function (hashOrPath) {
 
             const targetView = document.getElementById(`view-${viewName}`);
             if (targetView) {
-                targetView.style.display = 'grid';
                 targetView.classList.add('active-view');
                 targetView.classList.remove('hidden-for-role');
                 targetElement = targetView;
@@ -1727,10 +1860,10 @@ window.switchView = function (hashOrPath) {
             ownerPanel.style.display = 'grid';
             ownerPanel.classList.add('scroll-mode');
 
-            // Hide other view sections in owner panel
+            // First, remove active-view from ALL view-sections
             ownerPanel.querySelectorAll('.view-section').forEach(v => {
                 v.classList.remove('active-view');
-                v.style.display = 'none';
+                v.style.removeProperty('display');
             });
 
             // Ensure dashboard view is visible for owner
@@ -1740,7 +1873,6 @@ window.switchView = function (hashOrPath) {
 
         const targetView = document.getElementById(`view-${viewName}`);
         if (targetView) {
-            targetView.style.display = 'grid';
             targetView.classList.add('active-view');
             targetElement = targetView;
         }
@@ -1785,13 +1917,8 @@ window.switchView = function (hashOrPath) {
         // Scroll smoothly to the target section, accounting for the header
         setTimeout(() => {
             if (targetElement) {
-                const headerOffset = 80;
-                const elementPosition = targetElement.getBoundingClientRect().top;
-                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                window.scrollTo({
-                    top: offsetPosition,
-                    behavior: "smooth"
-                });
+                targetElement.style.scrollMarginTop = "80px";
+                targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
             }
         }, 50);
     }
@@ -1806,20 +1933,21 @@ function setupEventListeners() {
         }
     });
 
-    // Setup Scroll Spy (IntersectionObserver) for Team Owner dashboard
-    const ownerSections = document.querySelectorAll('#owner-panel .view-section');
-    if (ownerSections.length > 0) {
-        const ownerObserver = new IntersectionObserver((entries) => {
+    // Setup Scroll Spy (IntersectionObserver) for dashboards
+    const scrollSections = document.querySelectorAll('#owner-panel .view-section, #manager-panel > div[id^="section-"]');
+    if (scrollSections.length > 0) {
+        const scrollObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const id = entry.target.id;
-                    const viewName = id.replace('view-', '');
+                    const viewName = id.replace('view-', '').replace('section-', '');
 
                     // Update active sidebar item
                     document.querySelectorAll('.sidebar-item').forEach(item => {
                         item.classList.remove('active');
                         const path = item.getAttribute('data-path');
-                        if (path && path.includes('#' + viewName)) {
+                        // Also highlight Dashboard if we scroll to the top of the manager panel
+                        if (path && (path.includes('#' + viewName) || (viewName === 'manager-panel' && path.endsWith('/dashboard/manager')))) {
                             item.classList.add('active');
                         }
                     });
@@ -1831,9 +1959,16 @@ function setupEventListeners() {
             threshold: 0
         });
 
-        ownerSections.forEach(section => {
-            ownerObserver.observe(section);
+        scrollSections.forEach(section => {
+            scrollObserver.observe(section);
         });
+        
+        // Explicitly observe the top of the manager panel for the 'Dashboard' highlight
+        const managerHero = document.querySelector('#manager-panel .hero-banner');
+        if (managerHero) {
+            managerHero.id = 'section-dashboard';
+            scrollObserver.observe(managerHero);
+        }
     }
 
     // Contact support functionality

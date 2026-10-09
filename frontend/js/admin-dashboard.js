@@ -92,7 +92,7 @@ async function loadDashboardStats() {
             const elTeams = document.getElementById('reportTotalTeams');
             const elPlayers = document.getElementById('reportTotalPlayers');
             const elSold = document.getElementById('reportSoldPlayers');
-            if (elRevenue) elRevenue.textContent = `$${stats.auction_revenue || 0}M`;
+            if (elRevenue) elRevenue.textContent = `₹${(stats.auction_revenue || 0).toLocaleString('en-IN')}`;
             if (elTeams) elTeams.textContent = stats.total_teams || 0;
             if (elPlayers) elPlayers.textContent = stats.total_players || 0;
             if (elSold) elSold.textContent = stats.purchased_players || 0;
@@ -147,16 +147,40 @@ async function loadEvents() {
         if (summaryUpcomingEvents) summaryUpcomingEvents.textContent = upcomingEvents;
         if (summaryCompletedEvents) summaryCompletedEvents.textContent = completedEvents;
 
-        eventsGrid.innerHTML = '';
-        if (eventsData.length === 0) {
-            eventsGrid.innerHTML = '<div style="color: #94a3b8; text-align: center; grid-column: 1/-1;">No events found. Create one to get started.</div>';
-            return;
+        // Populate sports filter based on available events
+        const sportSelect = document.getElementById('filterSport');
+        if (sportSelect) {
+            const uniqueSports = [...new Set(eventsData.map(e => e.sport).filter(Boolean))].sort();
+            const currentValue = sportSelect.value; // preserve selection
+            sportSelect.innerHTML = '<option value="">All Sports</option>';
+            uniqueSports.forEach(sport => {
+                const opt = document.createElement('option');
+                opt.value = sport;
+                opt.textContent = sport;
+                sportSelect.appendChild(opt);
+            });
+            sportSelect.value = uniqueSports.includes(currentValue) ? currentValue : '';
         }
 
-        eventsData.forEach(event => {
-            const eventCard = createEventCard(event);
-            eventsGrid.appendChild(eventCard);
-        });
+        // Initial render
+        renderEvents();
+        
+        // Attach event listeners for filters if not already attached
+        const searchInput = document.getElementById('eventSearch');
+        const statusSelect = document.getElementById('filterStatus');
+        
+        if (searchInput && !searchInput.hasAttribute('data-listener-attached')) {
+            searchInput.addEventListener('input', renderEvents);
+            searchInput.setAttribute('data-listener-attached', 'true');
+        }
+        if (sportSelect && !sportSelect.hasAttribute('data-listener-attached')) {
+            sportSelect.addEventListener('change', renderEvents);
+            sportSelect.setAttribute('data-listener-attached', 'true');
+        }
+        if (statusSelect && !statusSelect.hasAttribute('data-listener-attached')) {
+            statusSelect.addEventListener('change', renderEvents);
+            statusSelect.setAttribute('data-listener-attached', 'true');
+        }
 
         // Populate event filter dropdown for player registrations
         populateEventFilterDropdown();
@@ -166,6 +190,44 @@ async function loadEvents() {
             eventsGrid.innerHTML = '<div style="color: #ef4444; text-align: center; grid-column: 1/-1;">Error loading events. Please try again later.</div>';
         }
     }
+}
+
+// Render events based on current filter values
+function renderEvents() {
+    const eventsGrid = document.getElementById('eventsGrid');
+    if (!eventsGrid) return;
+    
+    eventsGrid.innerHTML = '';
+    
+    if (eventsData.length === 0) {
+        eventsGrid.innerHTML = '<div style="color: #94a3b8; text-align: center; grid-column: 1/-1;">No events found. Create one to get started.</div>';
+        return;
+    }
+
+    const searchQuery = (document.getElementById('eventSearch')?.value || '').toLowerCase();
+    const sportFilter = document.getElementById('filterSport')?.value || '';
+    const statusFilter = document.getElementById('filterStatus')?.value || '';
+
+    const filteredEvents = eventsData.filter(event => {
+        const matchesSearch = !searchQuery || 
+            (event.name && event.name.toLowerCase().includes(searchQuery)) || 
+            (event.venue && event.venue.toLowerCase().includes(searchQuery));
+            
+        const matchesSport = !sportFilter || (event.sport && event.sport === sportFilter);
+        const matchesStatus = !statusFilter || (event.status && event.status.toUpperCase() === statusFilter);
+        
+        return matchesSearch && matchesSport && matchesStatus;
+    });
+
+    if (filteredEvents.length === 0) {
+        eventsGrid.innerHTML = '<div style="color: #94a3b8; text-align: center; grid-column: 1/-1;">No events match your search criteria.</div>';
+        return;
+    }
+
+    filteredEvents.forEach(event => {
+        const eventCard = createEventCard(event);
+        eventsGrid.appendChild(eventCard);
+    });
 }
 
 // Create event card HTML
@@ -2503,9 +2565,10 @@ async function viewPlayerFullDetails(playerId) {
              
              <!-- Factual Sport Profiles -->
              ${(() => {
+                let profileHtml = '';
                 if (player.sport_profiles && player.sport_profiles.cricket) {
                     const cricket = player.sport_profiles.cricket;
-                    return `
+                    profileHtml += `
                         <div style="margin-top: 2rem;">
                             <h3 style="color: #cbd5e1; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; margin-bottom: 1rem;">Cricket Information</h3>
                             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;">
@@ -2525,7 +2588,29 @@ async function viewPlayerFullDetails(playerId) {
                         </div>
                      `;
                 }
-                return '';
+                
+                if (player.sport_profiles && player.sport_profiles.badminton) {
+                    const badminton = player.sport_profiles.badminton;
+                    profileHtml += `
+                        <div style="margin-top: 2rem;">
+                            <h3 style="color: #cbd5e1; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; margin-bottom: 1rem;">Badminton Information</h3>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;">
+                                <div class="info-group">
+                                    <div class="info-row"><label>Role:</label> <span>${badminton.role || 'N/A'}</span></div>
+                                    <div class="info-row"><label>Playing Hand:</label> <span>${badminton.playing_hand || 'N/A'}</span></div>
+                                    <div class="info-row"><label>Highest Level:</label> <span>${badminton.highest_level || 'N/A'}</span></div>
+                                    <div class="info-row"><label>Experience:</label> <span>${badminton.years_experience || 0} Years</span></div>
+                                </div>
+                                <div class="info-group">
+                                    <div class="info-row"><label>Matches Played:</label> <span>${badminton.matches_played || 0}</span></div>
+                                    <div class="info-row"><label>Win Rate:</label> <span>${badminton.win_rate || 0}%</span></div>
+                                    <div class="info-row"><label>Tournaments Won:</label> <span>${badminton.tournaments_won || 0}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                     `;
+                }
+                return profileHtml;
             })()}
 
              <div style="margin-top: 2rem;">
@@ -2924,6 +3009,9 @@ async function loadSports() {
         const sports = data.sports || data || [];
         const tbody = document.querySelector('#sportsTable tbody');
         const sportSelect = document.getElementById('editSportId');
+        const escapeSportText = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[char]);
 
         if (sportSelect) {
             sportSelect.innerHTML = '<option value="">Select a Sport...</option>';
@@ -2932,7 +3020,7 @@ async function loadSports() {
         if (!tbody) return;
 
         if (sports.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: #94a3b8;">No sports found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #94a3b8;">No sports found.</td></tr>';
             return;
         }
 
@@ -2953,8 +3041,9 @@ async function loadSports() {
 
             tr.innerHTML = `
                 <td>${sport.sport_id}</td>
-                <td><i class="${sport.icon_class} mr-2"></i> ${sport.name}</td>
-                <td>${sport.description || 'N/A'}</td>
+                <td><i class="${escapeSportText(sport.icon_class || 'fas fa-trophy')} mr-2"></i> ${escapeSportText(sport.name)}</td>
+                <td>${escapeSportText(sport.category || '—')}</td>
+                <td>${escapeSportText(sport.description || 'N/A')}</td>
                 <td>
                     <button class="admin-btn-action" style="background: linear-gradient(135deg, #00ffff 0%, #0080ff 100%); color: black;" onclick="openConfigureSportModal('${sportData}')"><i class="fas fa-cogs"></i> Configure</button>
                     <button class="admin-btn-action" onclick="deleteSport(${sport.sport_id})"><i class="fas fa-trash"></i> Delete</button>
@@ -3380,7 +3469,7 @@ async function loadTeams() {
                 <td>${t.manager_count}</td>
                 <td>${t.analyst_count}</td>
                 <td>
-                    <button class="admin-btn-action" onclick="alert('View team coming soon!')"><i class="fas fa-eye"></i> View</button>
+                    <button class="admin-btn-action" onclick="viewTeam(${t.team_id})"><i class="fas fa-eye"></i> View</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -3390,13 +3479,80 @@ async function loadTeams() {
     }
 }
 
+async function viewTeam(teamId) {
+    try {
+        const modal = document.getElementById('viewTeamModal');
+        // Show modal right away in a loading state
+        document.getElementById('vtTeamName').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+        document.getElementById('vtOwnerName').textContent = 'Fetching details...';
+        document.getElementById('vtBudget').textContent = '...';
+        document.getElementById('vtSquadSize').textContent = '...';
+        document.getElementById('vtOwnerContact').textContent = '...';
+        document.getElementById('vtStaffList').innerHTML = '<div style="color:#94a3b8;">Loading...</div>';
+        document.getElementById('vtSquadList').innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">Loading...</td></tr>';
+        
+        modal.classList.add('active');
+
+        const response = await fetch(`/api/admin/teams/${teamId}`);
+        if (!response.ok) throw new Error('Failed to fetch team details');
+        
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message || 'Error loading team');
+        
+        // Populate Header
+        document.getElementById('vtTeamName').innerHTML = `<i class="fas fa-users"></i> ${data.team.team_name}`;
+        document.getElementById('vtOwnerName').textContent = `Owner: ${data.team.owner.name}`;
+        document.getElementById('vtOwnerContact').textContent = `${data.team.owner.email} | ${data.team.owner.phone !== 'N/A' ? data.team.owner.phone : ''}`;
+        
+        // Populate Stats
+        document.getElementById('vtBudget').textContent = `₹${data.team.budget.toLocaleString('en-IN')}`;
+        document.getElementById('vtSquadSize').textContent = data.squad.length;
+        
+        // Populate Staff
+        const staffList = document.getElementById('vtStaffList');
+        if (data.staff && data.staff.length > 0) {
+            staffList.innerHTML = data.staff.map(s => `
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 0.5rem; border-radius: 0.25rem;">
+                    <div>
+                        <div style="color: #f8fafc; font-weight: 500;">${s.name}</div>
+                        <div style="color: #64748b; font-size: 0.85rem;">${s.email}</div>
+                    </div>
+                    <span style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">${s.role}</span>
+                </div>
+            `).join('');
+        } else {
+            staffList.innerHTML = '<div style="color: #64748b; font-style: italic;">No staff assigned to this team.</div>';
+        }
+        
+        // Populate Squad
+        const squadList = document.getElementById('vtSquadList');
+        if (data.squad && data.squad.length > 0) {
+            squadList.innerHTML = data.squad.map(p => `
+                <tr>
+                    <td>#${p.player_id}</td>
+                    <td style="color: #3b82f6; font-weight: 500;">${p.name}</td>
+                    <td><span style="background: rgba(59, 130, 246, 0.1); color: #60a5fa; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem;">${p.category}</span></td>
+                    <td style="color: #10b981; font-weight: 600;">₹${p.price.toLocaleString('en-IN')}</td>
+                </tr>
+            `).join('');
+        } else {
+            squadList.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 1.5rem;">No players have been purchased by this team yet.</td></tr>';
+        }
+
+    } catch (e) {
+        console.error('Error viewing team:', e);
+        document.getElementById('vtTeamName').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
+        document.getElementById('vtOwnerName').textContent = e.message;
+    }
+}
+
 async function loadReports() {
     try {
         const response = await fetch('/api/dashboard/admin/stats');
         const stats = await response.json();
 
         const revEl = document.getElementById('reportTotalRevenue');
-        if (revEl) revEl.textContent = `$${stats.auction_revenue || 0}M`;
+        if (revEl) revEl.textContent = `₹${(stats.auction_revenue || 0).toLocaleString('en-IN')}`;
 
         const teamEl = document.getElementById('reportTotalTeams');
         if (teamEl) teamEl.textContent = stats.total_teams || 0;
@@ -3407,20 +3563,91 @@ async function loadReports() {
         const soldEl = document.getElementById('reportSoldPlayers');
         if (soldEl) soldEl.textContent = stats.purchased_players || 0;
 
+        // Populate recent transactions
+        const txTbody = document.getElementById('reportRecentTransactions');
+        if (txTbody) {
+            if (stats.recent_transactions && stats.recent_transactions.length > 0) {
+                txTbody.innerHTML = stats.recent_transactions.map(tx => `
+                    <tr>
+                        <td style="color: var(--text-primary); font-weight: 500;">
+                            <i class="fas fa-user-circle" style="color: var(--text-muted); margin-right: 8px;"></i>${tx.player_name}
+                        </td>
+                        <td><span style="background: rgba(139,92,246,0.15); color: #c4b5fd; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">${tx.team_name}</span></td>
+                        <td style="color: var(--text-muted);">${tx.event_title}</td>
+                        <td style="color: #10b981; font-weight: 600;">₹${tx.amount.toLocaleString('en-IN')}</td>
+                        <td style="color: var(--text-muted); font-size: 0.9rem;">
+                            ${new Date(tx.date).toLocaleDateString('en-IN', {day: 'numeric', month: 'short', year: 'numeric'})}
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                txTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">No recent transactions found.</td></tr>`;
+            }
+        }
+
     } catch (e) {
         console.error('Error loading reports:', e);
+        const txTbody = document.getElementById('reportRecentTransactions');
+        if (txTbody) {
+            txTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ef4444; padding: 2rem;">Error loading transactions.</td></tr>`;
+        }
+    }
+}
+
+async function exportReportsCSV() {
+    try {
+        const response = await fetch('/api/dashboard/admin/stats');
+        if (!response.ok) throw new Error('Failed to fetch stats for export');
+        const stats = await response.json();
+        
+        // Let's create a CSV
+        let csvContent = "data:text/csv;charset=utf-8,";
+        
+        // Add Summary Info
+        csvContent += "JamRig System Report\n\n";
+        csvContent += "Summary\n";
+        csvContent += `Total Auction Revenue,₹${(stats.auction_revenue || 0).toLocaleString('en-IN')}\n`;
+        csvContent += `Total Registered Teams,${stats.total_teams || 0}\n`;
+        csvContent += `Total Players,${stats.total_players || 0}\n`;
+        csvContent += `Players Sold,${stats.purchased_players || 0}\n\n`;
+        
+        // Add Transactions
+        if (stats.recent_transactions && stats.recent_transactions.length > 0) {
+            csvContent += "Recent Transactions\n";
+            csvContent += "Player,Team,Event,Amount,Date\n";
+            
+            stats.recent_transactions.forEach(tx => {
+                const date = new Date(tx.date).toLocaleDateString('en-IN');
+                csvContent += `"${tx.player_name}","${tx.team_name}","${tx.event_title}",${tx.amount},"${date}"\n`;
+            });
+        }
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `JamRig_Reports_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+    } catch (err) {
+        console.error("Export error:", err);
+        alert("Failed to export CSV. Please try again.");
     }
 }
 
 function openCreateSportModal() {
     const name = prompt("Enter Sport Name:");
     if (!name) return;
+    const category = prompt("Enter Sport Category (optional):");
+    if (category === null) return;
     const desc = prompt("Enter Description:");
+    if (desc === null) return;
 
     fetch('/api/admin/sports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name, description: desc })
+        body: JSON.stringify({ name: name, category: category.trim(), description: desc })
     })
         .then(r => r.json())
         .then(data => {

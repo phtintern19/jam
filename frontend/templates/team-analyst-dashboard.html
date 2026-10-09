@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team Owner Dashboard - JamRig</title>
+    <title>Team Analyst Dashboard - JamRig</title>
     <!-- Fonts -->
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap">
@@ -12,8 +12,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS Dependencies -->
-    <link rel="stylesheet" href="/css/styles.css?v=premium-animated-v1">
-    <link rel="stylesheet" href="/css/saas-theme.css?v=global-v2">
+    <link rel="stylesheet" href="/css/styles.css?v=30">
+    <link rel="stylesheet" href="/css/saas-theme.css?v=30">
 
     <style>
         /* ==========================================================================
@@ -1183,18 +1183,18 @@
                             style="display: flex; align-items: center; gap: 0.5rem; background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.2); padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; color: var(--text-primary); font-weight: 600; transition: all 0.2s ease;">
                             <div
                                 style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem;">
-                                TO</div>
-                            <span id="headerUserName">Team Owner</span>
+                                TA</div>
+                            <span id="headerUserName">Team Analyst</span>
                             <i class="fas fa-chevron-down" style="font-size: 0.8rem; margin-left: 0.25rem;"></i>
                         </button>
                         <div id="userDropdownMenu"
                             style="display: none; position: absolute; top: 120%; right: 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; min-width: 200px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 1000; overflow: hidden;">
                             <div style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
                                 <div id="dropdownUserName" style="font-weight: 600; color: var(--text-primary);">Team
-                                    Owner</div>
+                                    Analyst</div>
                                 <div id="dropdownUserRole"
                                     style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-top: 0.25rem;">
-                                    Owner</div>
+                                    Analyst</div>
                             </div>
                             <div style="padding: 0.5rem 0;">
                                 <button onclick="logout()" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'"
@@ -1252,441 +1252,6 @@
                 <div class="dashboard-grid live-auction-container" style="display: block;">
                     <!-- JS toggles display on this container -->
 
-                    <div id="owner-panel" class="role-panel dashboard-grid"
-                        style="display: none; width: 100%; margin: 0;">
-                        <!-- Inner Grid to maintain layout since live-auction-container is toggled -->
-
-                        <!-- DASHBOARD VIEW -->
-                        <div id="view-dashboard" class="view-section dashboard-grid" style="grid-column: span 12;">
-                            <!-- Hero Section -->
-                            <div class="hero-banner" style="grid-column: span 12;">
-                                <div class="hero-content">
-                                    <h1 class="hero-title">Welcome back, Team Owner.</h1>
-                                    <p class="hero-subtitle">You have active auctions waiting for your participation.
-                                        Expand your squad and build the ultimate team.</p>
-                                    <div class="hero-actions">
-                                        <button class="btn-premium"
-                                            onclick="if(window.currentAuction && window.currentAuction.eventId) { window.location.href='/templates/live-auction.html?id=' + window.currentAuction.eventId; } else { alert('No active auction found for your current event.'); }"><i
-                                                class="fas fa-gavel"></i> Join Live Auction</button>
-                                        <button class="btn-outline-premium"><i class="fas fa-users"></i> View My
-                                            Squad</button>
-                                    </div>
-                                </div>
-                                <div class="hero-illustration">
-                                    <i class="fas fa-trophy"></i>
-                                </div>
-                            </div>
-
-                            <!-- Quick Stats -->
-                            <div class="stat-card glass-card">
-                                <div class="stat-icon-wrapper stat-icon-green">
-                                    <i class="fas fa-wallet"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value" id="walletAmount">₹0</div>
-                                    <div class="stat-label">Available Balance</div>
-                                </div>
-                            </div>
-
-                            <div class="stat-card glass-card">
-                                <div class="stat-icon-wrapper stat-icon-cyan">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value" id="squadSize">0</div>
-                                    <div class="stat-label">Squad Size</div>
-                                </div>
-                            </div>
-
-                            <div class="stat-card glass-card">
-                                <div class="stat-icon-wrapper stat-icon-blue">
-                                    <i class="fas fa-gavel"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value" id="liveAuctions">0</div>
-                                    <div class="stat-label">Live Auctions</div>
-                                </div>
-                            </div>
-
-                            <div class="stat-card glass-card">
-                                <div class="stat-icon-wrapper stat-icon-purple">
-                                    <i class="fas fa-chart-line"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value" id="activeBids">0</div>
-                                    <div class="stat-label">Active Bids</div>
-                                </div>
-                            </div>
-
-                            <!-- Left Panel: Participants & Upcoming -->
-                            <div class="left-panel">
-
-                                <div class="glass-card" style="flex-grow: 1;">
-                                    <div class="panel-header">
-                                        <h3 class="panel-title"><i class="fas fa-user-friends"></i> Participants</h3>
-                                    </div>
-                                    <div class="list-container" id="participantsList">
-                                        <!-- Populated by JS -->
-                                        <div class="empty-state">
-                                            <i class="fas fa-spinner fa-spin empty-icon" style="font-size: 2rem;"></i>
-                                            <p>Loading participants...</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="glass-card">
-                                    <div class="panel-header">
-                                        <h3 class="panel-title"><i class="fas fa-calendar-alt"></i> Upcoming Events</h3>
-                                    </div>
-                                    <div class="list-container" id="upcomingEventsList" style="max-height: 250px;">
-                                        <div class="empty-state">
-                                            <i class="fas fa-spinner fa-spin empty-icon" style="font-size: 2rem;"></i>
-                                            <p>Loading upcoming events...</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
-
-                            <!-- Center Panel: Live Auction -->
-                            <div class="center-panel">
-                                <div class="glass-card live-auction-card">
-                                    <div class="auction-header-status">
-                                        <div class="auction-status status-not-started" id="auctionStatus">Loading...
-                                        </div>
-                                        <h2 id="currentEventTitle">Select an Event</h2>
-                                        <div id="countdownTimer">--:--</div>
-                                    </div>
-
-                                    <!-- JS Injects player card and bidding controls here -->
-                                    <div id="auctionContent"
-                                        style="flex-grow: 1; display: flex; flex-direction: column;">
-                                        <div class="empty-state" style="margin: auto;">
-                                            <i class="fas fa-gavel empty-icon" style="font-size: 4rem;"></i>
-                                            <h3 style="color: var(--text-white); font-weight: 600; font-size: 1.2rem;">
-                                                No Active Auction</h3>
-                                            <p>Please select an event from the top menu or wait for the auction to
-                                                begin.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Right Panel: My Squad -->
-                            <div class="right-panel">
-
-                                <div class="glass-card" style="flex-grow: 1; display: flex; flex-direction: column;">
-                                    <div class="panel-header">
-                                        <h3 class="panel-title"><i class="fas fa-shield-alt"></i> My Squad</h3>
-                                        <button class="btn-outline-premium" onclick="downloadSquadCSV()"
-                                            style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                                            <i class="fas fa-download"></i> CSV
-                                        </button>
-                                    </div>
-
-                                    <div class="list-container" id="squadList" style="flex-grow: 1;">
-                                        <!-- Populated by JS -->
-                                        <!-- Existing JS completely overwrites this innerHTML when populated or empty -->
-                                    </div>
-                                </div>
-
-                                <!-- Support Card -->
-                                <div class="glass-card">
-                                    <div class="panel-header">
-                                        <h3 class="panel-title"><i class="fas fa-life-buoy"></i> Support</h3>
-                                    </div>
-                                    <p
-                                        style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; line-height: 1.5;">
-                                        Need help with auctions or have questions about bidding? Our team is here.</p>
-                                    <button class="btn-outline-premium" style="width: 100%; justify-content: center;"
-                                        onclick="contactSupport()">
-                                        <i class="fas fa-envelope"></i> Contact Admin
-                                    </button>
-                                </div>
-
-                            </div>
-                        </div> <!-- End Dashboard View -->
-
-                        <!-- PLAYERS VIEW -->
-                        <div id="view-players" class="view-section dashboard-grid" style="grid-column: span 12;">
-                            <div class="glass-card" style="grid-column: span 12;">
-                                <div class="panel-header">
-                                    <h3 class="panel-title"><i class="fas fa-users"></i> My Squad & Players</h3>
-                                    <div style="display: flex; gap: 1rem;">
-                                        <input type="text" id="playerSearch" placeholder="Search players..."
-                                            class="form-control"
-                                            style="background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.5rem 1rem;">
-                                        <select id="playerFilter" class="form-control"
-                                            style="background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.5rem 1rem;">
-                                            <option value="all" style="background: #0f172a;">All Categories</option>
-                                            <option value="Standard" style="background: #0f172a;">Standard</option>
-                                            <option value="Premium" style="background: #0f172a;">Premium</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div id="playersFullList" class="dashboard-grid"
-                                    style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
-                                    <!-- Populated by JS -->
-                                    <div class="empty-state" style="grid-column: 1 / -1;">
-                                        <i class="fas fa-spinner fa-spin empty-icon" style="font-size: 2rem;"></i>
-                                        <p>Loading players...</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- AUCTION VIEW -->
-                        <div id="view-auction" class="view-section dashboard-grid" style="grid-column: span 12;">
-                            <div class="center-panel" style="grid-column: span 12;">
-                                <div class="glass-card live-auction-card" style="min-height: 600px;">
-                                    <div class="auction-header-status">
-                                        <div class="auction-status status-not-started" id="dedicatedAuctionStatus">
-                                            Loading...</div>
-                                        <h2 id="dedicatedEventTitle">Select an Event</h2>
-                                        <div id="dedicatedCountdownTimer">--:--</div>
-                                    </div>
-                                    <div id="dedicatedAuctionContent"
-                                        style="flex-grow: 1; display: flex; flex-direction: column;">
-                                        <div class="empty-state" style="margin: auto;">
-                                            <i class="fas fa-gavel empty-icon" style="font-size: 4rem;"></i>
-                                            <h3 style="color: var(--text-white); font-weight: 600; font-size: 1.2rem;">
-                                                No Active Auction</h3>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- WALLET VIEW -->
-                        <div id="view-wallet" class="view-section dashboard-grid" style="grid-column: span 12;">
-                            <!-- Wallet Stats -->
-                            <div class="stat-card glass-card" style="grid-column: span 4;">
-                                <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-wallet"></i></div>
-                                <div class="stat-info">
-                                    <div class="stat-value" id="walletTotalBudget">₹0</div>
-                                    <div class="stat-label">Total Budget</div>
-                                </div>
-                            </div>
-                            <div class="stat-card glass-card" style="grid-column: span 4;">
-                                <div class="stat-icon-wrapper stat-icon-purple"><i class="fas fa-shopping-cart"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value" id="walletSpent">₹0</div>
-                                    <div class="stat-label">Total Spent</div>
-                                </div>
-                            </div>
-                            <div class="stat-card glass-card" style="grid-column: span 4;">
-                                <div class="stat-icon-wrapper stat-icon-blue"><i class="fas fa-piggy-bank"></i></div>
-                                <div class="stat-info">
-                                    <div class="stat-value" id="walletAvailable">₹0</div>
-                                    <div class="stat-label">Available Balance</div>
-                                </div>
-                            </div>
-
-                            <div class="glass-card" style="grid-column: span 12;">
-                                <div class="panel-header">
-                                    <h3 class="panel-title"><i class="fas fa-history"></i> Transaction History</h3>
-                                </div>
-                                <div id="transactionHistoryList" class="list-container">
-                                    <div class="empty-state">
-                                        <i class="fas fa-spinner fa-spin empty-icon" style="font-size: 2rem;"></i>
-                                        <p>Loading transactions...</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- REPORTS VIEW -->
-                        <div id="view-reports" class="view-section dashboard-grid" style="grid-column: span 12;">
-                            <div class="glass-card" style="grid-column: span 6;">
-                                <div class="panel-header">
-                                    <h3 class="panel-title"><i class="fas fa-chart-pie"></i> Auction Summary</h3>
-                                </div>
-                                <div id="reportAuctionSummary" style="color: var(--text-white); line-height: 2;">
-                                    <!-- Populated by JS -->
-                                </div>
-                            </div>
-                            <div class="glass-card" style="grid-column: span 6;">
-                                <div class="panel-header">
-                                    <h3 class="panel-title"><i class="fas fa-chart-bar"></i> Spending Summary</h3>
-                                </div>
-                                <div id="reportSpendingSummary" style="color: var(--text-white); line-height: 2;">
-                                    <!-- Populated by JS -->
-                                </div>
-                            </div>
-                            <div class="glass-card" style="grid-column: span 12;">
-                                <div class="panel-header">
-                                    <h3 class="panel-title"><i class="fas fa-history"></i> Auction History</h3>
-                                </div>
-                                <div id="reportAuctionHistory" style="overflow-x: auto;">
-                                    <!-- Populated by JS -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SETTINGS VIEW -->
-                        <div id="view-settings" class="view-section dashboard-grid" style="grid-column: span 12;">
-                            <!-- Team Manager Settings -->
-                            <div class="glass-card" style="grid-column: span 6;">
-                                <div class="panel-header">
-                                    <h3 class="panel-title"><i class="fas fa-user-tie"></i> Team Manager Settings</h3>
-                                </div>
-                                <form id="form-manager-settings" class="saas-form" autocomplete="off"
-                                    onsubmit="updateStaffDetails(event, 'team_manager')">
-                                    <div class="form-group">
-                                        <label for="manager-name">Name</label>
-                                        <input type="text" id="manager-name" class="saas-input" placeholder="Name">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="manager-email">Email (Login ID)</label>
-                                        <input type="email" id="manager-email" class="saas-input"
-                                            placeholder="Email Address" autocomplete="off" readonly
-                                            onfocus="this.removeAttribute('readonly');">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="manager-password">New Password</label>
-                                        <input type="password" id="manager-password" class="saas-input"
-                                            placeholder="Leave blank to keep current" autocomplete="new-password">
-                                    </div>
-                                    <button type="submit" class="btn-premium" style="width: 100%;"><i
-                                            class="fas fa-save"></i> Update Manager</button>
-                                </form>
-                            </div>
-
-                            <!-- Team Analyst Settings -->
-                            <div class="glass-card" style="grid-column: span 6;">
-                                <div class="panel-header">
-                                    <h3 class="panel-title"><i class="fas fa-chart-pie"></i> Team Analyst Settings</h3>
-                                </div>
-                                <form id="form-analyst-settings" class="saas-form" autocomplete="off"
-                                    onsubmit="updateStaffDetails(event, 'team_analyst')">
-                                    <div class="form-group">
-                                        <label for="analyst-name">Name</label>
-                                        <input type="text" id="analyst-name" class="saas-input" placeholder="Name">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="analyst-email">Email (Login ID)</label>
-                                        <input type="email" id="analyst-email" class="saas-input"
-                                            placeholder="Email Address" autocomplete="off" readonly
-                                            onfocus="this.removeAttribute('readonly');">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="analyst-password">New Password</label>
-                                        <input type="password" id="analyst-password" class="saas-input"
-                                            placeholder="Leave blank to keep current" autocomplete="new-password">
-                                    </div>
-                                    <button type="submit" class="btn-premium" style="width: 100%;"><i
-                                            class="fas fa-save"></i> Update Analyst</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div> <!-- Inner Grid End (owner-panel) -->
-
-                    <!-- MANAGER PANEL -->
-                    <div id="manager-panel" class="role-panel dashboard-grid"
-                        style="display: none; width: 100%; margin: 0;">
-                        <div class="hero-banner"
-                            style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2)); grid-column: span 12;">
-                            <div class="hero-content">
-                                <h1 class="hero-title">Manager Hub</h1>
-                                <p class="hero-subtitle">Manage your squad, plan training schedules, and monitor
-                                    shortlisted players.</p>
-                                <div class="hero-actions">
-                                    <button class="btn-premium" onclick="openScheduleTrainingModal()"><i
-                                            class="fas fa-dumbbell"></i> Schedule
-                                        Training</button>
-                                    <button class="btn-outline-premium" onclick="switchView('#players')"><i
-                                            class="fas fa-star"></i> View
-                                        Shortlist</button>
-                                </div>
-                            </div>
-                            <div class="hero-illustration"><i class="fas fa-users-cog"></i></div>
-                        </div>
-
-                        <div class="stat-card glass-card">
-                            <div class="stat-icon-wrapper stat-icon-cyan"><i class="fas fa-running"></i></div>
-                            <div class="stat-info">
-                                <div class="stat-value" id="managerAvailablePlayers">0</div>
-                                <div class="stat-label">Available Players</div>
-                            </div>
-                        </div>
-                        <div class="stat-card glass-card">
-                            <div class="stat-icon-wrapper stat-icon-purple"><i class="fas fa-star"></i></div>
-                            <div class="stat-info">
-                                <div class="stat-value" id="managerShortlisted">0</div>
-                                <div class="stat-label">Shortlisted</div>
-                            </div>
-                        </div>
-                        <div class="stat-card glass-card">
-                            <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-calendar-check"></i></div>
-                            <div class="stat-info">
-                                <div class="stat-value" id="managerUpcomingMatches">0</div>
-                                <div class="stat-label">Upcoming Matches</div>
-                            </div>
-                        </div>
-                        <div class="stat-card glass-card">
-                            <div class="stat-icon-wrapper stat-icon-blue"><i class="fas fa-dumbbell"></i></div>
-                            <div class="stat-info">
-                                <div class="stat-value" id="managerTraining">N/A</div>
-                                <div class="stat-label">Training</div>
-                            </div>
-                        </div>
-
-                        <div class="center-panel" style="grid-column: span 8;">
-                            <div class="glass-card">
-                                <div class="panel-header">
-                                    <h3 class="panel-title"><i class="fas fa-calendar-alt"></i> Training Calendar</h3>
-                                    <button class="btn-primary" onclick="openScheduleTrainingModal()"><i
-                                            class="fas fa-plus"></i> Schedule</button>
-                                </div>
-                                <div id="trainingCalendarContainer" style="margin-top: 1rem;">
-                                    <div class="calendar-controls"
-                                        style="display: flex; justify-content: space-between; margin-bottom: 1rem; align-items: center;">
-                                        <div style="display: flex; align-items: center;">
-                                            <button class="btn-icon" onclick="changeCalendarMonth(-1)"><i
-                                                    class="fas fa-chevron-left"></i></button>
-                                            <span id="calendarCurrentMonth"
-                                                style="font-weight: 600; margin: 0 1rem; font-size: 1.1rem; color: var(--text-white);"></span>
-                                            <button class="btn-icon" onclick="changeCalendarMonth(1)"><i
-                                                    class="fas fa-chevron-right"></i></button>
-                                            <button class="btn-outline-primary"
-                                                style="padding: 0.2rem 0.5rem; font-size: 0.8rem; margin-left: 1rem;"
-                                                onclick="resetCalendarToToday()">Today</button>
-                                        </div>
-                                        <div style="display: flex; gap: 0.5rem;">
-                                            <button class="btn-outline-primary" id="btnViewCalendar"
-                                                onclick="toggleTrainingView('calendar')"><i
-                                                    class="fas fa-th"></i></button>
-                                            <button class="btn-outline-primary" id="btnViewAgenda"
-                                                onclick="toggleTrainingView('agenda')"><i
-                                                    class="fas fa-list"></i></button>
-                                        </div>
-                                    </div>
-                                    <div class="calendar-grid" id="trainingCalendarGrid"
-                                        style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden;">
-                                        <!-- Populated by JS -->
-                                    </div>
-                                    <div id="trainingAgendaList"
-                                        style="display: none; flex-direction: column; gap: 0.5rem;">
-                                        <!-- Populated by JS -->
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="right-panel" style="grid-column: span 4;">
-                            <div class="glass-card">
-                                <div class="panel-header">
-                                    <h3 class="panel-title"><i class="fas fa-envelope"></i> Messages</h3>
-                                </div>
-                                <div class="empty-state">
-                                    <i class="fas fa-inbox empty-icon"></i>
-                                    <p>No new messages.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div> <!-- End Manager Panel -->
-
-                    <!-- ANALYST PANEL -->
                     <div id="analyst-panel" class="role-panel dashboard-grid"
                         style="display: none; width: 100%; margin: 0;">
 
@@ -1810,35 +1375,359 @@
                         </div> <!-- End Predictions Section -->
 
                         <!-- ANALYST SETTINGS SECTION -->
-                        <div id="section-analyst-settings" class="center-panel"
-                            style="grid-column: span 12; padding-top: 1rem;">
-                            <div class="glass-card" style="max-width: 600px; margin: 0 auto;">
-                                <div class="panel-header">
-                                    <h3 class="panel-title"><i class="fas fa-user-circle"></i> My Profile &amp; Settings</h3>
+                        <div id="section-analyst-settings" class="dashboard-grid"
+                            style="grid-column: span 12; width: 100%; margin: 0; padding-top: 1rem;">
+                            <!-- Settings Sidebar -->
+                            <div class="glass-card" style="grid-column: span 3; display: flex; flex-direction: column; gap: 0.5rem; padding: 1.5rem; height: fit-content;">
+                                <div class="panel-header" style="margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    <h3 class="panel-title" style="font-size: 1.1rem;"><i class="fas fa-cog"></i> Settings</h3>
                                 </div>
-                                <form id="analyst-profile-form" autocomplete="off" onsubmit="saveAnalystProfile(event)">
-                                    <div class="form-group" style="margin-bottom:1rem;">
-                                        <label class="form-label" for="analyst-profile-name">Name</label>
-                                        <input type="text" id="analyst-profile-name" class="saas-input" placeholder="Your name">
+                                <button class="settings-tab-btn active" onclick="switchSettingsTab('profile', 'analyst', event)"><i class="fas fa-user"></i> Profile</button>
+                                <button class="settings-tab-btn" onclick="switchSettingsTab('security', 'analyst', event)"><i class="fas fa-lock"></i> Security</button>
+                                <button class="settings-tab-btn" onclick="switchSettingsTab('preferences', 'analyst', event)"><i class="fas fa-sliders-h"></i> Preferences</button>
+                                <button class="settings-tab-btn" onclick="switchSettingsTab('notifications', 'analyst', event)"><i class="fas fa-bell"></i> Notifications</button>
+                            </div>
+
+                            <!-- Settings Content -->
+                            <div class="glass-card" style="grid-column: span 9; padding: 2rem; min-height: 500px;">
+                                <!-- Profile Tab -->
+                                <div id="analyst-settings-tab-profile" class="settings-tab-content" style="display: block;">
+                                    <div class="panel-header" style="margin-bottom: 2rem;">
+                                        <h3 class="panel-title">Account Profile</h3>
+                                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Manage your public profile and basic information.</p>
                                     </div>
-                                    <div class="form-group" style="margin-bottom:1rem;">
-                                        <label class="form-label" for="analyst-profile-email">Email (Login ID)</label>
-                                        <input type="email" id="analyst-profile-email" class="saas-input" placeholder="Email" readonly
-                                            onfocus="this.removeAttribute('readonly');">
+                                    
+                                    <div style="display: flex; gap: 2rem; align-items: flex-start; margin-bottom: 2rem; flex-wrap: wrap;">
+                                        <!-- Avatar placeholder -->
+                                        <div style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.2)); border: 2px solid #06b6d4; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: #fff; font-weight: 700; flex-shrink: 0;" id="analyst-avatar-initials">
+                                            A
+                                        </div>
+                                        
+                                        <form id="analyst-profile-form" autocomplete="off" onsubmit="saveAnalystProfile(event)" style="flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                                            <div class="form-group">
+                                                <label class="form-label" for="analyst-profile-name">Full Name</label>
+                                                <input type="text" id="analyst-profile-name" class="saas-input" placeholder="Your name">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label" for="analyst-profile-role">Job Title</label>
+                                                <input type="text" id="analyst-profile-role" class="saas-input" value="Lead Data Analyst" disabled style="opacity: 0.7;">
+                                            </div>
+                                            <div class="form-group" style="grid-column: 1 / -1;">
+                                                <label class="form-label" for="analyst-profile-email">Email Address (Login ID)</label>
+                                                <input type="email" id="analyst-profile-email" class="saas-input" placeholder="Email" readonly onfocus="this.removeAttribute('readonly');">
+                                            </div>
+                                            
+                                            <div style="grid-column: 1 / -1; display: flex; justify-content: flex-start; margin-top: 1rem;">
+                                                <button type="submit" class="btn-premium" style="min-width: 150px;">
+                                                    <i class="fas fa-save"></i> Save Profile
+                                                </button>
+                                            </div>
+                                        </form>
                                     </div>
-                                    <div class="form-group" style="margin-bottom:1.5rem;">
-                                        <label class="form-label" for="analyst-profile-password">New Password</label>
-                                        <input type="password" id="analyst-profile-password" class="saas-input"
-                                            placeholder="Leave blank to keep current" autocomplete="new-password">
+                                    
+                                    <!-- Staff Reference (read-only for analysts) -->
+                                    <div id="analyst-staff-reference" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); display: none;">
+                                        <h4 style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;">Team Staff (Read-only)</h4>
+                                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                                            <div class="glass-card" style="flex: 1; min-width: 200px; padding: 1rem; background: rgba(0,0,0,0.2);">
+                                                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Team Manager</div>
+                                                <div id="staff-ref-manager-name" style="color: white; font-weight: 600;">—</div>
+                                                <div id="staff-ref-manager-email" style="color: var(--text-muted); font-size: 0.85rem;">—</div>
+                                            </div>
+                                            <div class="glass-card" style="flex: 1; min-width: 200px; padding: 1rem; background: rgba(0,0,0,0.2);">
+                                                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Team Analyst</div>
+                                                <div id="staff-ref-analyst-name" style="color: white; font-weight: 600;">—</div>
+                                                <div id="staff-ref-analyst-email" style="color: var(--text-muted); font-size: 0.85rem;">—</div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <button type="submit" class="btn-premium" style="width:100%;">
-                                        <i class="fas fa-save"></i> Save Changes
-                                    </button>
-                                </form>
+                                </div>
+
+                                <!-- Security Tab -->
+                                <div id="analyst-settings-tab-security" class="settings-tab-content" style="display: none;">
+                                    <div class="panel-header" style="margin-bottom: 2rem;">
+                                        <h3 class="panel-title">Security & Login</h3>
+                                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Keep your account safe and secure.</p>
+                                    </div>
+                                    
+                                    <form id="analyst-security-form" autocomplete="off" onsubmit="saveAnalystSecurity(event)" style="display: flex; flex-direction: column; gap: 1.5rem; max-width: 500px;">
+                                        <div class="form-group">
+                                            <label class="form-label" for="analyst-current-password">Current Password</label>
+                                            <input type="password" id="analyst-current-password" class="saas-input" placeholder="Enter current password (required)">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label" for="analyst-profile-password">New Password</label>
+                                            <input type="password" id="analyst-profile-password" class="saas-input" placeholder="Enter new password" autocomplete="new-password">
+                                        </div>
+                                        
+                                        <div style="display: flex; justify-content: flex-start; margin-top: 1rem;">
+                                            <button type="submit" class="btn-premium" style="min-width: 150px; background: linear-gradient(135deg, #8b5cf6, #3b82f6);">
+                                                <i class="fas fa-key"></i> Update Password
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- Preferences Tab -->
+                                <div id="analyst-settings-tab-preferences" class="settings-tab-content" style="display: none;">
+                                    <div class="panel-header" style="margin-bottom: 2rem;">
+                                        <h3 class="panel-title">Dashboard Preferences</h3>
+                                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Customize how the dashboard looks and behaves.</p>
+                                    </div>
+                                    <div class="empty-state" style="padding: 2rem; min-height: 200px;">
+                                        <i class="fas fa-paint-brush empty-icon"></i>
+                                        <p>Preferences customization coming soon.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Notifications Tab -->
+                                <div id="analyst-settings-tab-notifications" class="settings-tab-content" style="display: none;">
+                                    <div class="panel-header" style="margin-bottom: 2rem;">
+                                        <h3 class="panel-title">Notification Settings</h3>
+                                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Manage how we contact you.</p>
+                                    </div>
+                                    <div class="empty-state" style="padding: 2rem; min-height: 200px;">
+                                        <i class="fas fa-bell empty-icon"></i>
+                                        <p>Notification preferences coming soon.</p>
+                                    </div>
+                                </div>
                             </div>
                         </div> <!-- End Analyst Settings Section -->
 
                     </div> <!-- End Analyst Panel -->
+
+                    <div id="owner-panel" class="role-panel dashboard-grid"
+                        style="display: none; width: 100%; margin: 0;">
+                        <!-- Inner Grid to maintain layout since live-auction-container is toggled -->
+
+                        <!-- Dashboard View Removed for Analyst -->
+
+                        <!-- PLAYERS VIEW -->
+                        <div id="view-players" class="view-section dashboard-grid" style="grid-column: span 12;">
+                            <div class="glass-card" style="grid-column: span 12;">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-users"></i> My Squad & Players</h3>
+                                    <div style="display: flex; gap: 1rem;">
+                                        <input type="text" id="playerSearch" placeholder="Search players..."
+                                            class="form-control"
+                                            style="background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.5rem 1rem;">
+                                        <select id="playerFilter" class="form-control"
+                                            style="background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.5rem 1rem;">
+                                            <option value="all" style="background: #0f172a;">All Categories</option>
+                                            <option value="Standard" style="background: #0f172a;">Standard</option>
+                                            <option value="Premium" style="background: #0f172a;">Premium</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div id="playersFullList" class="dashboard-grid"
+                                    style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+                                    <!-- Populated by JS -->
+                                    <div class="empty-state" style="grid-column: 1 / -1;">
+                                        <i class="fas fa-spinner fa-spin empty-icon" style="font-size: 2rem;"></i>
+                                        <p>Loading players...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AUCTION VIEW -->
+                        <div id="view-auction" class="view-section dashboard-grid" style="grid-column: span 12;">
+                            <div class="center-panel" style="grid-column: span 12;">
+                                <div class="glass-card live-auction-card" style="min-height: 600px;">
+                                    <div class="auction-header-status">
+                                        <div class="auction-status status-not-started" id="dedicatedAuctionStatus">
+                                            Loading...</div>
+                                        <h2 id="dedicatedEventTitle">Select an Event</h2>
+                                        <div id="dedicatedCountdownTimer">--:--</div>
+                                    </div>
+                                    <div id="dedicatedAuctionContent"
+                                        style="flex-grow: 1; display: flex; flex-direction: column;">
+                                        <div class="empty-state" style="margin: auto;">
+                                            <i class="fas fa-gavel empty-icon" style="font-size: 4rem;"></i>
+                                            <h3 style="color: var(--text-white); font-weight: 600; font-size: 1.2rem;">
+                                                No Active Auction</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- WALLET VIEW -->
+                        <div id="view-wallet" class="view-section dashboard-grid" style="grid-column: span 12;">
+                            <!-- Wallet Stats -->
+                            <div class="stat-card glass-card" style="grid-column: span 4;">
+                                <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-wallet"></i></div>
+                                <div class="stat-info">
+                                    <div class="stat-value" id="walletTotalBudget">₹0</div>
+                                    <div class="stat-label">Total Budget</div>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="grid-column: span 4;">
+                                <div class="stat-icon-wrapper stat-icon-purple"><i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-value" id="walletSpent">₹0</div>
+                                    <div class="stat-label">Total Spent</div>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="grid-column: span 4;">
+                                <div class="stat-icon-wrapper stat-icon-blue"><i class="fas fa-piggy-bank"></i></div>
+                                <div class="stat-info">
+                                    <div class="stat-value" id="walletAvailable">₹0</div>
+                                    <div class="stat-label">Available Balance</div>
+                                </div>
+                            </div>
+
+                            <div class="glass-card" style="grid-column: span 12;">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-history"></i> Transaction History</h3>
+                                </div>
+                                <div id="transactionHistoryList" class="list-container">
+                                    <div class="empty-state">
+                                        <i class="fas fa-spinner fa-spin empty-icon" style="font-size: 2rem;"></i>
+                                        <p>Loading transactions...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- REPORTS VIEW -->
+                        <div id="view-reports" class="view-section dashboard-grid" style="grid-column: span 12;">
+                            <div class="glass-card" style="grid-column: span 6;">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-chart-pie"></i> Auction Summary</h3>
+                                </div>
+                                <div id="reportAuctionSummary" style="color: var(--text-white); line-height: 2;">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                            <div class="glass-card" style="grid-column: span 6;">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-chart-bar"></i> Spending Summary</h3>
+                                </div>
+                                <div id="reportSpendingSummary" style="color: var(--text-white); line-height: 2;">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                            <div class="glass-card" style="grid-column: span 12;">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-history"></i> Auction History</h3>
+                                </div>
+                                <div id="reportAuctionHistory" style="overflow-x: auto;">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings View Removed for Analyst -->
+                    </div> <!-- Inner Grid End (owner-panel) -->
+
+                    <!-- MANAGER PANEL -->
+                    <div id="manager-panel" class="role-panel dashboard-grid"
+                        style="display: none; width: 100%; margin: 0;">
+                        <div class="hero-banner"
+                            style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2)); grid-column: span 12;">
+                            <div class="hero-content">
+                                <h1 class="hero-title">Manager Hub</h1>
+                                <p class="hero-subtitle">Manage your squad, plan training schedules, and monitor
+                                    shortlisted players.</p>
+                                <div class="hero-actions">
+                                    <button class="btn-premium" onclick="openScheduleTrainingModal()"><i
+                                            class="fas fa-dumbbell"></i> Schedule
+                                        Training</button>
+                                    <button class="btn-outline-premium" onclick="switchView('#players')"><i
+                                            class="fas fa-star"></i> View
+                                        Shortlist</button>
+                                </div>
+                            </div>
+                            <div class="hero-illustration"><i class="fas fa-users-cog"></i></div>
+                        </div>
+
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon-wrapper stat-icon-cyan"><i class="fas fa-running"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="managerAvailablePlayers">0</div>
+                                <div class="stat-label">Available Players</div>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon-wrapper stat-icon-purple"><i class="fas fa-star"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="managerShortlisted">0</div>
+                                <div class="stat-label">Shortlisted</div>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-calendar-check"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="managerUpcomingMatches">0</div>
+                                <div class="stat-label">Upcoming Matches</div>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon-wrapper stat-icon-blue"><i class="fas fa-dumbbell"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="managerTraining">N/A</div>
+                                <div class="stat-label">Training</div>
+                            </div>
+                        </div>
+
+                        <div class="center-panel" style="grid-column: span 8;">
+                            <div class="glass-card">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-calendar-alt"></i> Training Calendar</h3>
+                                    <button class="btn-primary" onclick="openScheduleTrainingModal()"><i
+                                            class="fas fa-plus"></i> Schedule</button>
+                                </div>
+                                <div id="trainingCalendarContainer" style="margin-top: 1rem;">
+                                    <div class="calendar-controls"
+                                        style="display: flex; justify-content: space-between; margin-bottom: 1rem; align-items: center;">
+                                        <div style="display: flex; align-items: center;">
+                                            <button class="btn-icon" onclick="changeCalendarMonth(-1)"><i
+                                                    class="fas fa-chevron-left"></i></button>
+                                            <span id="calendarCurrentMonth"
+                                                style="font-weight: 600; margin: 0 1rem; font-size: 1.1rem; color: var(--text-white);"></span>
+                                            <button class="btn-icon" onclick="changeCalendarMonth(1)"><i
+                                                    class="fas fa-chevron-right"></i></button>
+                                            <button class="btn-outline-primary"
+                                                style="padding: 0.2rem 0.5rem; font-size: 0.8rem; margin-left: 1rem;"
+                                                onclick="resetCalendarToToday()">Today</button>
+                                        </div>
+                                        <div style="display: flex; gap: 0.5rem;">
+                                            <button class="btn-outline-primary" id="btnViewCalendar"
+                                                onclick="toggleTrainingView('calendar')"><i
+                                                    class="fas fa-th"></i></button>
+                                            <button class="btn-outline-primary" id="btnViewAgenda"
+                                                onclick="toggleTrainingView('agenda')"><i
+                                                    class="fas fa-list"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="calendar-grid" id="trainingCalendarGrid"
+                                        style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden;">
+                                        <!-- Populated by JS -->
+                                    </div>
+                                    <div id="trainingAgendaList"
+                                        style="display: none; flex-direction: column; gap: 0.5rem;">
+                                        <!-- Populated by JS -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="right-panel" style="grid-column: span 4;">
+                            <div class="glass-card">
+                                <div class="panel-header">
+                                    <h3 class="panel-title"><i class="fas fa-envelope"></i> Messages</h3>
+                                </div>
+                                <div class="empty-state">
+                                    <i class="fas fa-inbox empty-icon"></i>
+                                    <p>No new messages.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- End Manager Panel -->
+
+                    <!-- ANALYST PANEL -->
+                    
 
                 </div> <!-- Live Auction Container End -->
             </main>
@@ -2026,8 +1915,8 @@
     <!-- JS Files -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
-    <script src="/js/rbac-router.js?v=26"></script>
-    <script src="/js/team-analyst-dashboard.js?v=26"></script>
+    <script src="/js/rbac-router.js?v=30"></script>
+    <script src="/js/team-analyst-dashboard.js?v=30"></script>
     <script>
         // Defeat bfcache so back button properly re-verifies auth
         window.addEventListener('pageshow', function (event) {

@@ -57,9 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Auth & Session Check
     const userStr = sessionStorage.getItem('user');
-    const token = sessionStorage.getItem('session_token');
     
-    if (!userStr || !token) {
+    if (!userStr) {
         window.location.replace('/');
         return;
     }
@@ -108,27 +107,56 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- NAVIGATION LOGIC ---
 function setupNavigation() {
     const navLinks = document.querySelectorAll('.nav-link[data-target]');
+    
+    // 1. Force all sections to be visible and stacked
+    document.querySelectorAll('.section-view').forEach(sec => {
+        sec.style.display = 'block'; 
+        sec.style.marginBottom = '60px'; // Add spacing between stacked sections
+        sec.classList.add('active'); // Ensure any CSS relying on active is applied
+    });
+
+    // 2. Click to scroll
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            // Remove active class from all links
-            navLinks.forEach(l => l.classList.remove('active'));
-            // Add active class to clicked link
-            e.currentTarget.classList.add('active');
-            
-            // Hide all sections
-            document.querySelectorAll('.section-view').forEach(sec => {
-                sec.classList.remove('active');
-            });
-            
-            // Show target section
+            e.preventDefault();
             const targetId = e.currentTarget.getAttribute('data-target');
-            document.getElementById(targetId).classList.add('active');
+            const targetEl = document.getElementById(targetId);
+            
+            if (targetEl) {
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
             
             // Close sidebar on mobile after clicking
             if (window.innerWidth <= 992) {
                 document.getElementById('sidebar').classList.remove('open');
             }
         });
+    });
+
+    // 3. Scrollspy using IntersectionObserver
+    const observerOptions = {
+        root: null,
+        rootMargin: '-20% 0px -60% 0px',
+        threshold: 0
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.getAttribute('id');
+                // Remove active class from all links
+                navLinks.forEach(l => l.classList.remove('active'));
+                // Add active class to corresponding link
+                const activeLink = document.querySelector(`.nav-link[data-target="${id}"]`);
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+            }
+        });
+    }, observerOptions);
+
+    document.querySelectorAll('.section-view').forEach(sec => {
+        observer.observe(sec);
     });
 }
 
@@ -145,11 +173,9 @@ function setupMobileToggle() {
 // --- API INTEGRATION ---
 async function loadPlayerData() {
     try {
-        const token = sessionStorage.getItem('session_token');
         const response = await fetch('/api/player/dashboard', {
             headers: { 
-                'Accept': 'application/json',
-                'Authorization': `Bearer ${token}` // Ensure auth header if required
+                'Accept': 'application/json'
             },
             credentials: 'include'
         });
@@ -185,11 +211,9 @@ async function loadSkillsData(userId) {
 
 async function loadUpcomingEvents() {
     try {
-        const token = sessionStorage.getItem('session_token');
         const response = await fetch('/api/player/events/upcoming', {
             headers: { 
-                'Accept': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Accept': 'application/json'
             }
         });
         
@@ -411,8 +435,8 @@ async function handleProfileSubmit(e) {
         const token = sessionStorage.getItem('session_token');
         const user = JSON.parse(sessionStorage.getItem('user'));
         
-        // Attempting to update via a generic users endpoint or player endpoint
-        const response = await fetch(`/api/users/${user.user_id}`, {
+        // Attempting to update via player profile endpoint
+        const response = await fetch('/api/player/profile', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -653,8 +677,49 @@ async function removeProfilePhoto() {
 }
 
 
+// Helper: write to admin activity log
+function adminLogActivity(action, details) {
+    try {
+        const key = 'adminActivityLogs';
+        const logs = JSON.parse(localStorage.getItem(key) || '[]');
+        logs.push({ timestamp: new Date().toISOString(), action, details });
+        const trimmed = logs.slice(-500);
+        localStorage.setItem(key, JSON.stringify(trimmed));
+    } catch (e) {
+        console.warn('Failed to write admin activity log:', e);
+    }
+
+    try {
+        fetch('/api/activity-logs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action_type: action,
+                action_description: details || '',
+                entity_type: null,
+                entity_id: null,
+                ip_address: null,
+                user_agent: navigator.userAgent
+            })
+        }).catch(err => {
+            console.warn('Failed to send activity log to server:', err);
+        });
+    } catch (err) {
+        console.warn('Failed to send activity log to server:', err);
+    }
+}
+
 // --- AUTH LOGIC ---
 async function logout() {
+    const userStr = sessionStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const username = user ? user.username : 'Unknown';
+
+    // Log the logout action
+    adminLogActivity('Player Logout', `Username: ${username}`);
+
     try {
         const token = sessionStorage.getItem('session_token');
         await fetch('/api/logout', { 
@@ -667,7 +732,11 @@ async function logout() {
         console.error('Error logging out:', error);
     }
 
+    // Clear all session storage
     sessionStorage.clear();
+
+    // Clear all local storage
     localStorage.clear();
+
     window.location.replace('/');
 }

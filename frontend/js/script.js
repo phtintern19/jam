@@ -1786,7 +1786,7 @@ async function handleTeamOwnerRegistration(event) {
 
         // Send the request to the backend
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
         const response = await fetch('/register/team-owner', {
             method: 'POST',
@@ -2447,13 +2447,20 @@ async function handlePlayerRegistration(event) {
             throw new Error(errorMessage);
         }
 
-        // Show success message
-        showModal('Registration Successful!',
-            `Thank you ${firstName}! Your registration was successful. You can now log in with your credentials.`);
-
         // Close the modal and reset the form
         closeModal('playerRegistrationModal');
         form.reset();
+        
+        // Show success message
+        showModal('Registration Successful!',
+            `Thank you ${firstName}! Your registration was successful. Please log in to access your dashboard.`);
+
+        // Automatically open the login modal after a short delay
+        setTimeout(() => {
+            const genericModal = document.getElementById('genericModal');
+            if (genericModal) genericModal.style.display = 'none';
+            showLoginModal();
+        }, 3000);
 
         // Refresh events to show updated registered counts
         if (typeof fetchEvents === 'function') {
