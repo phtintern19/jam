@@ -4,7 +4,7 @@ JAMRIG is a web application for managing and participating in live sports player
 
 ## Project Structure
 
-```text
+```textt
 .
 |-- backend/                 # Flask application and database utilities
 |   |-- app.py               # Flask application object
