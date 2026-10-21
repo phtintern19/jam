@@ -17,6 +17,7 @@ from passlib.context import CryptContext
 import bcrypt
 import psutil
 import json
+import math
 import re
 import time
 import random
@@ -161,6 +162,7 @@ settings = Settings()
 # Imports dependent on config
 from database import Base, engine, SessionLocal
 import models
+import sport_configuration
 import schemas
 
 # Custom error handlers for production
@@ -175,7 +177,8 @@ def handle_client_error(error):
 def not_found_error(error):
     # API clients get JSON
     if request.path.startswith('/api/'):
-        return jsonify({"error": "Route not found"}), 404
+        message = error.description if hasattr(error, 'description') else "The requested API resource was not found"
+        return jsonify({"success": False, "error": "Not found", "message": message, "detail": message}), 404
     
     # Browser page misses (like SPA routes) should fall back to index.html instead of showing JSON
     index_path = os.path.join(FRONTEND_DIR, "index.html")
@@ -321,6 +324,10 @@ def get_current_user():
         return user
     finally:
         db.close()
+
+from tournament_api import register_tournament_routes
+register_tournament_routes(app, get_current_user, SessionLocal)
+
 
 def resolve_team_owner(user, db=None):
     """
@@ -2635,8 +2642,8 @@ def register_player_endpoint():
         db.close()
 
 def calculate_player_score(player_cricket_data: dict, event_rules: dict) -> Optional[float]:
-    """Calculate an objective score based on factual cricket data and event rules."""
-    if not player_cricket_data or not event_rules:
+    """Score sport-profile statistics using the evaluation rules snapshot."""
+    if not player_cricket_data or not event_rules or event_rules.get("enabled") is False:
         return None
         
     def flatten(data):
@@ -2648,9 +2655,10 @@ def calculate_player_score(player_cricket_data: dict, event_rules: dict) -> Opti
             return flat
         return data or {}
 
-    weights = flatten(event_rules.get("weights", {}))
-    norm = flatten(event_rules.get("normalization", {}))
+    weights = flatten(event_rules.get("evaluation_weights", event_rules.get("weights", {})))
+    norm = flatten(event_rules.get("normalization_thresholds", event_rules.get("normalization", {})))
     levels = flatten(event_rules.get("highest_level_scores", {}))
+    directions = flatten(event_rules.get("metric_directions", {}))
     
     score = 0.0
     
@@ -2673,7 +2681,7 @@ def calculate_player_score(player_cricket_data: dict, event_rules: dict) -> Opti
             val = float(player_cricket_data.get(data_key, 0))
             
             # Determine norm key (e.g. matches_played -> matches_max, runs -> runs_max)
-            max_key = key + "_max"
+            max_key = key + ("_target" if directions.get(key) == "lower" else "_max")
             if key == "matches_played":
                 max_key = "matches_max"
             elif key == "years_experience":
@@ -2681,7 +2689,15 @@ def calculate_player_score(player_cricket_data: dict, event_rules: dict) -> Opti
                 
             max_val = float(norm.get(max_key, 100)) # default to 100 to avoid DivByZero
             if max_val > 0:
-                component_score = min((val / max_val) * 100, 100)
+                if directions.get(key) == "lower":
+                    if val <= 0:
+                        component_score = 0.0
+                    elif val <= max_val:
+                        component_score = 100.0
+                    else:
+                        component_score = min((max_val / val) * 100, 100)
+                else:
+                    component_score = min((val / max_val) * 100, 100)
                 score += component_score * (weight / 100.0)
         
     return round(score, 2)
@@ -4114,10 +4130,14 @@ def create_event():
              if sport and sport not in new_event.sports:
                   new_event.sports.append(sport)
         
-        # Log activity
-        log_activity(db, current_user.user_id, "EVENT_CREATED", f"Created event {new_event.title}", "event", new_event.event_id)
-        
+        # Persist the event before the non-critical activity logger runs.
+        # log_activity commits/rolls back this same session; if logging fails
+        # before the event is committed, its rollback expunges the new Event.
         db.commit()
+        try:
+            log_activity(db, current_user.user_id, "EVENT_CREATED", f"Created event {new_event.title}", "event", new_event.event_id)
+        except Exception as log_error:
+            logger.warning("Could not log event creation: %s", log_error)
         db.refresh(new_event)
         return jsonify({
             "event_id": new_event.event_id,
@@ -4209,10 +4229,11 @@ def update_event(event_id: int):
                 if sport not in event.sports:
                     event.sports.append(sport)
         
-        # Log activity
-        log_activity(db, current_user.user_id, "EVENT_UPDATED", f"Updated event {event.title}", "event", event.event_id)
-        
         db.commit()
+        try:
+            log_activity(db, current_user.user_id, "EVENT_UPDATED", f"Updated event {event.title}", "event", event.event_id)
+        except Exception as log_error:
+            logger.warning("Could not log event update: %s", log_error)
         db.refresh(event)
         return jsonify({
             "event_id": event.event_id,
@@ -5526,14 +5547,59 @@ def admin_manage_sports():
                 return jsonify({"success": False, "error": "Unauthorized"}), 403
                 
             data = request.json or {}
-            name = data.get('name')
-            if not name:
-                return jsonify({"success": False, "error": "Name is required"}), 400
+            name = data.get('name', '').strip()
+            if not name or len(name) > 50:
+                return jsonify({"success": False, "error": "Name is required and must be at most 50 characters"}), 400
+
+            classification = data.get('classification')
+            if classification not in (None, '', 'traditional', 'esport', 'other'):
+                return jsonify({"success": False, "error": "classification must be traditional, esport, or other"}), 400
+            participation = data.get('participation_format')
+            if participation not in (None, '', 'individual', 'team', 'both'):
+                return jsonify({"success": False, "error": "participation_format must be individual, team, or both"}), 400
+            requested_slug = data.get('slug')
+            slug = re.sub(r'[^a-z0-9]+', '-', (requested_slug or name).strip().lower()).strip('-')
+            formats = data.get('competition_formats', [])
+            if not isinstance(formats, list) or any(not isinstance(item, str) for item in formats):
+                return jsonify({"success": False, "error": "competition_formats must be a list of strings"}), 400
+
+            existing_sport = db.query(models.Sport).filter(
+                or_(models.Sport.name.ilike(name), models.Sport.slug == slug)
+            ).first()
+            if existing_sport:
+                # Promote an existing catalog entry in place to preserve its ID
+                # and any event or team references to it.
+                existing_sport.tier = 1
+                existing_sport.is_active = True
+                existing_sport.slug = existing_sport.slug or slug
+                existing_sport.category = existing_sport.category or (data.get('category') or '').strip() or None
+                existing_sport.subcategory = existing_sport.subcategory or (data.get('subcategory') or '').strip() or None
+                existing_sport.classification = existing_sport.classification or classification or None
+                existing_sport.participation_format = participation or existing_sport.participation_format or 'both'
+                existing_sport.competition_formats = formats or existing_sport.competition_formats or [
+                    'single_elimination', 'round_robin'
+                ]
+                existing_sport.scoring_template = (
+                    (data.get('scoring_template') or '').strip() or existing_sport.scoring_template or 'points'
+                )
+                db.commit()
+                return jsonify({"success": True, "sport_id": existing_sport.sport_id, "existing": True})
                 
             new_sport = models.Sport(
                 name=name,
+                slug=slug,
                 category=(data.get('category') or '').strip() or None,
+                subcategory=(data.get('subcategory') or '').strip() or None,
+                classification=classification or None,
+                # New sports are immediately eligible for tournament setup.
+                # The points template is the generic score envelope; organizers
+                # can refine these defaults from the sport configuration UI.
+                tier=1,
+                participation_format=participation or 'both',
+                competition_formats=formats or ['single_elimination', 'round_robin'],
+                scoring_template=(data.get('scoring_template') or '').strip() or 'points',
                 description=data.get('description', ''),
+                is_active=True,
                 icon_class=data.get('icon_class', 'fas fa-trophy')
             )
             db.add(new_sport)
@@ -5547,6 +5613,13 @@ def admin_manage_sports():
                 "name": s.name,
                 "description": s.description,
                 "category": s.category,
+                "slug": s.slug,
+                "subcategory": s.subcategory,
+                "classification": s.classification,
+                "participation_format": s.participation_format,
+                "competition_formats": s.competition_formats or [],
+                "scoring_template": s.scoring_template,
+                "is_active": s.is_active,
                 "tier": s.tier,
                 "players_equipment": s.players_equipment,
                 "scoring_format": s.scoring_format,
@@ -5569,9 +5642,15 @@ def get_sports():
     try:
         query = db.query(models.Sport)
         tier = request.args.get("tier", type=int)
+        classification = request.args.get("classification", "").strip().lower()
+        active_only = request.args.get("active", "").lower() in {"1", "true", "yes"}
         search = request.args.get("search", "").strip()
         if tier is not None:
             query = query.filter(models.Sport.tier == tier)
+        if classification:
+            query = query.filter(models.Sport.classification == classification)
+        if active_only:
+            query = query.filter(models.Sport.is_active.is_(True))
         if search:
             pattern = f"%{search}%"
             query = query.filter(or_(
@@ -5585,6 +5664,13 @@ def get_sports():
             "name": s.name,
             "description": s.description,
             "category": s.category,
+            "slug": s.slug,
+            "subcategory": s.subcategory,
+            "classification": s.classification,
+            "participation_format": s.participation_format,
+            "competition_formats": s.competition_formats or [],
+            "scoring_template": s.scoring_template,
+            "is_active": s.is_active,
             "tier": s.tier,
             "players_equipment": s.players_equipment,
             "scoring_format": s.scoring_format,
@@ -5614,8 +5700,15 @@ def get_sport(sport_id: int):
             "success": True, 
             "sport": {
                 "sport_id": sport.sport_id,
+                "slug": sport.slug,
                 "name": sport.name,
                 "category": sport.category,
+                "subcategory": sport.subcategory,
+                "classification": sport.classification,
+                "participation_format": sport.participation_format,
+                "competition_formats": sport.competition_formats or [],
+                "scoring_template": sport.scoring_template,
+                "is_active": sport.is_active,
                 "tier": sport.tier,
                 "description": sport.description,
                 "players_equipment": sport.players_equipment,
@@ -5637,93 +5730,137 @@ def get_sport(sport_id: int):
     finally:
         db.close()
 
-@app.route("/api/sports/<int:sport_id>/config", methods=['PUT'])
-def update_sport_config(sport_id: int):
-    current_user = get_current_user()
-    if current_user.user_type != models.UserType.admin:
-        abort(403, description="Only admins can update sport configuration")
-        
+def _require_sport_config_admin():
+    user = get_current_user()
+    user_type = user.user_type.value if hasattr(user.user_type, "value") else user.user_type
+    if user_type != "admin":
+        abort(403, description="Only admins can manage sport configuration")
+    return user
+
+
+@app.route("/api/sports/<int:sport_id>/config", methods=['GET'])
+def get_sport_config(sport_id: int):
+    _require_sport_config_admin()
     db = SessionLocal()
-    config_data = request.get_json()
     try:
         sport = db.query(models.Sport).filter(models.Sport.sport_id == sport_id).first()
         if not sport:
             abort(404, description="Sport not found")
-            
-        if 'roles_config' in config_data:
-            sport.roles_config = config_data['roles_config']
-        if 'categories_config' in config_data:
-            # Validate categories_config
-            cats = config_data['categories_config']
-            if not isinstance(cats, list):
-                abort(400, description="categories_config must be a list")
-                
-            names = set()
-            for i, cat in enumerate(cats):
-                if not isinstance(cat, dict):
-                    abort(400, description="Each category must be an object")
-                    
-                name = cat.get('name', '').strip()
-                if not name:
-                    abort(400, description="Category name is required")
-                if name.lower() in names:
-                    abort(400, description=f"Duplicate category name: {name}")
-                names.add(name.lower())
-                
-                min_score = cat.get('min_score')
-                max_score = cat.get('max_score')
-                
-                if min_score is None or max_score is None:
-                    lower_name = name.lower()
-                    if 'diamond' in lower_name:
-                        min_score, max_score = 90.0, 100.0
-                    elif 'platinum' in lower_name:
-                        min_score, max_score = 75.0, 89.99
-                    elif 'gold' in lower_name:
-                        min_score, max_score = 50.0, 74.99
-                    elif 'silver' in lower_name:
-                        min_score, max_score = 0.0, 49.99
-                    else:
-                        abort(400, description=f"Category {name} is missing min_score or max_score")
-                    
-                    cat['min_score'] = min_score
-                    cat['max_score'] = max_score
-                    
-                try:
-                    min_score = float(min_score)
-                    max_score = float(max_score)
-                except ValueError:
-                    abort(400, description=f"Scores must be numeric for category {name}")
-                    
-                if min_score < 0 or max_score > 100:
-                    abort(400, description=f"Scores must be between 0 and 100 for category {name}")
-                if min_score > max_score:
-                    abort(400, description=f"min_score cannot be greater than max_score for category {name}")
-                    
-                # Check overlaps with previous categories
-                for j in range(i):
-                    prev = cats[j]
-                    p_min = float(prev['min_score'])
-                    p_max = float(prev['max_score'])
-                    if min_score <= p_max and max_score >= p_min:
-                        abort(400, description=f"Category '{name}' overlaps with category '{prev['name']}'")
-                        
-            sport.categories_config = cats
-        if 'attributes_schema' in config_data:
-            sport.attributes_schema = config_data['attributes_schema']
-        if 'default_auction_rules' in config_data:
-            sport.default_auction_rules = config_data['default_auction_rules']
-        if 'evaluation_rules' in config_data:
-            sport.evaluation_rules = config_data['evaluation_rules']
-            
-        db.commit()
-        return jsonify({"success": True, "message": "Sport configuration updated"})
+        saved = sport.evaluation_rules
+        rules = sport_configuration.normalize_existing_rules(sport, saved)
+        if saved != rules:
+            sport.evaluation_rules = rules
+            db.commit()
+            db.refresh(sport)
+        return jsonify({
+            "success": True,
+            "sport_id": sport.sport_id,
+            "schema": sport_configuration.schema_for(sport),
+            "evaluation_rules": sport.evaluation_rules,
+            "categories_config": sport.categories_config or [],
+            "default_auction_rules": sport.default_auction_rules or {},
+        })
     except HTTPException:
         raise
     except Exception as e:
         db.rollback()
-        logger.error(f"Error updating sport {sport_id}: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
+        logger.exception("Error loading sport configuration for %s", sport_id)
+        return jsonify({"success": False, "error": "Could not load sport configuration"}), 500
+    finally:
+        db.close()
+
+
+@app.route("/api/sports/<int:sport_id>/config", methods=['PUT'])
+def update_sport_config(sport_id: int):
+    _require_sport_config_admin()
+    db = SessionLocal()
+    config_data = request.get_json(silent=True)
+    try:
+        if not isinstance(config_data, dict):
+            abort(400, description="Request body must be a JSON object")
+        allowed = {"evaluation_rules", "categories_config", "default_auction_rules", "roles_config", "attributes_schema"}
+        unknown = set(config_data) - allowed
+        if unknown:
+            abort(400, description=f"Unknown configuration field(s): {', '.join(sorted(unknown))}")
+
+        sport = db.query(models.Sport).filter(models.Sport.sport_id == sport_id).first()
+        if not sport:
+            abort(404, description="Sport not found")
+
+        if "evaluation_rules" in config_data:
+            try:
+                sport.evaluation_rules = sport_configuration.validate_rules(sport, config_data["evaluation_rules"])
+            except ValueError as e:
+                abort(400, description=str(e))
+
+        # Retain compatibility with existing sports-table controls and clients.
+        if "roles_config" in config_data:
+            if not isinstance(config_data["roles_config"], (list, dict)):
+                abort(400, description="roles_config must be a list or object")
+            sport.roles_config = config_data["roles_config"]
+        if "attributes_schema" in config_data:
+            if not isinstance(config_data["attributes_schema"], dict):
+                abort(400, description="attributes_schema must be an object")
+            sport.attributes_schema = config_data["attributes_schema"]
+
+        if "default_auction_rules" in config_data:
+            auction_rules = config_data["default_auction_rules"]
+            if not isinstance(auction_rules, dict):
+                abort(400, description="default_auction_rules must be an object")
+            for key in ("default_budget", "default_timer", "min_bid_increment"):
+                if key in auction_rules:
+                    value = auction_rules[key]
+                    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                        abort(400, description=f"{key} must be a valid number")
+                    if (key != "min_bid_increment" and value <= 0) or (key == "min_bid_increment" and value < 0):
+                        abort(400, description=f"{key} has an invalid value")
+            sport.default_auction_rules = auction_rules
+
+        if "categories_config" in config_data:
+            categories = config_data["categories_config"]
+            if not isinstance(categories, list):
+                abort(400, description="categories_config must be a list")
+            names = set()
+            ranges = []
+            for cat in categories:
+                if not isinstance(cat, dict):
+                    abort(400, description="Each category must be an object")
+                name = cat.get("name")
+                if not isinstance(name, str) or not name.strip():
+                    abort(400, description="Category name is required")
+                name = name.strip()
+                if name.casefold() in names:
+                    abort(400, description=f"Duplicate category name: {name}")
+                names.add(name.casefold())
+                lo, hi = cat.get("min_score"), cat.get("max_score")
+                price = cat.get("base_price", 0)
+                if any(isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) for v in (lo, hi, price)):
+                    abort(400, description=f"Category {name} scores and base price must be numeric")
+                if lo < 0 or hi > 100 or lo > hi or price < 0:
+                    abort(400, description=f"Category {name} has invalid score bounds or base price")
+                if any(lo <= old_hi and hi >= old_lo for old_lo, old_hi in ranges):
+                    abort(400, description=f"Category '{name}' overlaps another score range")
+                ranges.append((lo, hi))
+            sport.categories_config = categories
+
+        db.commit()
+        db.refresh(sport)
+        return jsonify({
+            "success": True,
+            "message": "Sport configuration saved",
+            "sport_id": sport.sport_id,
+            "evaluation_rules": sport.evaluation_rules,
+        })
+    except HTTPException as e:
+        db.rollback()
+        response = e.get_response()
+        response.data = json.dumps({"success": False, "message": e.description, "detail": e.description})
+        response.content_type = "application/json"
+        return response
+    except Exception:
+        db.rollback()
+        logger.exception("Error saving sport configuration for %s", sport_id)
+        return jsonify({"success": False, "message": "Error saving sport configuration"}), 500
     finally:
         db.close()
 
@@ -5744,15 +5881,34 @@ def admin_create_sport():
     finally:
         db.close()
 
-@app.route("/api/admin/sports/<int:sport_id>", methods=['DELETE'])
+@app.route("/api/admin/sports/<int:sport_id>", methods=['PUT', 'DELETE'])
 def admin_delete_sport(sport_id):
+    current_user = get_current_user()
+    if not current_user or getattr(current_user.user_type, 'value', current_user.user_type) != 'admin':
+        return jsonify({"success": False, "error": "Forbidden"}), 403
     db = SessionLocal()
     try:
         sport = db.query(models.Sport).filter(models.Sport.sport_id == sport_id).first()
         if sport:
-            db.delete(sport)
+            if request.method == 'DELETE':
+                # Preserve IDs and event/player relationships; removal from the
+                # active catalog is reversible through PUT {is_active: true}.
+                sport.is_active = False
+            else:
+                data = request.get_json(silent=True) or {}
+                if 'is_active' in data:
+                    if not isinstance(data['is_active'], bool):
+                        return jsonify({"success": False, "error": "is_active must be a boolean"}), 400
+                    sport.is_active = data['is_active']
+                for field in ('name', 'description', 'category', 'subcategory', 'participation_format', 'scoring_template'):
+                    if field in data:
+                        setattr(sport, field, data[field])
+                if 'competition_formats' in data:
+                    if not isinstance(data['competition_formats'], list):
+                        return jsonify({"success": False, "error": "competition_formats must be a list"}), 400
+                    sport.competition_formats = data['competition_formats']
             db.commit()
-            return jsonify({"success": True})
+            return jsonify({"success": True, "is_active": sport.is_active})
         abort(404, description="Sport not found")
     finally:
         db.close()
@@ -6367,16 +6523,21 @@ def reset_password():
 def initialize_database():
     logger.info("Initializing database...")
     try:
+        from sqlalchemy import text
         with engine.connect() as conn:
             logger.info("Successfully connected to database")
             try:
-                conn.execute("ALTER TABLE auctions ADD COLUMN bid_deadline DATETIME NULL")
+                conn.execute(text("ALTER TABLE auctions ADD COLUMN bid_deadline DATETIME NULL"))
                 logger.info("Added bid_deadline to auctions table")
             except Exception:
                 pass # Column already exists
         Base.metadata.create_all(bind=engine)
+        from sports_schema import upgrade_sports_schema
+        upgrade_sports_schema(engine)
         from seed_tier1_sports import upgrade_and_seed_tier1_sports
         upgrade_and_seed_tier1_sports()
+        from sports_catalog import upgrade_and_seed_catalog
+        upgrade_and_seed_catalog()
         logger.info("Database tables initialized successfully")
         return True
     except Exception as e:
@@ -6387,8 +6548,12 @@ def initialize_database():
 # even under Passenger/WSGI where __main__ block never runs.
 try:
     Base.metadata.create_all(bind=engine)
+    from sports_schema import upgrade_sports_schema
+    upgrade_sports_schema(engine)
     from seed_tier1_sports import upgrade_and_seed_tier1_sports
     upgrade_and_seed_tier1_sports()
+    from sports_catalog import upgrade_and_seed_catalog
+    upgrade_and_seed_catalog()
     logger.info("Startup: ensured all DB tables are created.")
 except Exception as _e:
     logger.warning(f"Startup create_all skipped: {_e}")

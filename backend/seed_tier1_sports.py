@@ -7,6 +7,7 @@ from sqlalchemy import inspect, text
 
 from database import Base, SessionLocal, engine
 import models
+from sports_schema import upgrade_sports_schema
 
 DATA_PATH = Path(__file__).with_name("sports_tier1_data.json")
 
@@ -19,21 +20,7 @@ def upgrade_and_seed_tier1_sports(db_engine=engine, session_factory=SessionLocal
     place instead of creating duplicate sports.
     """
     Base.metadata.create_all(bind=db_engine)
-    columns = {
-        "category": "VARCHAR(150) NULL",
-        "tier": "INTEGER NULL",
-        "players_equipment": "TEXT NULL",
-        "scoring_format": "TEXT NULL",
-        "exact_rules": "TEXT NULL",
-        # This existing Sport field is present in current MySQL deployments,
-        # but may be absent from older local SQLite databases.
-        "training_config": "JSON NULL",
-    }
-    existing = {column["name"] for column in inspect(db_engine).get_columns("sports")}
-    with db_engine.begin() as connection:
-        for name, definition in columns.items():
-            if name not in existing:
-                connection.execute(text(f"ALTER TABLE sports ADD COLUMN {name} {definition}"))
+    upgrade_sports_schema(db_engine)
     indexes = {index["name"] for index in inspect(db_engine).get_indexes("sports")}
     if "ix_sports_tier" not in indexes:
         with db_engine.begin() as connection:
@@ -62,7 +49,6 @@ def upgrade_and_seed_tier1_sports(db_engine=engine, session_factory=SessionLocal
             sport.players_equipment = record["players_equipment"]
             sport.scoring_format = record["scoring_format"]
             sport.exact_rules = record["exact_rules"]
-            sport.is_active = True
             if not sport.icon_class:
                 sport.icon_class = "fas fa-trophy"
         db.commit()

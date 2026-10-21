@@ -79,3 +79,5 @@ Auction progression uses request-scoped ticks for Passenger compatibility. An op
 ## Browser Support and Design
 
 The interface targets current Chrome, Firefox, Safari, and Edge. The project emphasizes clear navigation, responsive performance, semantic markup, readable contrast, and separation of frontend assets from backend modules.
+
+The shared sports catalog and competition foundation, including current support limits and seed instructions, is documented in [`documents/sports_catalog_and_competition.md`](documents/sports_catalog_and_competition.md).

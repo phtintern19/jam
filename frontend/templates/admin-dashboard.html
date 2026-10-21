@@ -2368,6 +2368,9 @@
         <button class="tab-btn" data-tab="sports">
             <i class="fas fa-trophy"></i> Sports
         </button>
+        <button class="tab-btn" data-tab="tournaments">
+            <i class="fas fa-sitemap"></i> Tournaments
+        </button>
 
         <div class="sidebar-section-title">Management</div>
         <button class="tab-btn" data-tab="teams">
@@ -2799,12 +2802,13 @@
             <div class="section-header">
                 <div>
                     <h3><i class="fas fa-trophy"></i> Manage Sports</h3>
-                    <p>Create and manage sports for the platform</p>
+                    <p>Active Tier 1 sports are available for tournaments. New sports receive default tournament settings.</p>
                 </div>
                 <button class="btn btn-outline" onclick="openCreateSportModal()">
                     <i class="fas fa-plus"></i> Add Sport
                 </button>
             </div>
+            <div id="sportsNotice" role="status" style="margin: .5rem 0;"></div>
             <div class="admin-table-container">
                 <table class="admin-table" id="sportsTable">
                     <thead>
@@ -2821,6 +2825,66 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <div class="admin-modal" id="createSportModal" role="dialog" aria-modal="true" aria-labelledby="createSportTitle">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 id="createSportTitle">Add a Sport</h2>
+                        <p class="modal-subtitle">New sports are added to the active Tier 1 list with default tournament settings.</p>
+                    </div>
+                    <button class="modal-close" type="button" onclick="closeCreateSportModal()" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="createSportForm" onsubmit="submitCreateSportForm(event)">
+                        <div class="form-group">
+                            <label for="createSportName">Sport name</label>
+                            <input id="createSportName" type="text" maxlength="50" required autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="createSportCategory">Category</label>
+                            <input id="createSportCategory" type="text" maxlength="150" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="createSportDescription">Description</label>
+                            <textarea id="createSportDescription" rows="3"></textarea>
+                        </div>
+                        <div id="createSportNotice" role="alert" style="margin-bottom:1rem"></div>
+                        <div class="modal-footer">
+                            <button class="btn-cancel" type="button" onclick="closeCreateSportModal()">Cancel</button>
+                            <button class="btn-save" type="submit">Add sport</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tournament Section -->
+        <div class="registrations-section" id="tournamentsSection" style="display: none;">
+            <div class="section-header">
+                <div>
+                    <h3><i class="fas fa-sitemap"></i> Tournaments and Matches</h3>
+                    <p>Create knockout or round-robin tournaments, register participants, and confirm results.</p>
+                </div>
+                <button class="btn btn-outline" onclick="loadTournaments()"><i class="fas fa-sync"></i> Refresh</button>
+            </div>
+            <div class="admin-table-container" style="padding: 1rem; margin-bottom: 1rem;">
+                <form id="createTournamentForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .75rem; align-items: end;">
+                    <label>Name<input id="tournamentName" class="form-control" required maxlength="160"></label>
+                    <label>Sport<select id="tournamentSport" class="form-control" required></select></label>
+                    <label>Format<select id="tournamentFormat" class="form-control"><option value="single_elimination">Single elimination</option><option value="round_robin">Round robin</option><option value="multi_entrant">Multi-entrant placement</option></select></label>
+                    <label>Participants<select id="tournamentParticipantType" class="form-control"><option value="team">Teams</option><option value="individual">Individuals</option></select></label>
+                    <button class="btn btn-primary" type="submit">Create tournament</button>
+                </form>
+            </div>
+            <div id="tournamentNotice" role="status" style="margin: .5rem 0;"></div>
+            <div class="admin-table-container">
+                <table class="admin-table"><thead><tr><th>Name</th><th>Sport / format</th><th>Status</th><th>Entrants</th><th>Actions</th></tr></thead>
+                    <tbody id="tournamentsTableBody"><tr><td colspan="5">Select Tournaments to load records.</td></tr></tbody>
+                </table>
+            </div>
+            <div id="tournamentDetailPanel" style="margin-top: 1rem;"></div>
         </div>
 
         <!-- Teams Section -->
@@ -3443,9 +3507,8 @@
             </div>
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 1.5rem;">
                 <input type="hidden" id="configureSportId">
-                <input type="hidden" id="configRolesHidden">
-                <input type="hidden" id="configAttributesHidden">
                 <input type="hidden" id="configRulesHidden">
+                <input type="hidden" id="configLevelScoresHidden">
 
                 <div class="form-section">
                     <h3
@@ -3505,82 +3568,34 @@
                 </div>
 
                 <div class="form-section" style="margin-top: 2rem;">
-                    <h3
-                        style="margin-bottom: 1rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">
-                        Evaluation Rules (Score weights out of 100%)</h3>
-
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">
-                        <div class="form-group">
-                            <label>Matches Played Weight (%)</label>
-                            <input type="number" id="configWeightMatches" class="form-control" value="15" min="0"
-                                max="100">
-                        </div>
-                        <div class="form-group">
-                            <label>Runs Weight (%)</label>
-                            <input type="number" id="configWeightRuns" class="form-control" value="25" min="0"
-                                max="100">
-                        </div>
-                        <div class="form-group">
-                            <label>Wickets Weight (%)</label>
-                            <input type="number" id="configWeightWickets" class="form-control" value="25" min="0"
-                                max="100">
-                        </div>
-                        <div class="form-group">
-                            <label>Experience Weight (%)</label>
-                            <input type="number" id="configWeightExperience" class="form-control" value="15" min="0"
-                                max="100">
-                        </div>
-                        <div class="form-group">
-                            <label>Highest Level Weight (%)</label>
-                            <input type="number" id="configWeightLevel" class="form-control" value="20" min="0"
-                                max="100">
-                        </div>
-                    </div>
-
-                    <div
-                        style="background: #1e293b; padding: 1rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                        <span style="color: #94a3b8; font-weight: bold;">Total Weight:</span>
-                        <span id="configWeightTotalDisplay"
-                            style="font-size: 1.25rem; font-weight: bold; color: #10b981;">100%</span>
-                    </div>
-
-                    <h4 style="margin-bottom: 1rem; color: #cbd5e1; font-size: 1rem;">Normalization Thresholds (Max
-                        expected values for 100/100 score)</h4>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
-                        <div class="form-group">
-                            <label>Max Matches Played</label>
-                            <input type="number" id="configNormMatches" class="form-control" value="150" min="1">
-                        </div>
-                        <div class="form-group">
-                            <label>Max Runs</label>
-                            <input type="number" id="configNormRuns" class="form-control" value="5000" min="1">
-                        </div>
-                        <div class="form-group">
-                            <label>Max Wickets</label>
-                            <input type="number" id="configNormWickets" class="form-control" value="200" min="1">
-                        </div>
-                        <div class="form-group">
-                            <label>Max Experience (Years)</label>
-                            <input type="number" id="configNormExperience" class="form-control" value="15" min="1">
-                        </div>
+                    <h3 style="margin-bottom: 1rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">Evaluation Rules (Score weights out of 100%)</h3>
+                    <label style="display:flex; align-items:center; gap:.6rem; margin-bottom:1rem;">
+                        <input type="checkbox" id="configScoringEnabled" checked>
+                        Enable weighted player evaluation
+                    </label>
+                    <p style="color:#cbd5e1; margin:0 0 1rem;">Scoring method: weighted normalized profile score</p>
+                    <div id="sportEvaluationWeightFields" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1rem;"></div>
+                    <div style="background:#1e293b; padding:1rem; border-radius:.5rem; display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
+                        <span style="color:#94a3b8; font-weight:bold;">Total Weight</span>
+                        <span id="configWeightTotalDisplay" style="font-size:1.25rem; font-weight:bold;">100%</span>
                     </div>
                 </div>
+                <div class="form-section" style="margin-top: 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">Normalization Thresholds (Max expected values for 100/100 score)</h3>
+                    <p style="color:#cbd5e1; margin:0 0 1rem;">Editable baselines: reaching a maximum expected value maps to a normalized score of 100/100. For lower-is-better metrics, the target is the time or measurement that earns 100/100.</p>
+                    <div id="sportNormalizationFields" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1rem;"></div>
+                    <p id="sportConfigurationValidation" role="status" style="min-height:1.25rem; color:#ef4444; margin:.5rem 0 0;"></p>
+                </div>
 
-                <div class="form-section"
-                    style="margin-top: 2rem; background: #0f172a; padding: 1rem; border-radius: 0.5rem; border: 1px dashed #334155;">
-                    <h4 style="color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem;"><i
-                            class="fas fa-info-circle"></i> Cricket Configuration</h4>
-                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>Roles:</strong>
-                        Batsman · Bowler · All-Rounder · Wicket-Keeper</p>
-                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>Player
-                            Attributes:</strong> Automatically configured for Cricket</p>
-                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0;"><strong>Auction Rules:</strong>
-                        Automatically configured</p>
+                <div class="form-section" style="margin-top: 2rem; background: #0f172a; padding: 1rem; border-radius: 0.5rem; border: 1px dashed #334155;">
+                    <h4 id="sportConfigurationInfoTitle" style="color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem;"><i class="fas fa-info-circle"></i> Sport Configuration</h4>
+                    <p id="sportConfigurationInfoText" style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.5rem;"></p>
+                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0;"><strong>Auction Rules:</strong> Automatically configured</p>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-cancel" onclick="closeConfigureSportModal()">Cancel</button>
-                <button class="btn-save" onclick="saveSportConfiguration()">Save Configuration</button>
+                <button class="btn-save" id="saveSportConfigurationButton" onclick="saveSportConfiguration()">Save Configuration</button>
             </div>
         </div>
     </div>
@@ -3828,7 +3843,7 @@
         </div>
     </div>
 
-    <script src="/js/admin-dashboard.js?v=30"></script>
+    <script src="/js/admin-dashboard.js?v=31"></script>
     <script>
         // Defeat bfcache so back button properly re-verifies auth
         window.addEventListener('pageshow', function (event) {

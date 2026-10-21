@@ -389,6 +389,13 @@ class Sport(Base):
     name = Column(String(50), nullable=False, unique=True)
     description = Column(Text, nullable=True)
     category = Column(String(150), nullable=True)
+    # Stable catalog metadata. Existing IDs and event links remain authoritative.
+    slug = Column(String(100), unique=True, nullable=True, index=True)
+    subcategory = Column(String(100), nullable=True)
+    classification = Column(String(30), nullable=True, index=True)  # traditional, esport, other
+    participation_format = Column(String(20), nullable=True)  # individual, team, both
+    competition_formats = Column(JSON, nullable=True)
+    scoring_template = Column(String(40), nullable=True)
     tier = Column(Integer, nullable=True, index=True)
     players_equipment = Column(Text, nullable=True)
     scoring_format = Column(Text, nullable=True)
@@ -843,4 +850,140 @@ class TrainingAttendance(Base):
 
     __table_args__ = (
         UniqueConstraint('training_session_id', 'player_id', name='uq_session_player'),
+    )
+
+
+# -------------------------
+# Shared tournament and match foundation
+# -------------------------
+class Tournament(Base):
+    __tablename__ = "tournaments"
+
+    tournament_id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(160), nullable=False)
+    sport_id = Column(Integer, ForeignKey("sports.sport_id", ondelete="RESTRICT"), nullable=False, index=True)
+    event_id = Column(Integer, ForeignKey("events.event_id", ondelete="SET NULL"), nullable=True, index=True)
+    created_by = Column(Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False, index=True)
+    format = Column(String(30), nullable=False)
+    participant_type = Column(String(20), nullable=False)
+    scoring_template = Column(String(40), nullable=False)
+    status = Column(String(20), nullable=False, default="draft", index=True)
+    min_participants = Column(Integer, nullable=False, default=2)
+    max_participants = Column(Integer, nullable=False, default=64)
+    allow_draws = Column(Boolean, nullable=False, default=False)
+    rules_config = Column(JSON, nullable=False, default=dict)
+    starts_at = Column(DateTime, nullable=True)
+    venue = Column(String(255), nullable=True)
+    version = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
+
+    __mapper_args__ = {"version_id_col": version}
+    __table_args__ = (
+        CheckConstraint("format IN ('single_elimination', 'round_robin', 'multi_entrant')", name="ck_tournament_format"),
+        CheckConstraint("participant_type IN ('individual', 'team')", name="ck_tournament_participant_type"),
+        CheckConstraint("status IN ('draft', 'registration', 'ready', 'in_progress', 'completed', 'cancelled')", name="ck_tournament_status"),
+        CheckConstraint("min_participants >= 2 AND max_participants >= min_participants", name="ck_tournament_capacity"),
+        Index("ix_tournament_sport_status", "sport_id", "status"),
+    )
+
+
+class TournamentParticipant(Base):
+    __tablename__ = "tournament_participants"
+
+    tournament_participant_id = Column(Integer, primary_key=True, autoincrement=True)
+    tournament_id = Column(Integer, ForeignKey("tournaments.tournament_id", ondelete="CASCADE"), nullable=False)
+    participant_type = Column(String(20), nullable=False)
+    player_id = Column(Integer, ForeignKey("players.player_id", ondelete="RESTRICT"), nullable=True)
+    team_id = Column(Integer, ForeignKey("teams.team_id", ondelete="RESTRICT"), nullable=True)
+    status = Column(String(20), nullable=False, default="registered")
+    registered_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
+    withdrawn_at = Column(DateTime, nullable=True)
+
+    tournament = relationship("Tournament")
+    player = relationship("Player")
+    team = relationship("Team")
+
+    __table_args__ = (
+        UniqueConstraint("tournament_id", "player_id", name="uq_tournament_player"),
+        UniqueConstraint("tournament_id", "team_id", name="uq_tournament_team"),
+        CheckConstraint("(participant_type = 'individual' AND player_id IS NOT NULL AND team_id IS NULL) OR (participant_type = 'team' AND team_id IS NOT NULL AND player_id IS NULL)", name="ck_tournament_participant_reference"),
+        CheckConstraint("status IN ('registered', 'withdrawn', 'disqualified')", name="ck_tournament_participant_status"),
+        Index("ix_tournament_participant_status", "tournament_id", "status"),
+    )
+
+
+class CompetitionMatch(Base):
+    __tablename__ = "competition_matches"
+
+    match_id = Column(Integer, primary_key=True, autoincrement=True)
+    tournament_id = Column(Integer, ForeignKey("tournaments.tournament_id", ondelete="CASCADE"), nullable=False, index=True)
+    round_number = Column(Integer, nullable=False)
+    match_number = Column(Integer, nullable=False)
+    status = Column(String(20), nullable=False, default="pending")
+    result_status = Column(String(20), nullable=False, default="none")
+    is_bye = Column(Boolean, nullable=False, default=False)
+    winner_participant_id = Column(Integer, ForeignKey("tournament_participants.tournament_participant_id", ondelete="SET NULL"), nullable=True)
+    score_data = Column(JSON, nullable=True)
+    is_draw = Column(Boolean, nullable=False, default=False)
+    scheduled_at = Column(DateTime, nullable=True)
+    venue = Column(String(255), nullable=True)
+    submitted_by = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    confirmed_by = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    confirmed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("tournament_id", "round_number", "match_number", name="uq_tournament_match_position"),
+        CheckConstraint("round_number >= 1 AND match_number >= 1", name="ck_match_position"),
+        CheckConstraint("status IN ('pending', 'scheduled', 'in_progress', 'completed', 'postponed', 'cancelled')", name="ck_match_status"),
+        CheckConstraint("result_status IN ('none', 'pending', 'confirmed', 'rejected')", name="ck_match_result_status"),
+        Index("ix_match_tournament_round", "tournament_id", "round_number"),
+    )
+
+
+class CompetitionMatchSide(Base):
+    __tablename__ = "competition_match_sides"
+
+    match_side_id = Column(Integer, primary_key=True, autoincrement=True)
+    match_id = Column(Integer, ForeignKey("competition_matches.match_id", ondelete="CASCADE"), nullable=False)
+    side_number = Column(Integer, nullable=False)
+    tournament_participant_id = Column(Integer, ForeignKey("tournament_participants.tournament_participant_id", ondelete="SET NULL"), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("match_id", "side_number", name="uq_match_side_position"),
+        CheckConstraint("side_number >= 1", name="ck_match_side_number"),
+        Index("ix_match_side_participant", "tournament_participant_id"),
+    )
+
+
+class MatchResultAudit(Base):
+    __tablename__ = "match_result_audits"
+
+    audit_id = Column(Integer, primary_key=True, autoincrement=True)
+    match_id = Column(Integer, ForeignKey("competition_matches.match_id", ondelete="CASCADE"), nullable=False, index=True)
+    actor_id = Column(Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False)
+    action = Column(String(30), nullable=False)
+    reason = Column(Text, nullable=True)
+    score_data = Column(JSON, nullable=True)
+    created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("action IN ('submitted', 'corrected', 'confirmed', 'rejected')", name="ck_result_audit_action"),
+    )
+
+
+class TournamentAudit(Base):
+    __tablename__ = "tournament_audits"
+
+    audit_id = Column(Integer, primary_key=True, autoincrement=True)
+    tournament_id = Column(Integer, ForeignKey("tournaments.tournament_id", ondelete="CASCADE"), nullable=False, index=True)
+    actor_id = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    action = Column(String(40), nullable=False)
+    details = Column(JSON, nullable=True)
+    created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("action IN ('created', 'updated', 'state_changed', 'participant_registered', 'participant_withdrawn', 'fixtures_generated')", name="ck_tournament_audit_action"),
     )

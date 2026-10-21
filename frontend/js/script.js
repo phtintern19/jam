@@ -308,6 +308,14 @@ async function fetchEvents() {
 }
 
 // Function to render events on home page
+// Event datetimes are stored in UTC in the database. API responses from
+// databases without timezone support can omit the trailing UTC marker.
+function parseEventDateTime(value) {
+    if (!value) return null;
+    const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+    return new Date(hasTimezone ? value : `${value}Z`);
+}
+
 function renderHomePageEvents(events) {
     const eventsGrid = document.querySelector('.events-grid');
     if (!eventsGrid) return; // Not on home page
@@ -338,7 +346,9 @@ function renderHomePageEvents(events) {
 
     events.forEach((event, index) => {
         const colorScheme = colorSchemes[index % colorSchemes.length];
-        const date = new Date(event.start_date);
+        const date = parseEventDateTime(event.start_date);
+        const endDate = parseEventDateTime(event.end_date);
+        const now = new Date();
         const dateStr = date.toLocaleDateString('en-US', {
             month: 'long',
             day: 'numeric',
@@ -349,13 +359,16 @@ function renderHomePageEvents(events) {
         card.className = 'ecr-card';
         card.setAttribute('data-aos', 'fade-up');
 
-        const hasStarted = new Date() > date;
+        const hasStarted = now >= date;
+        const hasEnded = endDate ? now > endDate : hasStarted;
 
         let statusText = 'Upcoming';
         if (event.is_live) {
             statusText = 'Live Now';
-        } else if (hasStarted) {
+        } else if (hasEnded) {
             statusText = 'Event Ended';
+        } else if (hasStarted) {
+            statusText = 'In Progress';
         }
 
         let sportsHtml = '';
@@ -373,7 +386,7 @@ function renderHomePageEvents(events) {
         const registrationFee = event.registration_fee ? `₹${event.registration_fee.toLocaleString()}` : 'Free';
 
         // Check deadline
-        const deadline = event.registration_deadline ? new Date(event.registration_deadline) : null;
+        const deadline = parseEventDateTime(event.registration_deadline);
         const isDeadlinePassed = deadline && new Date() > deadline;
 
         card.innerHTML = `
@@ -415,7 +428,7 @@ function renderHomePageEvents(events) {
             <div class="saas-card-footer" style="display: flex; gap: 0.75rem;">
                 <button class="saas-btn-secondary w-full" onclick="showEventDetails(${event.event_id})">Details</button>
                 ${(isDeadlinePassed || hasStarted)
-                ? `<button class="saas-btn-primary w-full" style="opacity: 0.5; cursor: not-allowed;" disabled>${hasStarted ? 'Event Ended' : 'Registration Closed'}</button>`
+                ? `<button class="saas-btn-primary w-full" style="opacity: 0.5; cursor: not-allowed;" disabled>${hasStarted ? 'Event Started' : 'Registration Closed'}</button>`
                 : `<button class="saas-btn-primary w-full" onclick="handleRegisterClick(event, ${event.event_id})">Register as Player</button>`
             }
             </div>
@@ -452,9 +465,9 @@ window.showEventDetails = function (eventId) {
     const content = document.getElementById('eventDetailsDynamicContent');
     if (!modal || !content) return;
 
-    const startDate = new Date(event.start_date);
-    const endDate = new Date(event.end_date);
-    const deadline = event.registration_deadline ? new Date(event.registration_deadline) : null;
+    const startDate = parseEventDateTime(event.start_date);
+    const endDate = parseEventDateTime(event.end_date);
+    const deadline = parseEventDateTime(event.registration_deadline);
 
     const isDeadlinePassed = deadline && new Date() > deadline;
 

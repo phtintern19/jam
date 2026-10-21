@@ -348,7 +348,10 @@ function openCreateEventModal() {
 
     // Clear sport id selection
     let sportIdSelect = document.getElementById('editSportId');
-    if (sportIdSelect) sportIdSelect.value = '';
+    if (sportIdSelect) {
+        sportIdSelect.querySelectorAll('option[data-legacy-event-option]').forEach(option => option.remove());
+        sportIdSelect.value = '';
+    }
 
     // Default bid time to 20 seconds
     const defaultEditBid = document.getElementById('editBidTime');
@@ -416,10 +419,20 @@ function editEvent(eventId) {
     // Select the correct sport in the dropdown
     let sportIdSelect = document.getElementById('editSportId');
     if (sportIdSelect) {
+        sportIdSelect.querySelectorAll('option[data-legacy-event-option]').forEach(option => option.remove());
         // If event has sports attached via the old event_sports table, grab the first one.
         // For new events, event.sport_id would be ideal but we use event.sports for backward compatibility.
         if (event.sports && event.sports.length > 0) {
-            sportIdSelect.value = event.sports[0].sport_id;
+            const linkedSport = event.sports[0];
+            const linkedId = String(linkedSport.sport_id);
+            if (!Array.from(sportIdSelect.options).some(option => option.value === linkedId)) {
+                const legacyOption = document.createElement('option');
+                legacyOption.value = linkedId;
+                legacyOption.textContent = `${linkedSport.name} (existing event)`;
+                legacyOption.dataset.legacyEventOption = 'true';
+                sportIdSelect.appendChild(legacyOption);
+            }
+            sportIdSelect.value = linkedId;
         } else {
             sportIdSelect.value = '';
         }
@@ -1649,16 +1662,27 @@ async function approveUser(userId, currentName) {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
+            cache: 'no-store',
             body: JSON.stringify({}) // password is now optional; keeps the one set during registration
         });
 
+        const result = await response.json();
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Failed to approve user');
+            throw new Error(result.detail || result.message || 'Failed to approve user');
+        }
+        if (result.is_active !== true) {
+            throw new Error('The server did not confirm that the account was activated.');
         }
 
-        alert('User approved successfully!');
-        loadTeamOwnerRegistrations(); // Reload list
+        await loadTeamOwnerRegistrations();
+
+        const detailsModal = document.getElementById('teamOwnerFullDetailsModal');
+        if (detailsModal && detailsModal.style.display === 'block') {
+            await viewTeamOwnerFullDetails(userId);
+        }
+
+        alert('Team owner approved successfully!');
     } catch (error) {
         console.error('Error approving user:', error);
         alert(`Error: ${error.message}`);
@@ -3017,23 +3041,38 @@ async function loadSports() {
             sportSelect.innerHTML = '<option value="">Select a Sport...</option>';
         }
 
+        const listedSports = sports.filter(sport => Number(sport.tier) === 1 && sport.is_active !== false);
+        if (sportSelect) {
+            listedSports.forEach(sport => {
+                const opt = document.createElement('option');
+                opt.value = sport.sport_id;
+                opt.textContent = sport.name;
+                sportSelect.appendChild(opt);
+            });
+        }
+
         if (!tbody) return;
 
-        if (sports.length === 0) {
+        const normalizeSportName = name => String(name ?? '')
+            .normalize('NFKC')
+            .trim()
+            .replace(/\s+/g, ' ')
+            .toLocaleLowerCase('en');
+        const adminSportAllowlist = new Set([
+            'Badminton', 'Basketball', 'Boxing', 'Carrom', 'Chess', 'Cricket', 'Esports',
+            'Football (Soccer)', 'Hockey / Field Hockey', 'Javelin throw', 'Kabaddi',
+            'Karate', 'Long-distance running', 'MMA (Mixed Martial Arts)', 'Marathon',
+            'Middle-distance running', 'Pickleball', 'Relay races', 'Shooting', 'Sprinting',
+            'Swimming', 'Table Tennis', 'Tennis', 'Volleyball', 'Wrestling'
+        ].map(normalizeSportName));
+        const configurableSports = sports.filter(sport => adminSportAllowlist.has(normalizeSportName(sport.name)));
+        if (configurableSports.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #94a3b8;">No sports found.</td></tr>';
             return;
         }
 
         tbody.innerHTML = '';
-        sports.forEach(sport => {
-            // Populate the dropdown inside the Event Creation Modal
-            if (sportSelect) {
-                const opt = document.createElement('option');
-                opt.value = sport.sport_id;
-                opt.textContent = sport.name;
-                sportSelect.appendChild(opt);
-            }
-
+        configurableSports.forEach(sport => {
             const tr = document.createElement('tr');
 
             // Serialize config to string safely for data attributes
@@ -3056,147 +3095,303 @@ async function loadSports() {
     }
 }
 
+function tournamentNotice(message, isError = false) {
+    const element = document.getElementById('tournamentNotice');
+    if (!element) return;
+    element.textContent = message;
+    element.style.color = isError ? '#ef4444' : '#22c55e';
+}
+
+async function loadTournamentSports() {
+    try {
+        const response = await fetch('/api/tournaments/sports');
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.error || 'Could not load sports');
+        window.jamrigTournamentSports = data.sports || [];
+        const select = document.getElementById('tournamentSport');
+        select.innerHTML = '<option value="">Select a sport</option>';
+        window.jamrigTournamentSports.forEach(sport => {
+            const option = document.createElement('option');
+            option.value = sport.sport_id;
+            option.textContent = sport.name;
+            select.appendChild(option);
+        });
+        updateTournamentOptions();
+    } catch (error) {
+        tournamentNotice(error.message, true);
+    }
+}
+
+function updateTournamentOptions() {
+    const sportId = Number(document.getElementById('tournamentSport')?.value);
+    const sport = (window.jamrigTournamentSports || []).find(item => item.sport_id === sportId);
+    const formatSelect = document.getElementById('tournamentFormat');
+    const participantSelect = document.getElementById('tournamentParticipantType');
+    if (!sport) return;
+    const formats = sport.competition_formats || [];
+    Array.from(formatSelect.options).forEach(option => { option.disabled = !formats.includes(option.value); });
+    if (!formats.includes(formatSelect.value)) formatSelect.value = formats[0] || '';
+    const supported = sport.participation_format === 'both' ? ['team', 'individual'] : [sport.participation_format];
+    Array.from(participantSelect.options).forEach(option => { option.disabled = !supported.includes(option.value); });
+    if (!supported.includes(participantSelect.value)) participantSelect.value = supported[0] || '';
+}
+
+async function createTournamentFromDashboard(event) {
+    event.preventDefault();
+    const payload = {
+        name: document.getElementById('tournamentName').value.trim(),
+        sport_id: Number(document.getElementById('tournamentSport').value),
+        format: document.getElementById('tournamentFormat').value,
+        participant_type: document.getElementById('tournamentParticipantType').value
+    };
+    try {
+        const response = await fetch('/api/tournaments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.error || 'Could not create tournament');
+        document.getElementById('tournamentName').value = '';
+        tournamentNotice(`Created ${result.tournament.name}. Open registration to add participants.`);
+        await loadTournaments();
+    } catch (error) {
+        tournamentNotice(error.message, true);
+    }
+}
+
+async function loadTournaments() {
+    try {
+        const response = await fetch('/api/tournaments');
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.error || 'Could not load tournaments');
+        const body = document.getElementById('tournamentsTableBody');
+        const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+        body.innerHTML = (data.tournaments || []).map(item => {
+            const actions = [`<button class="admin-btn-action" onclick="viewTournament(${item.tournament_id})">View</button>`];
+            if (item.status === 'draft') actions.push(`<button class="admin-btn-action" onclick="tournamentAction(${item.tournament_id}, 'open')">Open registration</button>`);
+            if (['registration', 'ready'].includes(item.status)) actions.push(`<button class="admin-btn-action" onclick="tournamentAction(${item.tournament_id}, 'start')">Generate fixtures</button>`);
+            return `<tr><td>${esc(item.name)}</td><td>${esc(item.sport.name)} · ${esc(item.format)}</td><td>${esc(item.status)}</td><td>${item.participant_count}/${item.max_participants}</td><td>${actions.join(' ')}</td></tr>`;
+        }).join('') || '<tr><td colspan="5">No tournaments yet.</td></tr>';
+    } catch (error) {
+        tournamentNotice(error.message, true);
+    }
+}
+
+async function tournamentAction(tournamentId, action) {
+    try {
+        const response = await fetch(`/api/tournaments/${tournamentId}/${action}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.error || `Could not ${action} tournament`);
+        tournamentNotice(action === 'start' ? 'Fixtures generated.' : 'Registration opened.');
+        await loadTournaments();
+        if (action === 'start') await viewTournament(tournamentId);
+    } catch (error) {
+        tournamentNotice(error.message, true);
+    }
+}
+
+async function viewTournament(tournamentId) {
+    try {
+        const [tournamentResponse, matchesResponse, participantsResponse] = await Promise.all([
+            fetch(`/api/tournaments/${tournamentId}`), fetch(`/api/tournaments/${tournamentId}/matches`),
+            fetch(`/api/tournaments/${tournamentId}/participants`)
+        ]);
+        const [tournamentData, matchesData, participantsData] = await Promise.all([
+            tournamentResponse.json(), matchesResponse.json(), participantsResponse.json()
+        ]);
+        if (!tournamentResponse.ok || !tournamentData.success) throw new Error(tournamentData.error || 'Could not load tournament');
+        const tournament = tournamentData.tournament;
+        const panel = document.getElementById('tournamentDetailPanel');
+        const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+        const registrations = (participantsData.participants || []).map(p => `<li>${esc(p.name)} (${esc(p.type)} #${p.id}) · ${esc(p.status)}</li>`).join('');
+        const registerForm = tournament.status === 'registration' ? `<form onsubmit="registerTournamentParticipant(event, ${tournamentId})"><label>Player/team ID <input id="tournamentParticipantId" type="number" min="1" required></label> <button class="admin-btn-action">Register</button></form>` : '';
+        const rows = (matchesData.matches || []).filter(m => !m.is_bye && m.status !== 'cancelled').map(match => {
+            const sides = match.participants.map(side => side.participant ? `${esc(side.participant.name)} [entrant ${side.participant.participant_id}]` : 'Waiting').join(' vs ');
+            const entrantIds = match.participants.filter(side => side.participant).map(side => side.participant.participant_id);
+            const controls = match.result_status === 'pending'
+                ? `<button class="admin-btn-action" onclick="confirmTournamentResult(${match.match_id})">Confirm result</button>`
+                : ['scheduled', 'in_progress'].includes(match.status) && match.participants.every(side => side.participant)
+                    ? `<button class="admin-btn-action" onclick='submitTournamentResult(${match.match_id}, ${JSON.stringify(entrantIds)})'>Submit result</button>` : '';
+            return `<tr><td>${match.round} / ${match.match_number}</td><td>${sides}</td><td>${esc(match.status)} · ${esc(match.result_status)}</td><td>${esc(JSON.stringify(match.score || ''))}</td><td>${controls}</td></tr>`;
+        }).join('');
+        panel.innerHTML = `<div class="admin-table-container" style="padding:1rem"><h4>${esc(tournament.name)} · ${esc(tournament.status)}</h4><h5>Entrants</h5><ul>${registrations || '<li>No participants registered.</li>'}</ul>${registerForm}<h5>Fixtures and results</h5><table class="admin-table"><thead><tr><th>Round</th><th>Participants</th><th>Status</th><th>Score</th><th>Actions</th></tr></thead><tbody>${rows || '<tr><td colspan="5">Fixtures have not been generated.</td></tr>'}</tbody></table></div>`;
+    } catch (error) {
+        tournamentNotice(error.message, true);
+    }
+}
+
+async function registerTournamentParticipant(event, tournamentId) {
+    event.preventDefault();
+    try {
+        const participantId = Number(document.getElementById('tournamentParticipantId').value);
+        const response = await fetch(`/api/tournaments/${tournamentId}/participants`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ participant_id: participantId }) });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.error || 'Registration failed');
+        tournamentNotice('Participant registered.');
+        await loadTournaments();
+        await viewTournament(tournamentId);
+    } catch (error) {
+        tournamentNotice(error.message, true);
+    }
+}
+
+async function submitTournamentResult(matchId, entrantIds) {
+    const example = Object.fromEntries(entrantIds.map((id, index) => [String(id), entrantIds.length - index]));
+    const raw = prompt(`Enter JSON keyed by entrant IDs ${entrantIds.join(', ')}. Example for points: ${JSON.stringify(example)}. For other templates include fields like score, winner_participant_id, measurement_type, and unit.`);
+    if (!raw) return;
+    try {
+        const parsed = JSON.parse(raw);
+        const payload = parsed && typeof parsed === 'object' && Object.prototype.hasOwnProperty.call(parsed, 'score') ? parsed : { score: parsed };
+        const response = await fetch(`/api/matches/${matchId}/results`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.error || 'Result submission failed');
+        tournamentNotice('Result submitted and awaiting organizer confirmation.');
+        const tournamentId = data.match.tournament_id;
+        await viewTournament(tournamentId);
+    } catch (error) {
+        tournamentNotice(error.message, true);
+    }
+}
+
+async function confirmTournamentResult(matchId) {
+    try {
+        const response = await fetch(`/api/matches/${matchId}/confirm`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.error || 'Confirmation failed');
+        tournamentNotice('Result confirmed; tournament progression updated.');
+        await loadTournaments();
+        await viewTournament(data.match.tournament_id);
+    } catch (error) {
+        tournamentNotice(error.message, true);
+    }
+}
+
 // State to hold dynamic categories for the modal
 let currentSportCategories = [];
 
-function openConfigureSportModal(sportDataB64) {
+let currentSportConfigSchema = null;
+
+function configEscape(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[char]);
+}
+
+async function openConfigureSportModal(sportDataB64) {
+    let sport;
     try {
-        const sport = JSON.parse(decodeURIComponent(escape(atob(sportDataB64))));
-        document.getElementById('configureSportId').value = sport.sport_id;
+        sport = JSON.parse(decodeURIComponent(escape(atob(sportDataB64))));
+    } catch (error) {
+        showModal('Error', 'Could not read the selected sport.');
+        return;
+    }
 
-        // Handle hidden values to preserve non-editable JSON structures
-        document.getElementById('configRolesHidden').value = sport.roles_config ? JSON.stringify(sport.roles_config) : '';
-        document.getElementById('configAttributesHidden').value = sport.attributes_schema ? JSON.stringify(sport.attributes_schema) : '';
-        document.getElementById('configRulesHidden').value = sport.default_auction_rules ? JSON.stringify(sport.default_auction_rules) : '';
+    document.getElementById('configureSportId').value = sport.sport_id;
+    document.getElementById('configureSportModal').classList.add('active');
+    document.getElementById('sportEvaluationWeightFields').innerHTML = '<p style="color:#94a3b8">Loading saved configuration...</p>';
+    document.getElementById('sportNormalizationFields').innerHTML = '';
+    document.getElementById('sportConfigurationValidation').textContent = '';
+    const saveButton = document.getElementById('saveSportConfigurationButton');
+    saveButton.disabled = true;
 
-        // 1. Populate Team Budget
-        const budgetInput = document.getElementById('configDefaultBudget');
-        if (sport.default_auction_rules && sport.default_auction_rules.default_budget) {
-            budgetInput.value = sport.default_auction_rules.default_budget;
-        } else {
-            budgetInput.value = ''; // Default to empty so admin sets it
-        }
-
-        // 1.5 Populate Evaluation Rules
-        const isBadminton = sport.name.toLowerCase() === 'badminton';
-        const evalRules = sport.evaluation_rules || {
-            weights: isBadminton 
-                ? { matches_played: 15, win_rate: 25, tournaments_won: 25, years_experience: 15, highest_level: 20 }
-                : { matches_played: 15, runs: 25, wickets: 25, years_experience: 15, highest_level: 20 },
-            normalization: isBadminton
-                ? { matches_max: 200, win_rate_max: 100, tournaments_won_max: 20, experience_max: 15 }
-                : { matches_max: 150, runs_max: 5000, wickets_max: 200, experience_max: 15 }
-        };
-
-        // Update Modal Title and Subtitle
-        const modalTitle = document.querySelector('#configureSportModal h2');
-        if (modalTitle) modalTitle.innerHTML = `<i class="fas fa-cogs"></i> Configure ${sport.name}`;
-        
-        const modalSubtitle = document.getElementById('configureSportModalSubtitle');
-        if (modalSubtitle) modalSubtitle.innerText = `Set the default auction configuration for ${sport.name} events.`;
-
-        // Update Labels dynamically
-        if (document.getElementById('configWeightRuns') && document.getElementById('configWeightRuns').previousElementSibling) {
-            document.getElementById('configWeightRuns').previousElementSibling.innerText = isBadminton ? 'Win Rate Weight (%)' : 'Runs Weight (%)';
-            document.getElementById('configWeightWickets').previousElementSibling.innerText = isBadminton ? 'Tournaments Won Weight (%)' : 'Wickets Weight (%)';
-            document.getElementById('configNormRuns').previousElementSibling.innerText = isBadminton ? 'Max Win Rate (%)' : 'Max Runs';
-            document.getElementById('configNormWickets').previousElementSibling.innerText = isBadminton ? 'Max Tournaments Won' : 'Max Wickets';
-        }
-        
-        // Update Bottom Info Box dynamically
-        const infoBoxTitle = document.querySelector('#configureSportModal .form-section:last-child h4');
-        const infoBoxRoles = document.querySelector('#configureSportModal .form-section:last-child p:nth-of-type(1)');
-        const infoBoxAttrs = document.querySelector('#configureSportModal .form-section:last-child p:nth-of-type(2)');
-        if (infoBoxTitle) infoBoxTitle.innerHTML = `<i class="fas fa-info-circle"></i> ${sport.name} Configuration`;
-        if (infoBoxRoles) infoBoxRoles.innerHTML = `<strong>Roles:</strong> ${isBadminton ? 'Singles · Doubles · Mixed Doubles' : 'Batsman · Bowler · All-Rounder · Wicket-Keeper'}`;
-        if (infoBoxAttrs) infoBoxAttrs.innerHTML = `<strong>Player Attributes:</strong> Automatically configured for ${sport.name}`;
-
-        document.getElementById('configWeightMatches').value = evalRules.weights.matches_played || 0;
-        document.getElementById('configWeightRuns').value = isBadminton ? (evalRules.weights.win_rate || 0) : (evalRules.weights.runs || 0);
-        document.getElementById('configWeightWickets').value = isBadminton ? (evalRules.weights.tournaments_won || 0) : (evalRules.weights.wickets || 0);
-        document.getElementById('configWeightExperience').value = evalRules.weights.years_experience || 0;
-        document.getElementById('configWeightLevel').value = evalRules.weights.highest_level || 0;
-
-        // Add event listeners for dynamic total calculation
-        ['Matches', 'Runs', 'Wickets', 'Experience', 'Level'].forEach(field => {
-            document.getElementById(`configWeight${field}`).addEventListener('input', updateTotalWeight);
+    try {
+        const response = await apiFetch(`/api/sports/${sport.sport_id}/config`, {
+            credentials: 'include',
+            cache: 'no-store'
         });
-
-        document.getElementById('configNormMatches').value = evalRules.normalization.matches_max || 150;
-        document.getElementById('configNormRuns').value = isBadminton ? (evalRules.normalization.win_rate_max || 100) : (evalRules.normalization.runs_max || 5000);
-        document.getElementById('configNormWickets').value = isBadminton ? (evalRules.normalization.tournaments_won_max || 20) : (evalRules.normalization.wickets_max || 200);
-        document.getElementById('configNormExperience').value = evalRules.normalization.experience_max || 15;
-
-        updateTotalWeight(); // update the display UI
-
-        // 2. Populate Player Categories
-        currentSportCategories = [];
-        let legacyCategories = [];
-        if (sport.categories_config) {
-            if (Array.isArray(sport.categories_config)) {
-                // If stored as array: [{"name": "Diamond", "base_price": 50000}]
-                legacyCategories = [...sport.categories_config];
-            } else if (typeof sport.categories_config === 'object') {
-                // If stored as dictionary: {"diamond": 50000}
-                for (const [key, value] of Object.entries(sport.categories_config)) {
-                    // Capitalize dictionary keys for display (e.g. "diamond" -> "Diamond")
-                    const displayName = key.charAt(0).toUpperCase() + key.slice(1);
-                    legacyCategories.push({
-                        name: displayName,
-                        base_price: value
-                    });
-                }
-            }
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+            throw new Error(data.detail || data.message || data.error || `Configuration request failed (${response.status})`);
         }
 
-        // Auto-assign safe ranges for legacy categories if missing
-        currentSportCategories = legacyCategories.map(cat => {
-            if (cat.min_score !== undefined && cat.max_score !== undefined) {
-                return cat;
-            }
+        currentSportConfigSchema = data.schema;
+        document.querySelector('#configureSportModal h2').textContent = `Configure ${data.schema.name}`;
+        document.getElementById('configureSportModalSubtitle').textContent =
+            `Configure ${data.schema.name} evaluation, thresholds, and auction defaults.`;
+        document.getElementById('sportConfigurationInfoTitle').innerHTML =
+            `<i class="fas fa-info-circle"></i> ${configEscape(data.schema.name)} Scoring Profile`;
+        document.getElementById('sportConfigurationInfoText').textContent =
+            `Supported profile fields: ${data.schema.fields.map(field => field.key).join(', ')}. Editable thresholds are baseline estimates.`;
 
-            let min = 0, max = 0;
-            const lowerName = (cat.name || '').toLowerCase();
-            if (lowerName.includes('diamond')) { min = 90; max = 100; }
-            else if (lowerName.includes('platinum')) { min = 75; max = 89.99; }
-            else if (lowerName.includes('gold')) { min = 50; max = 74.99; }
-            else if (lowerName.includes('silver')) { min = 0; max = 49.99; }
+        const auctionRules = data.default_auction_rules || {};
+        document.getElementById('configRulesHidden').value = JSON.stringify(auctionRules);
+        document.getElementById('configDefaultBudget').value = auctionRules.default_budget || 600000;
 
-            return {
-                ...cat,
-                min_score: min,
-                max_score: max
-            };
-        });
-
+        currentSportCategories = Array.isArray(data.categories_config) ? data.categories_config : [];
         renderSportCategories();
-
-        // Clear add category inputs
         document.getElementById('newCategoryName').value = '';
         document.getElementById('newCategoryMinScore').value = '';
         document.getElementById('newCategoryMaxScore').value = '';
         document.getElementById('newCategoryPrice').value = '';
 
-        document.getElementById('configureSportModal').classList.add('active');
-    } catch (e) {
-        console.error("Error opening configure sport modal:", e);
-        showModal('Error', 'Failed to load sport configuration.');
+        renderSportConfigurationFields(data.schema, data.evaluation_rules || {});
+        saveButton.disabled = false;
+    } catch (error) {
+        console.error('Could not load sport configuration:', error);
+        document.getElementById('sportEvaluationWeightFields').innerHTML =
+            `<p style="color:#ef4444">${configEscape(error.message)}</p>`;
+        showModal('Configuration Error', error.message);
     }
 }
 
-function updateTotalWeight() {
-    const wMatches = parseFloat(document.getElementById('configWeightMatches').value) || 0;
-    const wRuns = parseFloat(document.getElementById('configWeightRuns').value) || 0;
-    const wWickets = parseFloat(document.getElementById('configWeightWickets').value) || 0;
-    const wExp = parseFloat(document.getElementById('configWeightExperience').value) || 0;
-    const wLevel = parseFloat(document.getElementById('configWeightLevel').value) || 0;
+function renderSportConfigurationFields(schema, rules) {
+    const weightsContainer = document.getElementById('sportEvaluationWeightFields');
+    const thresholdsContainer = document.getElementById('sportNormalizationFields');
+    const weights = rules.evaluation_weights || rules.weights || {};
+    const normalization = rules.normalization_thresholds || rules.normalization || {};
+    const levelScores = rules.highest_level_scores || {};
+    document.getElementById('configLevelScoresHidden').value = JSON.stringify(levelScores);
+    document.getElementById('configScoringEnabled').checked = rules.enabled !== false;
 
-    const total = wMatches + wRuns + wWickets + wExp + wLevel;
-    const el = document.getElementById('configWeightTotalDisplay');
-    if (el) {
-        el.textContent = `${total}%`;
-        el.style.color = (total === 100) ? '#10b981' : '#ef4444';
+    weightsContainer.innerHTML = schema.fields.map(field => {
+        const weight = weights[field.key] ?? 0;
+        return `<div class="form-group" style="background:#0f172a; padding:1rem; border-radius:.5rem">
+            <label for="weight-${configEscape(field.key)}" style="font-weight:600">${configEscape(field.label)}</label>
+            <label for="weight-${configEscape(field.key)}" style="margin-top:.5rem">Weight (%)</label>
+            <input id="weight-${configEscape(field.key)}" class="form-control" type="number" min="0" max="100" step="any"
+                data-config-weight="${configEscape(field.key)}" value="${configEscape(weight)}" required>
+        </div>`;
+    }).join('');
+
+    thresholdsContainer.innerHTML = schema.fields.filter(field => field.normalization_key).map(field => {
+        const threshold = normalization[field.normalization_key] ?? field.default_threshold;
+        const lower = field.direction === 'lower';
+        return `<div class="form-group" style="background:#0f172a; padding:1rem; border-radius:.5rem">
+            <label for="norm-${configEscape(field.key)}" style="font-weight:600">${configEscape(field.label)}</label>
+            <small style="display:block;color:#94a3b8;margin:.25rem 0 .5rem">${configEscape(field.unit)}; ${lower ? 'lower values score higher; this target maps to 100/100' : 'this maximum expected value maps to 100/100'}</small>
+            <label for="norm-${configEscape(field.key)}">${lower ? 'Target value' : 'Maximum expected value'} (${configEscape(field.unit)})</label>
+            <input id="norm-${configEscape(field.key)}" class="form-control" type="number" min="0.000001" ${field.unit === '%' ? 'max="100"' : ''} step="any"
+                data-config-threshold="${configEscape(field.normalization_key)}" value="${configEscape(threshold)}" required>
+        </div>`;
+    }).join('');
+
+    document.querySelectorAll('#sportEvaluationWeightFields [data-config-weight]')
+        .forEach(input => input.addEventListener('input', updateTotalWeight));
+    thresholdsContainer.querySelectorAll('[data-config-threshold]').forEach(input => input.addEventListener('input', validateSportThresholds));
+    document.getElementById('configScoringEnabled').onchange = updateTotalWeight;
+    updateTotalWeight();
+}
+
+function updateTotalWeight() {
+    const inputs = [...document.querySelectorAll('#sportEvaluationWeightFields [data-config-weight]')];
+    const total = inputs.reduce((sum, input) => sum + (input.value === '' ? 0 : Number(input.value)), 0);
+    const enabled = document.getElementById('configScoringEnabled').checked;
+    const validInputs = inputs.every(input => input.value !== '' && Number.isFinite(Number(input.value)) && Number(input.value) >= 0 && Number(input.value) <= 100);
+    const validTotal = !enabled || (Math.abs(total - 100) < 0.000001 && inputs.some(input => Number(input.value) > 0));
+    const display = document.getElementById('configWeightTotalDisplay');
+    display.textContent = `${Number(total.toFixed(4))}%`;
+    display.style.color = validInputs && validTotal ? '#10b981' : '#ef4444';
+    document.getElementById('sportConfigurationValidation').textContent =
+        !validInputs ? 'Weights must be numbers between 0 and 100.' :
+        (!validTotal ? 'Enabled weighted scoring requires a total weight of exactly 100%.' : '');
+    return validInputs && validTotal;
+}
+
+function validateSportThresholds() {
+    const inputs = [...document.querySelectorAll('#sportNormalizationFields [data-config-threshold]')];
+    const invalid = inputs.find(input => input.value === '' || !Number.isFinite(Number(input.value)) || Number(input.value) <= 0 || (input.max && Number(input.value) > Number(input.max)));
+    if (invalid) {
+        document.getElementById('sportConfigurationValidation').textContent = `${invalid.dataset.configThreshold} must be a positive number.`;
+        return false;
     }
+    return updateTotalWeight();
 }
 
 function renderSportCategories() {
@@ -3315,120 +3510,90 @@ function closeConfigureSportModal() {
 
 async function saveSportConfiguration() {
     const sportId = document.getElementById('configureSportId').value;
-
-    // Validate Team Budget
-    const budgetValue = parseFloat(document.getElementById('configDefaultBudget').value);
-    if (isNaN(budgetValue) || budgetValue <= 0) {
-        showModal('Validation Error', 'Team Budget is required and must be greater than 0.');
+    const saveButton = document.getElementById('saveSportConfigurationButton');
+    const budgetValue = Number(document.getElementById('configDefaultBudget').value);
+    const validation = document.getElementById('sportConfigurationValidation');
+    if (!Number.isFinite(budgetValue) || budgetValue <= 0) {
+        validation.textContent = 'Team budget must be greater than zero.';
         return;
     }
+    if (!updateTotalWeight()) return;
 
-    // Parse JSON safely from hidden inputs (preserves backend-provided configuration)
-    const parseJSON = (id) => {
-        const val = document.getElementById(id).value.trim();
-        if (!val) return null;
-        try {
-            return JSON.parse(val);
-        } catch (e) {
-            console.error(`Invalid JSON in hidden field ${id}`, e);
-            return null;
-        }
-    };
-
-    try {
-        // Read the preserved rules from the hidden input, or create a new object
-        let rules = parseJSON('configRulesHidden') || {};
-        // Update the specific values that the Admin has control over
-        rules.default_budget = budgetValue;
-        // Enforce the system default timer if it wasn't already set
-        if (!rules.default_timer) rules.default_timer = 20;
-
-        // Get the sport name to determine if Badminton
-        const sportName = document.querySelector(`#sportsTableBody tr button[onclick*="${document.getElementById('configureSportId').value}"]`) 
-            ? document.querySelector(`#sportsTableBody tr button[onclick*="${document.getElementById('configureSportId').value}"]`).closest('tr').children[1].innerText.toLowerCase() 
-            : 'cricket'; // Fallback
-        const isBadminton = sportName.includes('badminton');
-
-        let roles = parseJSON('configRolesHidden');
-        if (!roles || (Array.isArray(roles) && roles.length === 0)) {
-            roles = isBadminton ? ["Singles", "Doubles", "Mixed Doubles"] : ["Batsman", "Bowler", "All-Rounder", "Wicket-Keeper"];
-        }
-
-        let attributes = parseJSON('configAttributesHidden');
-        if (!attributes || Object.keys(attributes).length === 0) {
-            attributes = isBadminton
-                ? {
-                    "playing_hand": ["Right-handed", "Left-handed"],
-                    "play_style": ["Aggressive", "Defensive", "Balanced"]
-                }
-                : {
-                    "batting_style": ["Right-hand bat", "Left-hand bat"],
-                    "bowling_style": ["Right-arm fast", "Right-arm medium", "Right-arm spin", "Left-arm fast", "Left-arm medium", "Left-arm spin"]
-                };
-        }
-
-        // Build Evaluation Rules
-        const wMatches = parseFloat(document.getElementById('configWeightMatches').value) || 0;
-        const wRuns = parseFloat(document.getElementById('configWeightRuns').value) || 0;
-        const wWickets = parseFloat(document.getElementById('configWeightWickets').value) || 0;
-        const wExp = parseFloat(document.getElementById('configWeightExperience').value) || 0;
-        const wLevel = parseFloat(document.getElementById('configWeightLevel').value) || 0;
-
-        const totalWeight = wMatches + wRuns + wWickets + wExp + wLevel;
-        if (Math.abs(totalWeight - 100) > 0.01) {
-            showModal('Validation Error', `Total evaluation weight must equal exactly 100%. Currently it is ${totalWeight}%.`);
+    const weights = {};
+    const normalization = {};
+    for (const input of document.querySelectorAll('#sportEvaluationWeightFields [data-config-weight]')) {
+        weights[input.dataset.configWeight] = Number(input.value);
+    }
+    for (const input of document.querySelectorAll('#sportNormalizationFields [data-config-threshold]')) {
+        const value = Number(input.value);
+        if (!Number.isFinite(value) || value <= 0 || (input.max && value > Number(input.max))) {
+            validation.textContent = `${input.dataset.configThreshold} must be greater than zero.`;
+            input.focus();
             return;
         }
+        normalization[input.dataset.configThreshold] = value;
+    }
 
-        const evaluationRules = {
-            weights: {
-                matches_played: wMatches,
-                [isBadminton ? 'win_rate' : 'runs']: wRuns,
-                [isBadminton ? 'tournaments_won' : 'wickets']: wWickets,
-                years_experience: wExp,
-                highest_level: wLevel
-            },
-            normalization: {
-                matches_max: parseFloat(document.getElementById('configNormMatches').value) || 150,
-                [isBadminton ? 'win_rate_max' : 'runs_max']: parseFloat(document.getElementById('configNormRuns').value) || 5000,
-                [isBadminton ? 'tournaments_won_max' : 'wickets_max']: parseFloat(document.getElementById('configNormWickets').value) || 200,
-                experience_max: parseFloat(document.getElementById('configNormExperience').value) || 15
-            },
-            highest_level_scores: {
-                "Local": 20,
-                "District": 40,
-                "State": 60,
-                "National": 80,
-                "Professional": 95,
-                "International": 100
-            }
+    let levelScores = {};
+    try { levelScores = JSON.parse(document.getElementById('configLevelScoresHidden').value || '{}'); } catch { levelScores = {}; }
+
+    let auctionRules = {};
+    try { auctionRules = JSON.parse(document.getElementById('configRulesHidden').value || '{}'); } catch { auctionRules = {}; }
+    auctionRules.default_budget = budgetValue;
+    if (!auctionRules.default_timer) auctionRules.default_timer = 20;
+
+    const evaluationRules = {
+        enabled: document.getElementById('configScoringEnabled').checked,
+        scoring_method: 'weighted',
+        evaluation_weights: weights,
+        normalization_thresholds: normalization
+    };
+    if (Object.keys(levelScores).length) evaluationRules.highest_level_scores = levelScores;
+
+    saveButton.disabled = true;
+    saveButton.textContent = 'Saving?';
+    validation.textContent = '';
+    try {
+        const configPayload = {
+            evaluation_rules: evaluationRules,
+            categories_config: currentSportCategories,
+            default_auction_rules: auctionRules
         };
-
-        const payload = {
-            roles_config: roles,
-            attributes_schema: attributes,
-            categories_config: currentSportCategories, // Send as array of objects
-            default_auction_rules: rules,
-            evaluation_rules: evaluationRules
-        };
-
-        const response = await fetch(`/api/sports/${sportId}/config`, {
+        const putConfig = payload => apiFetch(`/api/sports/${sportId}/config`, {
             method: 'PUT',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-
-        const data = await response.json();
-        if (data.success) {
-            closeConfigureSportModal();
-            loadSports();
-            showModal('Success', `${sportName.charAt(0).toUpperCase() + sportName.slice(1)} configuration saved successfully.`);
-        } else {
-            const errorMsg = data.message || data.detail || data.error || 'Failed to save configuration';
-            showModal('Error', errorMsg);
+        let response = await putConfig(configPayload);
+        let data = await response.json().catch(() => ({}));
+        const errorMessage = data.detail || data.message || data.error || '';
+        if (!response.ok && /Unknown evaluation rule\(s\):.*evaluation_weights.*normalization_thresholds|Unknown evaluation rule\(s\):.*normalization_thresholds.*evaluation_weights/i.test(errorMessage)) {
+            // Older running backend processes only recognize the former field
+            // names. Retry once with their shape; updated backends adapt it to
+            // the canonical split schema before persisting.
+            const legacyRules = {
+                ...evaluationRules,
+                weights: evaluationRules.evaluation_weights,
+                normalization: evaluationRules.normalization_thresholds
+            };
+            delete legacyRules.evaluation_weights;
+            delete legacyRules.normalization_thresholds;
+            response = await putConfig({ ...configPayload, evaluation_rules: legacyRules });
+            data = await response.json().catch(() => ({}));
         }
-    } catch (e) {
-        showModal('Error', e.message || 'An error occurred saving configuration.');
+        if (!response.ok || !data.success) {
+            throw new Error(data.detail || data.message || data.error || `Configuration save failed (${response.status})`);
+        }
+        closeConfigureSportModal();
+        await loadSports();
+        showModal('Success', `${currentSportConfigSchema.name} configuration saved successfully.`);
+    } catch (error) {
+        validation.textContent = error.message;
+        showModal('Configuration Error', error.message);
+    } finally {
+        saveButton.disabled = false;
+        saveButton.textContent = 'Save Configuration';
     }
 }
 
@@ -3637,27 +3802,54 @@ async function exportReportsCSV() {
 }
 
 function openCreateSportModal() {
-    const name = prompt("Enter Sport Name:");
-    if (!name) return;
-    const category = prompt("Enter Sport Category (optional):");
-    if (category === null) return;
-    const desc = prompt("Enter Description:");
-    if (desc === null) return;
+    const modal = document.getElementById('createSportModal');
+    const notice = document.getElementById('createSportNotice');
+    const form = document.getElementById('createSportForm');
+    if (notice) notice.textContent = '';
+    form?.reset();
+    modal?.classList.add('active');
+}
 
-    fetch('/api/admin/sports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name, category: category.trim(), description: desc })
-    })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                loadSports();
-            } else {
-                alert("Error creating sport");
-            }
-        })
-        .catch(console.error);
+function closeCreateSportModal() {
+    document.getElementById('createSportModal')?.classList.remove('active');
+}
+
+async function submitCreateSportForm(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const submit = form.querySelector('button[type="submit"]');
+    const notice = document.getElementById('createSportNotice');
+    const sectionNotice = document.getElementById('sportsNotice');
+    submit.disabled = true;
+    notice.textContent = 'Adding sport…';
+    notice.style.color = '#94a3b8';
+    try {
+        const response = await fetch('/api/admin/sports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: document.getElementById('createSportName').value.trim(),
+                category: document.getElementById('createSportCategory').value.trim(),
+                description: document.getElementById('createSportDescription').value.trim()
+            })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || `Request failed (${response.status})`);
+        }
+        closeCreateSportModal();
+        sectionNotice.textContent = data.existing
+            ? 'Existing sport added to the active Tier 1 list and tournament sport list.'
+            : 'Sport added to the Sports section and tournament sport list.';
+        sectionNotice.style.color = '#22c55e';
+        form.reset();
+        await Promise.all([loadSports(), loadTournamentSports()]);
+    } catch (error) {
+        notice.textContent = error.message;
+        notice.style.color = '#ef4444';
+    } finally {
+        submit.disabled = false;
+    }
 }
 // Global helper for programmatic tab switching (used by Home button and navigation)
 window.switchAdminTab = function (tabId) {
@@ -3761,6 +3953,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (typeof loadSports === 'function') {
         loadSports();
     }
+    document.getElementById('createTournamentForm')?.addEventListener('submit', createTournamentFromDashboard);
+    document.getElementById('tournamentSport')?.addEventListener('change', updateTournamentOptions);
 
     // Set up event listeners for tab switching
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -3772,7 +3966,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             // Hide all sections
             const tabId = this.getAttribute('data-tab');
             const sections = [
-                'dashboardSection', 'sportsSection', 'teamsSection',
+                'dashboardSection', 'sportsSection', 'tournamentsSection', 'teamsSection',
                 'registrationsSection', 'teamOwnerRegistrationsSection',
                 'auctionsSection', 'reportsSection'
             ];
@@ -3797,6 +3991,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                 const el = document.getElementById('sportsSection');
                 if (el) el.style.display = 'block';
                 if (typeof loadSports === 'function') loadSports();
+            } else if (tabId === 'tournaments') {
+                const el = document.getElementById('tournamentsSection');
+                if (el) el.style.display = 'block';
+                loadTournamentSports();
+                loadTournaments();
             } else if (tabId === 'teams') {
                 const el = document.getElementById('teamsSection');
                 if (el) el.style.display = 'block';
