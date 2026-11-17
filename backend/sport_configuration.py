@@ -1,6 +1,7 @@
 """Sport-specific evaluation configuration schemas and validation."""
 from copy import deepcopy
 import math
+import re
 
 
 LEVEL_SCORES = {
@@ -11,6 +12,35 @@ LEVEL_SCORES = {
     "Professional": 95,
     "International": 100,
 }
+
+
+def new_sport_panel_defaults():
+    """Explicit marker and starter definition for sports created from now on."""
+    panel_field = {
+        "key": "matches_played", "label": "Matches played", "type": "integer",
+        "required": False, "minimum": 0, "maximum": 100, "method": "higher",
+        "normalization_maximum": 100, "unit": "matches", "weight": 100,
+    }
+    field_rule = {
+        **panel_field, "panel": "Match Experience", "direction": "higher",
+        "normalization_key": "matches_played_max", "default_threshold": 100,
+        "categorical": False, "options": [],
+    }
+    return {
+        "training_config": {"panel_builder": {"enabled": True, "panels": [{"name": "Match Experience", "fields": [panel_field]}]}},
+        "evaluation_rules": {
+            "enabled": True, "scoring_method": "weighted", "fields": [field_rule],
+            "evaluation_weights": {"matches_played": 100},
+            "normalization_thresholds": {"matches_played_max": 100},
+            "metric_directions": {},
+        },
+    }
+
+
+def panel_builder_enabled(training_config):
+    """Only the explicit creation marker enables this UI; promotion is not enough."""
+    builder = training_config.get("panel_builder") if isinstance(training_config, dict) else None
+    return bool(isinstance(builder, dict) and builder.get("enabled") is True)
 
 
 def _field(key, label, unit, maximum, direction="higher", categorical=False):
@@ -141,7 +171,9 @@ def _fields_for(name, category):
 
 
 def schema_for(sport):
-    fields = _fields_for(sport.name, getattr(sport, "category", None))
+    saved = getattr(sport, "evaluation_rules", None)
+    custom_fields = saved.get("fields") if isinstance(saved, dict) else None
+    fields = deepcopy(custom_fields) if isinstance(custom_fields, list) and custom_fields else _fields_for(sport.name, getattr(sport, "category", None))
     return {
         "sport_id": sport.sport_id,
         "name": sport.name,
@@ -151,14 +183,90 @@ def schema_for(sport):
     }
 
 
+def registration_fields_for(sport, panels=None):
+    """Return registration fields without coupling panel edits to evaluation rules."""
+    if panels is None:
+        training_config = getattr(sport, "training_config", None)
+        if panel_builder_enabled(training_config):
+            panels = training_config["panel_builder"].get("panels", [])
+    if panels is not None:
+        return validate_registration_panels(panels)[1]
+    return deepcopy(schema_for(sport)["fields"])
+
+
+def validate_registration_panels(panels):
+    """Validate and flatten registration-only panels."""
+    if not isinstance(panels, list) or not panels or len(panels) > 40:
+        raise ValueError("Add at least one panel with a registration field (maximum 40 panels)")
+
+    clean_panels, fields, seen = [], [], set()
+    for panel in panels:
+        if not isinstance(panel, dict) or not isinstance(panel.get("name"), str) or not panel["name"].strip():
+            raise ValueError("Each panel needs a name")
+        name = panel["name"].strip()
+        source_fields = panel.get("fields")
+        if not isinstance(source_fields, list) or not source_fields:
+            raise ValueError(f"Panel {name} needs at least one field")
+        if len(fields) + len(source_fields) > 40:
+            raise ValueError("Registration panels can contain at most 40 fields")
+
+        checked_fields = []
+        for source in source_fields:
+            if not isinstance(source, dict):
+                raise ValueError(f"Fields in {name} must be objects")
+            label = source.get("label")
+            if not isinstance(label, str) or not label.strip():
+                raise ValueError(f"A field in {name} needs a label")
+            key = source.get("key") or re.sub(r"[^a-z0-9]+", "_", label.strip().lower()).strip("_")
+            if not isinstance(key, str) or not re.fullmatch(r"[a-z][a-z0-9_]{0,49}", key):
+                raise ValueError("Registration field keys must use lowercase letters, numbers, and underscores")
+            if key in seen:
+                raise ValueError(f"Duplicate panel field key: {key}")
+            seen.add(key)
+
+            kind = source.get("type", "integer")
+            if kind not in {"integer", "decimal", "select", "text"}:
+                raise ValueError(f"Unsupported input type for {key}")
+            required = source.get("required", False)
+            if not isinstance(required, bool):
+                raise ValueError(f"Required status for {key} must be true or false")
+
+            field = {"key": key, "label": label.strip(), "panel": name, "type": kind, "required": required}
+            if kind in {"integer", "decimal"}:
+                minimum = source.get("minimum", 0)
+                maximum = source.get("maximum")
+                if isinstance(minimum, bool) or not isinstance(minimum, (int, float)) or not math.isfinite(minimum):
+                    raise ValueError(f"Invalid minimum for {key}")
+                if maximum is not None and (
+                    isinstance(maximum, bool) or not isinstance(maximum, (int, float))
+                    or not math.isfinite(maximum) or maximum <= minimum
+                ):
+                    raise ValueError(f"Invalid maximum for {key}")
+                field.update({"minimum": minimum, "maximum": maximum})
+            elif kind == "select":
+                options = source.get("options")
+                if not isinstance(options, list) or not options or not all(isinstance(value, str) and value.strip() for value in options):
+                    raise ValueError(f"Field {key} requires text options")
+                field["options"] = [value.strip() for value in options]
+            unit = source.get("unit")
+            if unit is not None:
+                if not isinstance(unit, str):
+                    raise ValueError(f"Invalid unit for {key}")
+                field["unit"] = unit
+            checked_fields.append(field)
+            fields.append(field)
+        clean_panels.append({"name": name, "fields": checked_fields})
+    return clean_panels, fields
+
+
 def default_rules(sport):
     fields = schema_for(sport)["fields"]
     weight = 100 // len(fields)
     weights = {field["key"]: weight for field in fields}
     weights[fields[0]["key"]] += 100 - sum(weights.values())
     normalization = {
-        field["normalization_key"]: field["default_threshold"]
-        for field in fields if field["normalization_key"]
+        (field.get("normalization_key") or f"{field['key']}_max"): field.get("default_threshold", 100)
+        for field in fields if field.get("normalization_key") or field.get("key")
     }
     rules = {
         "enabled": True,
@@ -166,11 +274,11 @@ def default_rules(sport):
         "weights": weights,
         "normalization": normalization,
         "metric_directions": {
-            field["key"]: field["direction"] for field in fields
-            if field["direction"] != "higher"
+            field["key"]: field.get("direction", "higher") for field in fields
+            if field.get("direction") != "higher"
         },
     }
-    if any(field["categorical"] for field in fields):
+    if any(field.get("categorical") for field in fields):
         rules["highest_level_scores"] = deepcopy(LEVEL_SCORES)
 
     # Keep the established Cricket scoring values exactly as configured.
@@ -207,20 +315,32 @@ def normalize_existing_rules(sport, saved):
     if not isinstance(saved, dict):
         saved = {}
     rules = deepcopy(saved)
+    has_custom_fields = isinstance(rules.get("fields"), list) and bool(rules["fields"])
     # Canonical keys are intentionally distinct. Older event snapshots and
     # sports rows used weights/normalization; accept those without data loss.
     rules["evaluation_weights"] = deepcopy(rules.get("evaluation_weights", rules.get("weights", {})))
     rules["normalization_thresholds"] = deepcopy(rules.get("normalization_thresholds", rules.get("normalization", {})))
     rules.setdefault("enabled", True)
     rules.setdefault("scoring_method", "weighted")
-    for section, default_section in (("evaluation_weights", "weights"), ("normalization_thresholds", "normalization")):
-        if not isinstance(rules.get(section), dict):
-            rules[section] = {}
-        for key, value in defaults[default_section].items():
-            rules[section].setdefault(key, value)
+    if not has_custom_fields:
+        for section, default_section in (("evaluation_weights", "weights"), ("normalization_thresholds", "normalization")):
+            if not isinstance(rules.get(section), dict):
+                rules[section] = {}
+            for key, value in defaults[default_section].items():
+                rules[section].setdefault(key, value)
+    else:
+        if not isinstance(rules.get("evaluation_weights"), dict):
+            rules["evaluation_weights"] = {}
+        if not isinstance(rules.get("normalization_thresholds"), dict):
+            rules["normalization_thresholds"] = {}
+        allowed_keys = {f["key"] for f in rules["fields"] if isinstance(f, dict) and "key" in f}
+        rules["evaluation_weights"] = {k: v for k, v in rules["evaluation_weights"].items() if k in allowed_keys}
     if "highest_level_scores" in defaults:
         rules.setdefault("highest_level_scores", deepcopy(defaults["highest_level_scores"]))
-    rules["metric_directions"] = defaults["metric_directions"]
+    rules["metric_directions"] = {
+        field["key"]: field["direction"] for field in schema_for(sport)["fields"]
+        if field.get("direction") != "higher"
+    }
     for legacy in ("weights", "normalization"):
         rules.pop(legacy, None)
     return rules
@@ -229,7 +349,7 @@ def normalize_existing_rules(sport, saved):
 def validate_rules(sport, data):
     if not isinstance(data, dict):
         raise ValueError("evaluation_rules must be an object")
-    allowed_top = {"enabled", "scoring_method", "evaluation_weights", "normalization_thresholds", "weights", "normalization", "highest_level_scores", "metric_directions"}
+    allowed_top = {"enabled", "scoring_method", "evaluation_weights", "normalization_thresholds", "weights", "normalization", "highest_level_scores", "metric_directions", "fields", "normalization_panels"}
     unknown_top = set(data) - allowed_top
     if unknown_top:
         raise ValueError(f"Unknown evaluation rule(s): {', '.join(sorted(unknown_top))}")
@@ -238,7 +358,7 @@ def validate_rules(sport, data):
     if data.get("scoring_method") != "weighted":
         raise ValueError("Only weighted scoring is currently supported")
 
-    fields = schema_for(sport)["fields"]
+    fields = _validate_custom_fields(data.get("fields")) if "fields" in data else schema_for(sport)["fields"]
     field_by_key = {field["key"]: field for field in fields}
     weights = data.get("evaluation_weights", data.get("weights"))
     normalization = data.get("normalization_thresholds", data.get("normalization"))
@@ -248,7 +368,39 @@ def validate_rules(sport, data):
     if unknown_weights:
         raise ValueError(f"Unsupported scoring factor(s) for {sport.name}: {', '.join(sorted(unknown_weights))}")
     allowed_norms = {f["normalization_key"] for f in fields if f["normalization_key"]}
-    unknown_norms = set(normalization) - allowed_norms
+    panels = data.get("normalization_panels", [])
+    if not isinstance(panels, list) or len(panels) > 40:
+        raise ValueError("normalization_panels must be a list of at most 40 panels")
+    checked_panels, panel_keys = [], set()
+    for panel in panels:
+        if not isinstance(panel, dict):
+            raise ValueError("Each normalization panel must be an object")
+        name, key = panel.get("name"), panel.get("key")
+        unit = panel.get("unit", "")
+        kind = str(panel.get("type") or "integer").lower().strip()
+        value = panel.get("value")
+        if not isinstance(name, str) or not name.strip() or not isinstance(key, str) or not re.fullmatch(r"[a-z][a-z0-9_]{0,59}", key):
+            raise ValueError("Each normalization panel needs a name and valid criterion key")
+        if kind == "text":
+            value = str(value) if value is not None else ""
+        elif kind == "integer":
+            if value is not None and value != "":
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0 or not float(value).is_integer():
+                    raise ValueError(f"Normalization threshold for {name} must be a positive whole integer")
+                value = int(value)
+        else:
+            if value is not None and value != "":
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+                    raise ValueError(f"Normalization threshold for {name} must be a positive number")
+        if not isinstance(unit, str):
+            raise ValueError(f"Normalization unit for {name} must be text")
+        if kind not in {"integer", "decimal", "select", "text"}:
+            raise ValueError(f"Normalization data type for {name} must be integer, decimal, select, or text")
+        if key in panel_keys:
+            raise ValueError(f"Duplicate normalization panel key: {key}")
+        panel_keys.add(key)
+        checked_panels.append({"name": name.strip(), "key": key, "value": value, "unit": unit.strip(), "type": kind})
+    unknown_norms = set(normalization) - allowed_norms - panel_keys
     if unknown_norms:
         raise ValueError(f"Unsupported normalization threshold(s): {', '.join(sorted(unknown_norms))}")
 
@@ -269,12 +421,40 @@ def validate_rules(sport, data):
         norm_key = field["normalization_key"]
         if not norm_key:
             continue
-        value = normalization.get(norm_key, field["default_threshold"])
-        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
-            raise ValueError(f"Normalization threshold {norm_key} must be a positive number")
-        if field["unit"] == "%" and value > 100:
-            raise ValueError(f"Normalization threshold {norm_key} must not exceed 100 percent")
-        normalized_thresholds[norm_key] = value
+        panel_match = next((p for p in checked_panels if p.get("key") == norm_key or p.get("key") == field.get("key") or p.get("name", "").strip().lower() == field.get("label", "").strip().lower()), None)
+        value = normalization.get(norm_key, field.get("default_threshold"))
+        if (panel_match and str(panel_match.get("type", "")).lower() == "text") or field.get("type") == "text":
+            normalized_thresholds[norm_key] = str(value) if value is not None else ""
+        else:
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+                raise ValueError(f"Normalization threshold {norm_key} must be a positive number")
+            if panel_match and str(panel_match.get("type", "")).lower() == "integer":
+                if not float(value).is_integer():
+                    raise ValueError(f"Normalization threshold {norm_key} must be a positive whole integer")
+                value = int(value)
+            if field.get("unit") == "%" and value > 100:
+                raise ValueError(f"Normalization threshold {norm_key} must not exceed 100 percent")
+            normalized_thresholds[norm_key] = value
+
+    for norm_key in panel_keys:
+        panel_obj = next((panel for panel in checked_panels if panel["key"] == norm_key), None)
+        if not panel_obj:
+            continue
+        panel_value = panel_obj["value"]
+        value = normalization.get(norm_key, panel_value)
+        if value is None:
+            continue
+        panel_type = str(panel_obj.get("type", "")).lower()
+        if panel_type == "text":
+            normalized_thresholds[norm_key] = str(value)
+        elif panel_type == "integer":
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0 or not float(value).is_integer():
+                raise ValueError(f"Normalization threshold {norm_key} must be a positive whole integer")
+            normalized_thresholds[norm_key] = int(value)
+        else:
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+                raise ValueError(f"Normalization threshold {norm_key} must be a positive number")
+            normalized_thresholds[norm_key] = value
 
     result = {
         "enabled": data["enabled"],
@@ -282,11 +462,15 @@ def validate_rules(sport, data):
         "evaluation_weights": normalized_weights,
         "normalization_thresholds": normalized_thresholds,
         "metric_directions": {
-            field["key"]: field["direction"] for field in fields
-            if field["direction"] != "higher"
+            field["key"]: field.get("direction", "higher") for field in fields
+            if field.get("direction") != "higher"
         },
     }
-    if any(field["categorical"] for field in fields):
+    if "fields" in data:
+        result["fields"] = fields
+    if "normalization_panels" in data:
+        result["normalization_panels"] = checked_panels
+    if any(field.get("categorical") for field in fields):
         level_scores = data.get("highest_level_scores", LEVEL_SCORES)
         if not isinstance(level_scores, dict) or not level_scores:
             raise ValueError("highest_level_scores must be a non-empty object")
@@ -297,3 +481,136 @@ def validate_rules(sport, data):
             checked[name.strip()] = score
         result["highest_level_scores"] = checked
     return result
+
+
+def _validate_custom_fields(fields):
+    """Validate admin-defined criteria; this additive JSON format needs no schema migration."""
+    if not isinstance(fields, list) or not fields or len(fields) > 40:
+        raise ValueError("fields must be a non-empty list of at most 40 criteria")
+    result, keys = [], set()
+    for item in fields:
+        if not isinstance(item, dict):
+            raise ValueError("Each field definition must be an object")
+        key, label = item.get("key"), item.get("label")
+        kind, method = item.get("type", "integer"), item.get("method", "higher")
+        if not isinstance(key, str) or not re.fullmatch(r"[a-z][a-z0-9_]{0,49}", key):
+            raise ValueError("Field keys must use lowercase letters, numbers, and underscores")
+        if key in keys: raise ValueError(f"Duplicate field key: {key}")
+        keys.add(key)
+        if not isinstance(label, str) or not label.strip(): raise ValueError(f"Field {key} requires a label")
+        if kind not in {"integer", "decimal", "select", "text"}: raise ValueError(f"Unsupported input type for {key}")
+        if method not in {"higher", "lower", "categorical"}: raise ValueError(f"Unsupported scoring method for {key}")
+        if kind == "select" or method == "categorical":
+            options = item.get("options")
+            if not isinstance(options, list) or not options or not all(isinstance(v, str) and v.strip() for v in options):
+                options = ["Option 1", "Option 2"]
+            if method != "categorical": method = "categorical"
+            scores = item.get("scores")
+            if scores is not None and isinstance(scores, dict) and set(scores) == set(options) and not any(isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) or not 0 <= v <= 100 for v in scores.values()):
+                pass
+            else:
+                scores = {v: min(100, int(round(100 * (i + 1) / len(options)))) for i, v in enumerate(options)}
+        else:
+            options = []
+            scores = None
+        minimum = item.get("minimum", 0)
+        if minimum is None:
+            minimum = 0
+        maximum = item.get("maximum")
+        if maximum is None:
+            maximum = item.get("default_threshold", 100)
+        if method != "categorical" and kind != "text":
+            if isinstance(minimum, bool) or not isinstance(minimum, (int, float)) or not math.isfinite(minimum): raise ValueError(f"Invalid minimum for {key}")
+            if isinstance(maximum, bool) or not isinstance(maximum, (int, float)) or not math.isfinite(maximum) or maximum <= minimum: raise ValueError(f"Invalid maximum for {key}")
+        elif method == "categorical":
+            minimum, maximum = 0, None
+        else:
+            minimum, maximum = None, None
+        if "normalization_key" in item:
+            norm_key = item["normalization_key"]
+            if norm_key is not None and (not isinstance(norm_key, str) or not re.fullmatch(r"[a-z][a-z0-9_]{0,59}", norm_key)):
+                raise ValueError(f"Invalid normalization key for {key}")
+        else:
+            norm_key = None if method == "categorical" or kind == "text" else f"{key}_{'target' if method == 'lower' else 'max'}"
+        required = item.get("required", False)
+        if not isinstance(required, bool): raise ValueError(f"Required status for {key} must be true or false")
+        normalized = {"key":key,"label":label.strip(),"type":kind,"unit":str(item.get("unit", "")),"direction":"lower" if method == "lower" else "higher","method":method,"normalization_key":norm_key,"default_threshold":maximum,"minimum":minimum,"maximum":maximum,"required":required,"categorical":method == "categorical","options":options}
+        if scores is not None: normalized["scores"] = scores
+        if item.get("panel") is not None:
+            if not isinstance(item["panel"], str) or not item["panel"].strip(): raise ValueError(f"Invalid panel name for {key}")
+            normalized["panel"] = item["panel"].strip()
+        result.append(normalized)
+    return result
+
+
+def validate_panels(panels):
+    """Turn a new-sport panel layout into canonical criteria and scoring rules."""
+    if not isinstance(panels, list):
+        raise ValueError("panels must be a list")
+    source_panels = []
+    for panel in panels:
+        if isinstance(panel, dict) and "fields" not in panel and isinstance(panel.get("value"), str):
+            source_panels.append({
+                **panel,
+                "fields": [{
+                    "label": panel["value"], "type": "integer", "required": False,
+                    "minimum": 0, "maximum": 100, "normalization_maximum": 100,
+                    "method": "higher", "weight": 100,
+                }],
+            })
+        else:
+            source_panels.append(panel)
+    validate_registration_panels(source_panels)
+    panels = source_panels
+    clean_panels, fields, weights, normalization = [], [], {}, {}
+    seen = set()
+    for panel in panels:
+        if not isinstance(panel, dict) or not isinstance(panel.get("name"), str) or not panel["name"].strip():
+            raise ValueError("Each panel needs a name")
+        name = panel["name"].strip()
+        source_fields = panel.get("fields")
+        # Accept the example shape {name, value} as a single text field.
+        if source_fields is None and isinstance(panel.get("value"), str):
+            source_fields = [{"label": panel["value"], "weight": 100, "type": "integer", "method": "higher", "minimum": 0, "maximum": 100}]
+        if not isinstance(source_fields, list) or not source_fields:
+            raise ValueError(f"Panel {name} needs at least one field")
+        checked_fields = []
+        for source in source_fields:
+            if not isinstance(source, dict): raise ValueError(f"Fields in {name} must be objects")
+            label = source.get("label")
+            if not isinstance(label, str) or not label.strip(): raise ValueError(f"A field in {name} needs a label")
+            key = source.get("key") or re.sub(r"[^a-z0-9]+", "_", label.strip().lower()).strip("_")
+            field = {**source, "key": key, "label": label.strip(), "panel": name}
+            if field.get("type") == "select": field["method"] = "categorical"
+            checked_fields.append(field)
+            if key in seen: raise ValueError(f"Duplicate panel field key: {key}")
+            seen.add(key)
+            weight = source.get("weight", 0)
+            if isinstance(weight, bool) or not isinstance(weight, (int, float)) or not math.isfinite(weight) or not 0 <= weight <= 100:
+                raise ValueError(f"Weight for {key} must be between 0 and 100")
+            weights[key] = weight
+            kind = source.get("type", "integer")
+            method = "categorical" if kind == "select" else source.get("method", "higher")
+            field["method"] = method
+            field["unit"] = source.get("unit", "")
+            if kind == "text" and weight != 0:
+                raise ValueError(f"Text field {key} cannot contribute to evaluation scoring")
+            scoring_field = {**field, "method": method}
+            if kind in {"integer", "decimal"}:
+                score_maximum = source.get("normalization_maximum", source.get("maximum"))
+                scoring_field["maximum"] = score_maximum
+                norm_key = source.get("normalization_key") or f"{key}_{'target' if method == 'lower' else 'max'}"
+                scoring_field["normalization_key"] = norm_key
+                normalization[norm_key] = score_maximum
+            elif kind == "select":
+                scoring_field["scores"] = source.get("scores")
+            fields.append(scoring_field)
+        clean_panels.append({"name": name, "fields": checked_fields})
+    fields = _validate_custom_fields(fields)
+    if abs(sum(weights.values()) - 100) > 0.000001:
+        raise ValueError(f"Panel field weights must total exactly 100 (received {sum(weights.values()):g})")
+    for field in fields:
+        norm_key = field.get("normalization_key")
+        if norm_key:
+            normalization[norm_key] = field["default_threshold"]
+    return clean_panels, fields, weights, normalization

@@ -2368,10 +2368,6 @@
         <button class="tab-btn" data-tab="sports">
             <i class="fas fa-trophy"></i> Sports
         </button>
-        <button class="tab-btn" data-tab="tournaments">
-            <i class="fas fa-sitemap"></i> Tournaments
-        </button>
-
         <div class="sidebar-section-title">Management</div>
         <button class="tab-btn" data-tab="teams">
             <i class="fas fa-users-cog"></i> Teams
@@ -2802,7 +2798,7 @@
             <div class="section-header">
                 <div>
                     <h3><i class="fas fa-trophy"></i> Manage Sports</h3>
-                    <p>Active Tier 1 sports are available for tournaments. New sports receive default tournament settings.</p>
+                    <p>Manage the active sports catalog used across events and player profiles.</p>
                 </div>
                 <button class="btn btn-outline" onclick="openCreateSportModal()">
                     <i class="fas fa-plus"></i> Add Sport
@@ -2832,7 +2828,7 @@
                 <div class="modal-header">
                     <div>
                         <h2 id="createSportTitle">Add a Sport</h2>
-                        <p class="modal-subtitle">New sports are added to the active Tier 1 list with default tournament settings.</p>
+                        <p class="modal-subtitle">New sports are added to the active sports catalog.</p>
                     </div>
                     <button class="modal-close" type="button" onclick="closeCreateSportModal()" aria-label="Close">&times;</button>
                 </div>
@@ -2858,33 +2854,6 @@
                     </form>
                 </div>
             </div>
-        </div>
-
-        <!-- Tournament Section -->
-        <div class="registrations-section" id="tournamentsSection" style="display: none;">
-            <div class="section-header">
-                <div>
-                    <h3><i class="fas fa-sitemap"></i> Tournaments and Matches</h3>
-                    <p>Create knockout or round-robin tournaments, register participants, and confirm results.</p>
-                </div>
-                <button class="btn btn-outline" onclick="loadTournaments()"><i class="fas fa-sync"></i> Refresh</button>
-            </div>
-            <div class="admin-table-container" style="padding: 1rem; margin-bottom: 1rem;">
-                <form id="createTournamentForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .75rem; align-items: end;">
-                    <label>Name<input id="tournamentName" class="form-control" required maxlength="160"></label>
-                    <label>Sport<select id="tournamentSport" class="form-control" required></select></label>
-                    <label>Format<select id="tournamentFormat" class="form-control"><option value="single_elimination">Single elimination</option><option value="round_robin">Round robin</option><option value="multi_entrant">Multi-entrant placement</option></select></label>
-                    <label>Participants<select id="tournamentParticipantType" class="form-control"><option value="team">Teams</option><option value="individual">Individuals</option></select></label>
-                    <button class="btn btn-primary" type="submit">Create tournament</button>
-                </form>
-            </div>
-            <div id="tournamentNotice" role="status" style="margin: .5rem 0;"></div>
-            <div class="admin-table-container">
-                <table class="admin-table"><thead><tr><th>Name</th><th>Sport / format</th><th>Status</th><th>Entrants</th><th>Actions</th></tr></thead>
-                    <tbody id="tournamentsTableBody"><tr><td colspan="5">Select Tournaments to load records.</td></tr></tbody>
-                </table>
-            </div>
-            <div id="tournamentDetailPanel" style="margin-top: 1rem;"></div>
         </div>
 
         <!-- Teams Section -->
@@ -3523,8 +3492,11 @@
 
                 <div class="form-section" style="margin-top: 2rem;">
                     <h3
-                        style="margin-bottom: 1rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">
+                        style="margin-bottom: 0.5rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">
                         Player Categories</h3>
+                    <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 1rem;">
+                        <i class="fas fa-info-circle"></i> Categories define auction base prices based on player evaluation scores. If configured, category ranges must be contiguous and cover the <strong>full 0–100 score</strong> (e.g. Bronze: 0–60, Silver: 60–70, Gold: 70–80, Platinum: 80–90, Diamond: 90–100).
+                    </p>
 
                     <table class="table" style="width: 100%; margin-bottom: 1rem; text-align: left;">
                         <thead>
@@ -3540,6 +3512,7 @@
                             <!-- Categories will be rendered here dynamically -->
                         </tbody>
                     </table>
+                    <div id="configCategoriesStatusNotice" style="margin-bottom: 1rem; font-size: 0.85rem;"></div>
 
                     <div
                         style="background: #1e293b; padding: 1rem; border-radius: 0.5rem; display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
@@ -3568,22 +3541,42 @@
                 </div>
 
                 <div class="form-section" style="margin-top: 2rem;">
-                    <h3 style="margin-bottom: 1rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">Evaluation Rules (Score weights out of 100%)</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                        <h3 style="margin: 0; color: #f8fafc;">Evaluation Rules (Score weights out of 100%)</h3>
+                        <div id="evaluationSectionActions" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <button type="button" class="btn btn-outline" id="editEvaluationPanelBtn" onclick="toggleEvaluationEditMode(true)" style="padding: 0.4rem 0.85rem; font-size: 0.875rem; border-color: #38bdf8; color: #38bdf8; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button type="button" class="btn btn-outline" id="addEvaluationPanelBtn" disabled style="padding: 0.4rem 0.85rem; font-size: 0.875rem; opacity: 0.5; cursor: not-allowed; display: inline-flex; align-items: center; gap: 0.4rem;" title="Click Edit to add panels">
+                                <i class="fas fa-plus"></i> Add Panel
+                            </button>
+                        </div>
+                    </div>
                     <label style="display:flex; align-items:center; gap:.6rem; margin-bottom:1rem;">
-                        <input type="checkbox" id="configScoringEnabled" checked>
+                        <input type="checkbox" id="configScoringEnabled" checked disabled>
                         Enable weighted player evaluation
                     </label>
                     <p style="color:#cbd5e1; margin:0 0 1rem;">Scoring method: weighted normalized profile score</p>
-                    <div id="sportEvaluationWeightFields" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1rem;"></div>
+                    <div id="sportEvaluationWeightFields" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem;"></div>
                     <div style="background:#1e293b; padding:1rem; border-radius:.5rem; display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
                         <span style="color:#94a3b8; font-weight:bold;">Total Weight</span>
                         <span id="configWeightTotalDisplay" style="font-size:1.25rem; font-weight:bold;">100%</span>
                     </div>
                 </div>
                 <div class="form-section" style="margin-top: 2rem;">
-                    <h3 style="margin-bottom: 1rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">Normalization Thresholds (Max expected values for 100/100 score)</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                        <h3 style="margin: 0; color: #f8fafc;">Normalization Thresholds (Max expected values for 100/100 score)</h3>
+                        <div id="normalizationSectionActions" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <button type="button" class="btn btn-outline" id="editNormalizationPanelBtn" onclick="toggleNormalizationEditMode(true)" style="padding: 0.4rem 0.85rem; font-size: 0.875rem; border-color: #38bdf8; color: #38bdf8; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button type="button" class="btn btn-outline" id="addNormalizationPanelBtn" disabled style="padding: 0.4rem 0.85rem; font-size: 0.875rem; opacity: 0.5; cursor: not-allowed; display: inline-flex; align-items: center; gap: 0.4rem;" title="Click Edit to add panels">
+                                <i class="fas fa-plus"></i> Add Panel
+                            </button>
+                        </div>
+                    </div>
                     <p style="color:#cbd5e1; margin:0 0 1rem;">Editable baselines: reaching a maximum expected value maps to a normalized score of 100/100. For lower-is-better metrics, the target is the time or measurement that earns 100/100.</p>
-                    <div id="sportNormalizationFields" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1rem;"></div>
+                    <div id="sportNormalizationFields" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem;"></div>
                     <p id="sportConfigurationValidation" role="status" style="min-height:1.25rem; color:#ef4444; margin:.5rem 0 0;"></p>
                 </div>
 
@@ -3843,7 +3836,7 @@
         </div>
     </div>
 
-    <script src="/js/admin-dashboard.js?v=31"></script>
+    <script src="/js/admin-dashboard.js?v=37"></script>
     <script>
         // Defeat bfcache so back button properly re-verifies auth
         window.addEventListener('pageshow', function (event) {

@@ -3041,9 +3041,10 @@ async function loadSports() {
             sportSelect.innerHTML = '<option value="">Select a Sport...</option>';
         }
 
-        const listedSports = sports.filter(sport => Number(sport.tier) === 1 && sport.is_active !== false);
+        const allSports = sports;
+        const activeSports = sports.filter(sport => sport.is_active !== false);
         if (sportSelect) {
-            listedSports.forEach(sport => {
+            activeSports.forEach(sport => {
                 const opt = document.createElement('option');
                 opt.value = sport.sport_id;
                 opt.textContent = sport.name;
@@ -3053,26 +3054,13 @@ async function loadSports() {
 
         if (!tbody) return;
 
-        const normalizeSportName = name => String(name ?? '')
-            .normalize('NFKC')
-            .trim()
-            .replace(/\s+/g, ' ')
-            .toLocaleLowerCase('en');
-        const adminSportAllowlist = new Set([
-            'Badminton', 'Basketball', 'Boxing', 'Carrom', 'Chess', 'Cricket', 'Esports',
-            'Football (Soccer)', 'Hockey / Field Hockey', 'Javelin throw', 'Kabaddi',
-            'Karate', 'Long-distance running', 'MMA (Mixed Martial Arts)', 'Marathon',
-            'Middle-distance running', 'Pickleball', 'Relay races', 'Shooting', 'Sprinting',
-            'Swimming', 'Table Tennis', 'Tennis', 'Volleyball', 'Wrestling'
-        ].map(normalizeSportName));
-        const configurableSports = sports.filter(sport => adminSportAllowlist.has(normalizeSportName(sport.name)));
-        if (configurableSports.length === 0) {
+        if (allSports.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #94a3b8;">No sports found.</td></tr>';
             return;
         }
 
         tbody.innerHTML = '';
-        configurableSports.forEach(sport => {
+        allSports.forEach(sport => {
             const tr = document.createElement('tr');
 
             // Serialize config to string safely for data attributes
@@ -3095,183 +3083,32 @@ async function loadSports() {
     }
 }
 
-function tournamentNotice(message, isError = false) {
-    const element = document.getElementById('tournamentNotice');
-    if (!element) return;
-    element.textContent = message;
-    element.style.color = isError ? '#ef4444' : '#22c55e';
-}
-
-async function loadTournamentSports() {
-    try {
-        const response = await fetch('/api/tournaments/sports');
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.error || 'Could not load sports');
-        window.jamrigTournamentSports = data.sports || [];
-        const select = document.getElementById('tournamentSport');
-        select.innerHTML = '<option value="">Select a sport</option>';
-        window.jamrigTournamentSports.forEach(sport => {
-            const option = document.createElement('option');
-            option.value = sport.sport_id;
-            option.textContent = sport.name;
-            select.appendChild(option);
-        });
-        updateTournamentOptions();
-    } catch (error) {
-        tournamentNotice(error.message, true);
-    }
-}
-
-function updateTournamentOptions() {
-    const sportId = Number(document.getElementById('tournamentSport')?.value);
-    const sport = (window.jamrigTournamentSports || []).find(item => item.sport_id === sportId);
-    const formatSelect = document.getElementById('tournamentFormat');
-    const participantSelect = document.getElementById('tournamentParticipantType');
-    if (!sport) return;
-    const formats = sport.competition_formats || [];
-    Array.from(formatSelect.options).forEach(option => { option.disabled = !formats.includes(option.value); });
-    if (!formats.includes(formatSelect.value)) formatSelect.value = formats[0] || '';
-    const supported = sport.participation_format === 'both' ? ['team', 'individual'] : [sport.participation_format];
-    Array.from(participantSelect.options).forEach(option => { option.disabled = !supported.includes(option.value); });
-    if (!supported.includes(participantSelect.value)) participantSelect.value = supported[0] || '';
-}
-
-async function createTournamentFromDashboard(event) {
-    event.preventDefault();
-    const payload = {
-        name: document.getElementById('tournamentName').value.trim(),
-        sport_id: Number(document.getElementById('tournamentSport').value),
-        format: document.getElementById('tournamentFormat').value,
-        participant_type: document.getElementById('tournamentParticipantType').value
-    };
-    try {
-        const response = await fetch('/api/tournaments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        const result = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.error || 'Could not create tournament');
-        document.getElementById('tournamentName').value = '';
-        tournamentNotice(`Created ${result.tournament.name}. Open registration to add participants.`);
-        await loadTournaments();
-    } catch (error) {
-        tournamentNotice(error.message, true);
-    }
-}
-
-async function loadTournaments() {
-    try {
-        const response = await fetch('/api/tournaments');
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.error || 'Could not load tournaments');
-        const body = document.getElementById('tournamentsTableBody');
-        const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
-        body.innerHTML = (data.tournaments || []).map(item => {
-            const actions = [`<button class="admin-btn-action" onclick="viewTournament(${item.tournament_id})">View</button>`];
-            if (item.status === 'draft') actions.push(`<button class="admin-btn-action" onclick="tournamentAction(${item.tournament_id}, 'open')">Open registration</button>`);
-            if (['registration', 'ready'].includes(item.status)) actions.push(`<button class="admin-btn-action" onclick="tournamentAction(${item.tournament_id}, 'start')">Generate fixtures</button>`);
-            return `<tr><td>${esc(item.name)}</td><td>${esc(item.sport.name)} · ${esc(item.format)}</td><td>${esc(item.status)}</td><td>${item.participant_count}/${item.max_participants}</td><td>${actions.join(' ')}</td></tr>`;
-        }).join('') || '<tr><td colspan="5">No tournaments yet.</td></tr>';
-    } catch (error) {
-        tournamentNotice(error.message, true);
-    }
-}
-
-async function tournamentAction(tournamentId, action) {
-    try {
-        const response = await fetch(`/api/tournaments/${tournamentId}/${action}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.error || `Could not ${action} tournament`);
-        tournamentNotice(action === 'start' ? 'Fixtures generated.' : 'Registration opened.');
-        await loadTournaments();
-        if (action === 'start') await viewTournament(tournamentId);
-    } catch (error) {
-        tournamentNotice(error.message, true);
-    }
-}
-
-async function viewTournament(tournamentId) {
-    try {
-        const [tournamentResponse, matchesResponse, participantsResponse] = await Promise.all([
-            fetch(`/api/tournaments/${tournamentId}`), fetch(`/api/tournaments/${tournamentId}/matches`),
-            fetch(`/api/tournaments/${tournamentId}/participants`)
-        ]);
-        const [tournamentData, matchesData, participantsData] = await Promise.all([
-            tournamentResponse.json(), matchesResponse.json(), participantsResponse.json()
-        ]);
-        if (!tournamentResponse.ok || !tournamentData.success) throw new Error(tournamentData.error || 'Could not load tournament');
-        const tournament = tournamentData.tournament;
-        const panel = document.getElementById('tournamentDetailPanel');
-        const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
-        const registrations = (participantsData.participants || []).map(p => `<li>${esc(p.name)} (${esc(p.type)} #${p.id}) · ${esc(p.status)}</li>`).join('');
-        const registerForm = tournament.status === 'registration' ? `<form onsubmit="registerTournamentParticipant(event, ${tournamentId})"><label>Player/team ID <input id="tournamentParticipantId" type="number" min="1" required></label> <button class="admin-btn-action">Register</button></form>` : '';
-        const rows = (matchesData.matches || []).filter(m => !m.is_bye && m.status !== 'cancelled').map(match => {
-            const sides = match.participants.map(side => side.participant ? `${esc(side.participant.name)} [entrant ${side.participant.participant_id}]` : 'Waiting').join(' vs ');
-            const entrantIds = match.participants.filter(side => side.participant).map(side => side.participant.participant_id);
-            const controls = match.result_status === 'pending'
-                ? `<button class="admin-btn-action" onclick="confirmTournamentResult(${match.match_id})">Confirm result</button>`
-                : ['scheduled', 'in_progress'].includes(match.status) && match.participants.every(side => side.participant)
-                    ? `<button class="admin-btn-action" onclick='submitTournamentResult(${match.match_id}, ${JSON.stringify(entrantIds)})'>Submit result</button>` : '';
-            return `<tr><td>${match.round} / ${match.match_number}</td><td>${sides}</td><td>${esc(match.status)} · ${esc(match.result_status)}</td><td>${esc(JSON.stringify(match.score || ''))}</td><td>${controls}</td></tr>`;
-        }).join('');
-        panel.innerHTML = `<div class="admin-table-container" style="padding:1rem"><h4>${esc(tournament.name)} · ${esc(tournament.status)}</h4><h5>Entrants</h5><ul>${registrations || '<li>No participants registered.</li>'}</ul>${registerForm}<h5>Fixtures and results</h5><table class="admin-table"><thead><tr><th>Round</th><th>Participants</th><th>Status</th><th>Score</th><th>Actions</th></tr></thead><tbody>${rows || '<tr><td colspan="5">Fixtures have not been generated.</td></tr>'}</tbody></table></div>`;
-    } catch (error) {
-        tournamentNotice(error.message, true);
-    }
-}
-
-async function registerTournamentParticipant(event, tournamentId) {
-    event.preventDefault();
-    try {
-        const participantId = Number(document.getElementById('tournamentParticipantId').value);
-        const response = await fetch(`/api/tournaments/${tournamentId}/participants`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ participant_id: participantId }) });
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.error || 'Registration failed');
-        tournamentNotice('Participant registered.');
-        await loadTournaments();
-        await viewTournament(tournamentId);
-    } catch (error) {
-        tournamentNotice(error.message, true);
-    }
-}
-
-async function submitTournamentResult(matchId, entrantIds) {
-    const example = Object.fromEntries(entrantIds.map((id, index) => [String(id), entrantIds.length - index]));
-    const raw = prompt(`Enter JSON keyed by entrant IDs ${entrantIds.join(', ')}. Example for points: ${JSON.stringify(example)}. For other templates include fields like score, winner_participant_id, measurement_type, and unit.`);
-    if (!raw) return;
-    try {
-        const parsed = JSON.parse(raw);
-        const payload = parsed && typeof parsed === 'object' && Object.prototype.hasOwnProperty.call(parsed, 'score') ? parsed : { score: parsed };
-        const response = await fetch(`/api/matches/${matchId}/results`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.error || 'Result submission failed');
-        tournamentNotice('Result submitted and awaiting organizer confirmation.');
-        const tournamentId = data.match.tournament_id;
-        await viewTournament(tournamentId);
-    } catch (error) {
-        tournamentNotice(error.message, true);
-    }
-}
-
-async function confirmTournamentResult(matchId) {
-    try {
-        const response = await fetch(`/api/matches/${matchId}/confirm`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.error || 'Confirmation failed');
-        tournamentNotice('Result confirmed; tournament progression updated.');
-        await loadTournaments();
-        await viewTournament(data.match.tournament_id);
-    } catch (error) {
-        tournamentNotice(error.message, true);
-    }
-}
-
-// State to hold dynamic categories for the modal
+// State to hold dynamic categories and panel configurations for the modal
 let currentSportCategories = [];
-
 let currentSportConfigSchema = null;
+let currentEvaluationPanels = [];
+let currentNormalizationPanels = [];
+let savedEvaluationPanels = [];
+let savedNormalizationPanels = [];
+let savedScoringEnabled = true;
+let evaluationEditMode = false;
+let normalizationEditMode = false;
 
 function configEscape(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     })[char]);
+}
+
+function formatInputType(type) {
+    switch (String(type || '').toLowerCase()) {
+        case 'decimal': return 'Decimal / Float';
+        case 'select': return 'Dropdown (Select)';
+        case 'text': return 'Text (Non-scoring)';
+        case 'integer':
+        default:
+            return 'Number (Integer)';
+    }
 }
 
 async function openConfigureSportModal(sportDataB64) {
@@ -3282,6 +3119,9 @@ async function openConfigureSportModal(sportDataB64) {
         showModal('Error', 'Could not read the selected sport.');
         return;
     }
+
+    evaluationEditMode = false;
+    normalizationEditMode = false;
 
     document.getElementById('configureSportId').value = sport.sport_id;
     document.getElementById('configureSportModal').classList.add('active');
@@ -3332,63 +3172,582 @@ async function openConfigureSportModal(sportDataB64) {
 }
 
 function renderSportConfigurationFields(schema, rules) {
-    const weightsContainer = document.getElementById('sportEvaluationWeightFields');
-    const thresholdsContainer = document.getElementById('sportNormalizationFields');
     const weights = rules.evaluation_weights || rules.weights || {};
     const normalization = rules.normalization_thresholds || rules.normalization || {};
     const levelScores = rules.highest_level_scores || {};
     document.getElementById('configLevelScoresHidden').value = JSON.stringify(levelScores);
-    document.getElementById('configScoringEnabled').checked = rules.enabled !== false;
 
-    weightsContainer.innerHTML = schema.fields.map(field => {
-        const weight = weights[field.key] ?? 0;
-        return `<div class="form-group" style="background:#0f172a; padding:1rem; border-radius:.5rem">
-            <label for="weight-${configEscape(field.key)}" style="font-weight:600">${configEscape(field.label)}</label>
-            <label for="weight-${configEscape(field.key)}" style="margin-top:.5rem">Weight (%)</label>
-            <input id="weight-${configEscape(field.key)}" class="form-control" type="number" min="0" max="100" step="any"
-                data-config-weight="${configEscape(field.key)}" value="${configEscape(weight)}" required>
-        </div>`;
-    }).join('');
+    savedScoringEnabled = rules.enabled !== false;
+    const scoringCheckbox = document.getElementById('configScoringEnabled');
+    if (scoringCheckbox) {
+        scoringCheckbox.checked = savedScoringEnabled;
+        scoringCheckbox.disabled = true;
+        scoringCheckbox.onchange = updateTotalWeight;
+    }
 
-    thresholdsContainer.innerHTML = schema.fields.filter(field => field.normalization_key).map(field => {
-        const threshold = normalization[field.normalization_key] ?? field.default_threshold;
-        const lower = field.direction === 'lower';
-        return `<div class="form-group" style="background:#0f172a; padding:1rem; border-radius:.5rem">
-            <label for="norm-${configEscape(field.key)}" style="font-weight:600">${configEscape(field.label)}</label>
-            <small style="display:block;color:#94a3b8;margin:.25rem 0 .5rem">${configEscape(field.unit)}; ${lower ? 'lower values score higher; this target maps to 100/100' : 'this maximum expected value maps to 100/100'}</small>
-            <label for="norm-${configEscape(field.key)}">${lower ? 'Target value' : 'Maximum expected value'} (${configEscape(field.unit)})</label>
-            <input id="norm-${configEscape(field.key)}" class="form-control" type="number" min="0.000001" ${field.unit === '%' ? 'max="100"' : ''} step="any"
-                data-config-threshold="${configEscape(field.normalization_key)}" value="${configEscape(threshold)}" required>
-        </div>`;
-    }).join('');
+    // Load Evaluation Rules Panels
+    const sourceFields = (Array.isArray(rules.fields) && rules.fields.length > 0)
+        ? rules.fields
+        : (schema.fields || []);
 
-    document.querySelectorAll('#sportEvaluationWeightFields [data-config-weight]')
-        .forEach(input => input.addEventListener('input', updateTotalWeight));
-    thresholdsContainer.querySelectorAll('[data-config-threshold]').forEach(input => input.addEventListener('input', validateSportThresholds));
-    document.getElementById('configScoringEnabled').onchange = updateTotalWeight;
+    currentEvaluationPanels = sourceFields.map((field, idx) => {
+        const key = field.key || `crit_${idx}_${Date.now()}`;
+        return {
+            id: 'eval_' + Math.random().toString(36).substr(2, 9),
+            key: key,
+            originalKey: field.key,
+            label: field.label || field.name || 'Criterion ' + (idx + 1),
+            type: field.type || (field.categorical ? 'select' : 'integer'),
+            weight: weights[key] !== undefined ? weights[key] : (field.weight !== undefined ? field.weight : 0),
+            unit: field.unit || '',
+            direction: field.direction || 'higher',
+            normalization_key: field.normalization_key || `${key}_max`,
+            default_threshold: field.default_threshold ?? field.maximum ?? 100,
+            minimum: field.minimum !== undefined ? field.minimum : 0,
+            maximum: field.maximum !== undefined ? field.maximum : 100,
+            options: field.options || [],
+            scores: field.scores || null,
+            isNew: false
+        };
+    });
+
+    // Load Normalization Threshold Panels
+    if (Array.isArray(rules.normalization_panels) && rules.normalization_panels.length > 0) {
+        currentNormalizationPanels = rules.normalization_panels.map((p, idx) => {
+            const key = p.key || `norm_${idx}_${Date.now()}`;
+            const isText = p.type === 'text';
+            let val = normalization[key] !== undefined ? normalization[key] : (p.value !== undefined ? p.value : (isText ? '' : 100));
+            if (isText) {
+                val = String(val ?? '');
+            } else {
+                val = (val !== '' && val !== null && val !== undefined && Number.isFinite(Number(val))) ? parseInt(val, 10) : 100;
+            }
+            return {
+                id: 'norm_' + Math.random().toString(36).substr(2, 9),
+                key: key,
+                originalKey: p.key,
+                name: p.name || p.label || 'Normalization Threshold ' + (idx + 1),
+                type: isText ? 'text' : 'integer',
+                unit: p.unit || '',
+                value: val,
+                isNew: false
+            };
+        });
+    } else {
+        currentNormalizationPanels = sourceFields.filter(f => f.normalization_key || f.type !== 'text').map((field, idx) => {
+            const normKey = field.normalization_key || `${field.key}_max`;
+            const isText = field.type === 'text';
+            let val = normalization[normKey] !== undefined ? normalization[normKey] : (field.default_threshold ?? (isText ? '' : 100));
+            if (isText) {
+                val = String(val ?? '');
+            } else {
+                val = (val !== '' && val !== null && val !== undefined && Number.isFinite(Number(val))) ? parseInt(val, 10) : 100;
+            }
+            return {
+                id: 'norm_' + Math.random().toString(36).substr(2, 9),
+                key: normKey,
+                originalKey: normKey,
+                name: field.label || 'Criterion ' + (idx + 1),
+                type: isText ? 'text' : 'integer',
+                unit: field.unit || '',
+                value: val,
+                isNew: false
+            };
+        });
+    }
+
+    // Save baseline snapshot for cancellation
+    savedEvaluationPanels = JSON.parse(JSON.stringify(currentEvaluationPanels));
+    savedNormalizationPanels = JSON.parse(JSON.stringify(currentNormalizationPanels));
+
+    // Both sections default to read-only mode
+    evaluationEditMode = false;
+    normalizationEditMode = false;
+
+    updateEvaluationHeaderActions();
+    updateNormalizationHeaderActions();
+    renderEvaluationPanelsUI();
+    renderNormalizationPanelsUI();
     updateTotalWeight();
 }
 
+function updateEvaluationHeaderActions() {
+    const container = document.getElementById('evaluationSectionActions');
+    if (!container) return;
+
+    if (!evaluationEditMode) {
+        container.innerHTML = `
+            <button type="button" class="btn btn-outline" id="editEvaluationPanelBtn" onclick="toggleEvaluationEditMode(true)" style="padding: 0.4rem 0.85rem; font-size: 0.875rem; border-color: #38bdf8; color: #38bdf8; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+            <button type="button" class="btn btn-outline" id="addEvaluationPanelBtn" disabled style="padding: 0.4rem 0.85rem; font-size: 0.875rem; opacity: 0.5; cursor: not-allowed; display: inline-flex; align-items: center; gap: 0.4rem;" title="Click Edit to add panels">
+                <i class="fas fa-plus"></i> Add Panel
+            </button>
+        `;
+    } else {
+        container.innerHTML = `
+            <button type="button" class="btn btn-primary" id="addEvaluationPanelBtn" onclick="addEvaluationPanel()" style="padding: 0.4rem 0.85rem; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fas fa-plus"></i> Add Panel
+            </button>
+            <button type="button" class="btn btn-cancel" id="cancelEvaluationEditBtn" onclick="cancelEvaluationEdit()" style="padding: 0.4rem 0.85rem; font-size: 0.875rem; height: auto; border-radius: 0.375rem; background: #334155; color: #f8fafc; border: none; cursor: pointer;">
+                Cancel
+            </button>
+            <button type="button" class="btn btn-save" id="saveEvaluationSectionBtn" onclick="saveEvaluationSection()" style="padding: 0.4rem 0.85rem; font-size: 0.875rem; height: auto; border-radius: 0.375rem; background: linear-gradient(135deg, #00ffff 0%, #0080ff 100%); color: #000; font-weight: 600; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fas fa-save"></i> Save
+            </button>
+        `;
+    }
+}
+
+function updateNormalizationHeaderActions() {
+    const container = document.getElementById('normalizationSectionActions');
+    if (!container) return;
+
+    if (!normalizationEditMode) {
+        container.innerHTML = `
+            <button type="button" class="btn btn-outline" id="editNormalizationPanelBtn" onclick="toggleNormalizationEditMode(true)" style="padding: 0.4rem 0.85rem; font-size: 0.875rem; border-color: #38bdf8; color: #38bdf8; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+            <button type="button" class="btn btn-outline" id="addNormalizationPanelBtn" disabled style="padding: 0.4rem 0.85rem; font-size: 0.875rem; opacity: 0.5; cursor: not-allowed; display: inline-flex; align-items: center; gap: 0.4rem;" title="Click Edit to add panels">
+                <i class="fas fa-plus"></i> Add Panel
+            </button>
+        `;
+    } else {
+        container.innerHTML = `
+            <button type="button" class="btn btn-primary" id="addNormalizationPanelBtn" onclick="addNormalizationPanel()" style="padding: 0.4rem 0.85rem; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fas fa-plus"></i> Add Panel
+            </button>
+            <button type="button" class="btn btn-cancel" id="cancelNormalizationEditBtn" onclick="cancelNormalizationEdit()" style="padding: 0.4rem 0.85rem; font-size: 0.875rem; height: auto; border-radius: 0.375rem; background: #334155; color: #f8fafc; border: none; cursor: pointer;">
+                Cancel
+            </button>
+            <button type="button" class="btn btn-save" id="saveNormalizationSectionBtn" onclick="saveNormalizationSection()" style="padding: 0.4rem 0.85rem; font-size: 0.875rem; height: auto; border-radius: 0.375rem; background: linear-gradient(135deg, #00ffff 0%, #0080ff 100%); color: #000; font-weight: 600; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fas fa-save"></i> Save
+            </button>
+        `;
+    }
+}
+
+function toggleEvaluationEditMode(isEdit) {
+    evaluationEditMode = Boolean(isEdit);
+    const checkbox = document.getElementById('configScoringEnabled');
+    if (checkbox) checkbox.disabled = !evaluationEditMode;
+    updateEvaluationHeaderActions();
+    renderEvaluationPanelsUI();
+    updateTotalWeight();
+}
+
+function toggleNormalizationEditMode(isEdit) {
+    normalizationEditMode = Boolean(isEdit);
+    updateNormalizationHeaderActions();
+    renderNormalizationPanelsUI();
+    validateSportThresholds();
+}
+
+function cancelEvaluationEdit() {
+    currentEvaluationPanels = JSON.parse(JSON.stringify(savedEvaluationPanels));
+    const checkbox = document.getElementById('configScoringEnabled');
+    if (checkbox) {
+        checkbox.checked = savedScoringEnabled;
+        checkbox.disabled = true;
+    }
+    evaluationEditMode = false;
+    updateEvaluationHeaderActions();
+    renderEvaluationPanelsUI();
+    updateTotalWeight();
+    const valMsg = document.getElementById('sportConfigurationValidation');
+    if (valMsg) valMsg.textContent = '';
+}
+
+function cancelNormalizationEdit() {
+    currentNormalizationPanels = JSON.parse(JSON.stringify(savedNormalizationPanels));
+    normalizationEditMode = false;
+    updateNormalizationHeaderActions();
+    renderNormalizationPanelsUI();
+    validateSportThresholds();
+    const valMsg = document.getElementById('sportConfigurationValidation');
+    if (valMsg) valMsg.textContent = '';
+}
+
+function renderEvaluationPanelsUI() {
+    const container = document.getElementById('sportEvaluationWeightFields');
+    if (!container) return;
+
+    if (currentEvaluationPanels.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:#94a3b8; padding:2rem; background:#0f172a; border-radius:.5rem; border:1px dashed #334155;">No evaluation rules configured.' + (evaluationEditMode ? ' Click <strong>+ Add Panel</strong> to add one.' : ' Click <strong>Edit</strong> to configure.') + '</div>';
+        return;
+    }
+
+    if (!evaluationEditMode) {
+        container.innerHTML = currentEvaluationPanels.map((panel) => {
+            return `
+            <div class="sport-config-panel-readonly" data-eval-id="${panel.id}" style="background:#0f172a; padding:1.25rem; border-radius:0.5rem; border:1px solid #1e293b; display:flex; flex-direction:column; gap:0.6rem;">
+                <div style="font-weight:600; color:#38bdf8; font-size:1rem; border-bottom:1px solid #1e293b; padding-bottom:0.5rem; margin-bottom:0.25rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    ${configEscape(panel.label || 'Untitled Rule')}
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.875rem;">
+                    <span style="color:#94a3b8;">Weight:</span>
+                    <span style="color:#f8fafc; font-weight:600; font-size:0.95rem;">${Number(panel.weight) || 0}%</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.875rem;">
+                    <span style="color:#94a3b8;">Input type:</span>
+                    <span style="color:#cbd5e1;">${formatInputType(panel.type)}</span>
+                </div>
+            </div>`;
+        }).join('');
+        return;
+    }
+
+    container.innerHTML = currentEvaluationPanels.map((panel) => {
+        return `
+        <div class="sport-config-panel" data-eval-id="${panel.id}" style="background:#0f172a; padding:1.25rem; border-radius:0.5rem; border:1px solid #38bdf8; display:flex; flex-direction:column; gap:0.75rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1e293b; padding-bottom:0.5rem;">
+                <span class="eval-panel-heading" style="font-weight:600; color:#38bdf8; font-size:0.95rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    ${configEscape(panel.label || 'New Rule')}
+                </span>
+                <button type="button" class="btn btn-outline-danger" style="padding:0.25rem 0.5rem; font-size:0.8rem; border-color:#ef4444; color:#ef4444; background:transparent; border-radius:4px; cursor:pointer;" onclick="deleteEvaluationPanel('${panel.id}')" title="Delete this panel">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div>
+                <label style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:0.35rem; font-weight:500;">Criteria Name</label>
+                <input type="text" class="form-control" style="background:#1e293b; border-color:#334155; color:#f8fafc;" value="${configEscape(panel.label)}" placeholder="e.g. Strike Rate / Matches Played" oninput="handleEvaluationPanelNameChange('${panel.id}', this.value)" required>
+            </div>
+            <div>
+                <label style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:0.35rem; font-weight:500;">Type of Input</label>
+                <select class="form-control" style="background:#1e293b; border-color:#334155; color:#f8fafc;" onchange="handleEvaluationPanelTypeChange('${panel.id}', this.value)">
+                    <option value="integer" ${panel.type === 'integer' ? 'selected' : ''}>Number (Integer)</option>
+                    <option value="decimal" ${panel.type === 'decimal' ? 'selected' : ''}>Decimal / Float</option>
+                    <option value="select" ${panel.type === 'select' ? 'selected' : ''}>Dropdown (Select)</option>
+                    <option value="text" ${panel.type === 'text' ? 'selected' : ''}>Text (Non-scoring)</option>
+                </select>
+            </div>
+            <div>
+                <label style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:0.35rem; font-weight:500;">Weight (%)</label>
+                <input type="number" class="form-control" style="background:#1e293b; border-color:#334155; color:#f8fafc;" min="0" max="100" step="any" data-config-weight="${configEscape(panel.key)}" value="${configEscape(panel.weight)}" ${panel.type === 'text' ? 'disabled' : ''} oninput="handleEvaluationPanelWeightChange('${panel.id}', this.value)" required>
+            </div>
+        </div>`;
+    }).join('');
+
+    container.querySelectorAll('[data-config-weight]').forEach(input => {
+        input.addEventListener('input', updateTotalWeight);
+    });
+}
+
+function renderNormalizationPanelsUI() {
+    const container = document.getElementById('sportNormalizationFields');
+    if (!container) return;
+
+    if (currentNormalizationPanels.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:#94a3b8; padding:2rem; background:#0f172a; border-radius:.5rem; border:1px dashed #334155;">No normalization thresholds configured.' + (normalizationEditMode ? ' Click <strong>+ Add Panel</strong> to add one.' : ' Click <strong>Edit</strong> to configure.') + '</div>';
+        return;
+    }
+
+    if (!normalizationEditMode) {
+        container.innerHTML = currentNormalizationPanels.map((panel) => {
+            const isText = panel.type === 'text';
+            const typeDisplay = isText ? 'Text' : 'Integer';
+            const valueLabel = isText ? 'Value:' : 'Maximum expected value:';
+            const displayVal = panel.value !== undefined && panel.value !== null && panel.value !== '' ? configEscape(panel.value) : '—';
+            return `
+            <div class="sport-config-panel-readonly" data-norm-id="${panel.id}" style="background:#0f172a; padding:1.25rem; border-radius:0.5rem; border:1px solid #1e293b; display:flex; flex-direction:column; gap:0.6rem;">
+                <div style="font-weight:600; color:#38bdf8; font-size:1rem; border-bottom:1px solid #1e293b; padding-bottom:0.5rem; margin-bottom:0.25rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    ${configEscape(panel.name || 'Untitled Threshold')}
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.875rem;">
+                    <span style="color:#94a3b8;">Type:</span>
+                    <span style="color:#cbd5e1;">${typeDisplay}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.875rem;">
+                    <span style="color:#94a3b8;">${valueLabel}</span>
+                    <span style="color:#f8fafc; font-weight:600; font-size:0.95rem;">${displayVal}</span>
+                </div>
+            </div>`;
+        }).join('');
+        return;
+    }
+
+    container.innerHTML = currentNormalizationPanels.map((panel) => {
+        const isText = panel.type === 'text';
+        return `
+        <div class="sport-config-panel" data-norm-id="${panel.id}" style="background:#0f172a; padding:1.25rem; border-radius:0.5rem; border:1px solid #38bdf8; display:flex; flex-direction:column; gap:0.75rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1e293b; padding-bottom:0.5rem;">
+                <span class="norm-panel-heading" style="font-weight:600; color:#38bdf8; font-size:0.95rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    ${configEscape(panel.name || 'New Threshold')}
+                </span>
+                <button type="button" class="btn btn-outline-danger" style="padding:0.25rem 0.5rem; font-size:0.8rem; border-color:#ef4444; color:#ef4444; background:transparent; border-radius:4px; cursor:pointer;" onclick="deleteNormalizationPanel('${panel.id}')" title="Delete this panel">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div>
+                <label style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:0.35rem; font-weight:500;">Criteria Name</label>
+                <input type="text" class="form-control" style="background:#1e293b; border-color:#334155; color:#f8fafc;" value="${configEscape(panel.name)}" placeholder="e.g. Personal Best Time / Maximum Runs" oninput="handleNormalizationPanelNameChange('${panel.id}', this.value)" required>
+            </div>
+            <div>
+                <label style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:0.35rem; font-weight:500;">Type of Input</label>
+                <select class="form-control" style="background:#1e293b; border-color:#334155; color:#f8fafc;" onchange="handleNormalizationPanelTypeChange('${panel.id}', this.value)">
+                    <option value="integer" ${!isText ? 'selected' : ''}>Integer</option>
+                    <option value="text" ${isText ? 'selected' : ''}>Text</option>
+                </select>
+            </div>
+            <div class="norm-threshold-input-container">
+                ${isText ? `
+                    <label style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:0.35rem; font-weight:500;">Threshold Value</label>
+                    <input type="text" class="form-control" style="background:#1e293b; border-color:#334155; color:#f8fafc;" data-config-threshold-text="${configEscape(panel.key)}" value="${configEscape(panel.value ?? '')}" oninput="handleNormalizationPanelValueChange('${panel.id}', this.value)" placeholder="e.g. International" required>
+                ` : `
+                    <label style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:0.35rem; font-weight:500;">Threshold Value (Max Expected for 100/100 score)</label>
+                    <input type="number" step="1" class="form-control" style="background:#1e293b; border-color:#334155; color:#f8fafc;" min="1" data-config-threshold="${configEscape(panel.key)}" value="${configEscape(panel.value ?? '')}" oninput="handleNormalizationPanelValueChange('${panel.id}', this.value)" placeholder="e.g. 100" required>
+                `}
+            </div>
+        </div>`;
+    }).join('');
+
+    container.querySelectorAll('[data-config-threshold], [data-config-threshold-text]').forEach(input => {
+        input.addEventListener('input', validateSportThresholds);
+    });
+}
+
+function addEvaluationPanel() {
+    if (!evaluationEditMode) {
+        toggleEvaluationEditMode(true);
+    }
+    const id = 'eval_' + Math.random().toString(36).substr(2, 9);
+    const newPanel = {
+        id: id,
+        key: `crit_${Date.now() % 100000}_${Math.floor(Math.random() * 1000)}`,
+        originalKey: null,
+        label: '',
+        type: 'integer',
+        weight: 0,
+        unit: '',
+        direction: 'higher',
+        default_threshold: 100,
+        minimum: 0,
+        maximum: 100,
+        options: [],
+        scores: null,
+        isNew: true
+    };
+    currentEvaluationPanels.push(newPanel);
+    renderEvaluationPanelsUI();
+    updateTotalWeight();
+
+    setTimeout(() => {
+        const inputEl = document.querySelector(`[data-eval-id="${id}"] input[type="text"]`);
+        if (inputEl) {
+            inputEl.focus();
+            inputEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }, 60);
+}
+
+function addNormalizationPanel() {
+    if (!normalizationEditMode) {
+        toggleNormalizationEditMode(true);
+    }
+    const id = 'norm_' + Math.random().toString(36).substr(2, 9);
+    const newPanel = {
+        id: id,
+        key: `norm_thresh_${Date.now() % 100000}_${Math.floor(Math.random() * 1000)}`,
+        originalKey: null,
+        name: '',
+        type: 'integer',
+        unit: '',
+        value: 100,
+        isNew: true
+    };
+    currentNormalizationPanels.push(newPanel);
+    renderNormalizationPanelsUI();
+    validateSportThresholds();
+
+    setTimeout(() => {
+        const inputEl = document.querySelector(`[data-norm-id="${id}"] input[type="text"]`);
+        if (inputEl) {
+            inputEl.focus();
+            inputEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }, 60);
+}
+
+function deleteEvaluationPanel(id) {
+    currentEvaluationPanels = currentEvaluationPanels.filter(p => p.id !== id);
+    renderEvaluationPanelsUI();
+    updateTotalWeight();
+}
+
+function deleteNormalizationPanel(id) {
+    currentNormalizationPanels = currentNormalizationPanels.filter(p => p.id !== id);
+    renderNormalizationPanelsUI();
+    validateSportThresholds();
+}
+
+function handleEvaluationPanelNameChange(id, value) {
+    const panel = currentEvaluationPanels.find(p => p.id === id);
+    if (panel) {
+        panel.label = value;
+        const heading = document.querySelector(`[data-eval-id="${id}"] .eval-panel-heading`);
+        if (heading) heading.textContent = value.trim() || 'New Rule';
+    }
+}
+
+function handleEvaluationPanelTypeChange(id, value) {
+    const panel = currentEvaluationPanels.find(p => p.id === id);
+    if (panel) {
+        panel.type = value;
+        const weightInput = document.querySelector(`[data-eval-id="${id}"] [data-config-weight]`);
+        if (value === 'text') {
+            panel.weight = 0;
+            if (weightInput) {
+                weightInput.value = 0;
+                weightInput.disabled = true;
+            }
+        } else {
+            if (weightInput) weightInput.disabled = false;
+        }
+        updateTotalWeight();
+    }
+}
+
+function handleEvaluationPanelWeightChange(id, value) {
+    const panel = currentEvaluationPanels.find(p => p.id === id);
+    if (panel) {
+        panel.weight = value === '' ? '' : Number(value);
+    }
+}
+
+function handleNormalizationPanelNameChange(id, value) {
+    const panel = currentNormalizationPanels.find(p => p.id === id);
+    if (panel) {
+        panel.name = value;
+        const heading = document.querySelector(`[data-norm-id="${id}"] .norm-panel-heading`);
+        if (heading) heading.textContent = value.trim() || 'New Threshold';
+    }
+}
+
+function handleNormalizationPanelTypeChange(id, value) {
+    const panel = currentNormalizationPanels.find(p => p.id === id);
+    if (!panel) return;
+    panel.type = value;
+    if (value === 'integer') {
+        if (panel.value !== '' && panel.value !== undefined && panel.value !== null) {
+            const num = Number(panel.value);
+            if (Number.isInteger(num) && num > 0) {
+                panel.value = num;
+            } else {
+                panel.value = '';
+            }
+        }
+    } else if (value === 'text') {
+        if (panel.value !== undefined && panel.value !== null) {
+            panel.value = String(panel.value);
+        }
+    }
+    const card = document.querySelector(`[data-norm-id="${id}"]`);
+    if (card) {
+        const container = card.querySelector('.norm-threshold-input-container');
+        if (container) {
+            if (panel.type === 'text') {
+                container.innerHTML = `
+                    <label style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:0.35rem; font-weight:500;">Threshold Value</label>
+                    <input type="text" class="form-control" style="background:#1e293b; border-color:#334155; color:#f8fafc;" data-config-threshold-text="${configEscape(panel.key)}" value="${configEscape(panel.value ?? '')}" oninput="handleNormalizationPanelValueChange('${panel.id}', this.value)" placeholder="e.g. International" required>
+                `;
+            } else {
+                container.innerHTML = `
+                    <label style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:0.35rem; font-weight:500;">Threshold Value (Max Expected for 100/100 score)</label>
+                    <input type="number" step="1" class="form-control" style="background:#1e293b; border-color:#334155; color:#f8fafc;" min="1" data-config-threshold="${configEscape(panel.key)}" value="${configEscape(panel.value ?? '')}" oninput="handleNormalizationPanelValueChange('${panel.id}', this.value)" placeholder="e.g. 100" required>
+                `;
+            }
+            const inputEl = container.querySelector('input');
+            if (inputEl) {
+                inputEl.addEventListener('input', validateSportThresholds);
+                inputEl.focus();
+            }
+        }
+    }
+    validateSportThresholds();
+}
+
+function handleNormalizationPanelValueChange(id, value) {
+    const panel = currentNormalizationPanels.find(p => p.id === id);
+    if (panel) {
+        if (panel.type === 'text') {
+            panel.value = value;
+        } else {
+            panel.value = value === '' ? '' : (value.includes('.') ? Number(value) : parseInt(value, 10));
+        }
+        validateSportThresholds();
+    }
+}
+
+function handleNormalizationPanelUnitChange(id, value) {
+    const panel = currentNormalizationPanels.find(p => p.id === id);
+    if (panel) {
+        panel.unit = value;
+    }
+}
+
 function updateTotalWeight() {
-    const inputs = [...document.querySelectorAll('#sportEvaluationWeightFields [data-config-weight]')];
-    const total = inputs.reduce((sum, input) => sum + (input.value === '' ? 0 : Number(input.value)), 0);
+    let total = 0;
+    let validInputs = true;
+    let count = 0;
+
+    if (evaluationEditMode) {
+        const inputs = [...document.querySelectorAll('#sportEvaluationWeightFields [data-config-weight]')];
+        count = inputs.length;
+        total = inputs.reduce((sum, input) => sum + (input.value === '' ? 0 : Number(input.value)), 0);
+        validInputs = count > 0 && inputs.every(input => input.value !== '' && Number.isFinite(Number(input.value)) && Number(input.value) >= 0 && Number(input.value) <= 100);
+    } else {
+        count = currentEvaluationPanels.length;
+        total = currentEvaluationPanels.reduce((sum, p) => sum + (Number(p.weight) || 0), 0);
+        validInputs = count > 0 && currentEvaluationPanels.every(p => p.weight !== '' && Number.isFinite(Number(p.weight)) && Number(p.weight) >= 0 && Number(p.weight) <= 100);
+    }
+
     const enabled = document.getElementById('configScoringEnabled').checked;
-    const validInputs = inputs.every(input => input.value !== '' && Number.isFinite(Number(input.value)) && Number(input.value) >= 0 && Number(input.value) <= 100);
-    const validTotal = !enabled || (Math.abs(total - 100) < 0.000001 && inputs.some(input => Number(input.value) > 0));
+    const validTotal = !enabled || (Math.abs(total - 100) < 0.000001 && total > 0);
     const display = document.getElementById('configWeightTotalDisplay');
-    display.textContent = `${Number(total.toFixed(4))}%`;
-    display.style.color = validInputs && validTotal ? '#10b981' : '#ef4444';
-    document.getElementById('sportConfigurationValidation').textContent =
-        !validInputs ? 'Weights must be numbers between 0 and 100.' :
-        (!validTotal ? 'Enabled weighted scoring requires a total weight of exactly 100%.' : '');
+    if (display) {
+        display.textContent = `${Number(total.toFixed(4))}%`;
+        display.style.color = validInputs && validTotal ? '#10b981' : '#ef4444';
+    }
+
+    const valMsg = document.getElementById('sportConfigurationValidation');
+    if (valMsg && evaluationEditMode) {
+        valMsg.textContent =
+            count === 0 ? 'At least one evaluation panel is required.' :
+            (!validInputs ? 'Weights must be numbers between 0 and 100.' :
+            (!validTotal ? 'Enabled weighted scoring requires a total weight of exactly 100%.' : ''));
+    }
     return validInputs && validTotal;
 }
 
 function validateSportThresholds() {
-    const inputs = [...document.querySelectorAll('#sportNormalizationFields [data-config-threshold]')];
-    const invalid = inputs.find(input => input.value === '' || !Number.isFinite(Number(input.value)) || Number(input.value) <= 0 || (input.max && Number(input.value) > Number(input.max)));
-    if (invalid) {
-        document.getElementById('sportConfigurationValidation').textContent = `${invalid.dataset.configThreshold} must be a positive number.`;
+    let invalidMessage = '';
+    const valMsg = document.getElementById('sportConfigurationValidation');
+
+    for (let i = 0; i < currentNormalizationPanels.length; i++) {
+        const p = currentNormalizationPanels[i];
+        if (!p.name || !p.name.trim()) {
+            if (normalizationEditMode) invalidMessage = `Normalization panel #${i + 1} requires a criteria name.`;
+            break;
+        }
+        if (p.type === 'text') {
+            if (p.value === undefined || p.value === null || String(p.value).trim() === '') {
+                if (normalizationEditMode) invalidMessage = `Threshold value for "${p.name.trim()}" is required.`;
+                break;
+            }
+        } else {
+            const numVal = Number(p.value);
+            if (p.value === '' || !Number.isFinite(numVal) || !Number.isInteger(numVal) || numVal <= 0) {
+                if (normalizationEditMode) invalidMessage = `Threshold for "${p.name.trim()}" must be a positive whole integer.`;
+                break;
+            }
+        }
+    }
+
+    if (valMsg && normalizationEditMode) {
+        valMsg.textContent = invalidMessage;
+    }
+
+    if (invalidMessage) {
         return false;
     }
     return updateTotalWeight();
@@ -3401,7 +3760,8 @@ function renderSportCategories() {
     tbody.innerHTML = '';
 
     if (currentSportCategories.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: #94a3b8; padding: 1rem;">No categories added yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #94a3b8; padding: 1rem;">No categories added yet.</td></tr>';
+        updateCategoryStatusNotice();
         return;
     }
 
@@ -3421,6 +3781,40 @@ function renderSportCategories() {
         `;
         tbody.appendChild(tr);
     });
+
+    updateCategoryStatusNotice();
+}
+
+function updateCategoryStatusNotice() {
+    const notice = document.getElementById('configCategoriesStatusNotice');
+    if (!notice) return;
+
+    if (currentSportCategories.length === 0) {
+        notice.innerHTML = '<span style="color: #94a3b8;"><i class="fas fa-info-circle"></i> No categories configured yet. Categories are optional, but if specified, they must cover 0–100.</span>';
+        return;
+    }
+
+    const ordered = [...currentSportCategories].sort((a, b) => a.min_score - b.min_score);
+    const minStart = ordered[0].min_score;
+    const maxEnd = ordered[ordered.length - 1].max_score;
+
+    let hasGap = false;
+    let gapInfo = '';
+    for (let i = 0; i < ordered.length - 1; i++) {
+        if (Math.abs(ordered[i].max_score - ordered[i + 1].min_score) > 0.000001) {
+            hasGap = true;
+            gapInfo = `Gap between "${ordered[i].name}" (ends at ${ordered[i].max_score}) and "${ordered[i + 1].name}" (starts at ${ordered[i + 1].min_score}).`;
+            break;
+        }
+    }
+
+    if (Math.abs(minStart) > 0.000001 || Math.abs(maxEnd - 100) > 0.000001) {
+        notice.innerHTML = `<span style="color: #f59e0b;"><i class="fas fa-exclamation-triangle"></i> Current coverage: <strong>${minStart} – ${maxEnd}</strong>. Categories must cover the full 0–100 score before saving.</span>`;
+    } else if (hasGap) {
+        notice.innerHTML = `<span style="color: #ef4444;"><i class="fas fa-times-circle"></i> ${gapInfo} Ranges must connect with no gaps.</span>`;
+    } else {
+        notice.innerHTML = `<span style="color: #22c55e;"><i class="fas fa-check-circle"></i> Complete coverage: 0 – 100 with no gaps. Ready to save!</span>`;
+    }
 }
 
 function addSportCategory() {
@@ -3470,7 +3864,7 @@ function addSportCategory() {
     const overlap = currentSportCategories.some(cat => {
         if (cat.min_score === undefined || cat.max_score === undefined) return false;
         // overlap exists if one range's start is less than or equal to the other range's end, and vice versa
-        return (minScore <= cat.max_score) && (maxScore >= cat.min_score);
+        return (minScore < cat.max_score) && (maxScore > cat.min_score);
     });
 
     if (overlap) {
@@ -3505,7 +3899,307 @@ function deleteSportCategory(index) {
 }
 
 function closeConfigureSportModal() {
+    evaluationEditMode = false;
+    normalizationEditMode = false;
     document.getElementById('configureSportModal').classList.remove('active');
+}
+
+function buildConfigurationPayload(evalPanels, normPanels) {
+    const usedFieldKeys = new Set();
+    function createFieldKey(rawName, fallback) {
+        let base = String(rawName || '')
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '');
+        if (!base || !/^[a-z]/.test(base)) {
+            base = `${fallback}_${base}`.replace(/^_+|_+$/g, '');
+        }
+        if (!/^[a-z]/.test(base)) {
+            base = `${fallback}_1`;
+        }
+        base = base.slice(0, 40);
+        let key = base;
+        let counter = 1;
+        while (usedFieldKeys.has(key)) {
+            key = `${base.slice(0, 36)}_${counter++}`;
+        }
+        usedFieldKeys.add(key);
+        return key;
+    }
+
+    const fields = [];
+    const weights = {};
+    const normalization = {};
+
+    evalPanels.forEach((p) => {
+        let key;
+        if (!p.isNew && p.originalKey && /^[a-z][a-z0-9_]{0,49}$/.test(p.originalKey) && !usedFieldKeys.has(p.originalKey)) {
+            key = p.originalKey;
+            usedFieldKeys.add(key);
+        } else {
+            key = createFieldKey(p.label, 'criterion');
+        }
+        p.key = key;
+
+        const weightVal = Number(p.weight) || 0;
+        weights[key] = weightVal;
+
+        const normKey = p.normalization_key && /^[a-z][a-z0-9_]{0,59}$/.test(p.normalization_key)
+            ? p.normalization_key
+            : `${key}_max`;
+        const thresholdVal = Number(p.default_threshold ?? p.maximum ?? 100) || 100;
+        normalization[normKey] = thresholdVal;
+
+        fields.push({
+            key: key,
+            label: p.label.trim(),
+            type: p.type || 'integer',
+            unit: (p.unit || '').trim(),
+            method: p.direction === 'lower' ? 'lower' : (p.type === 'select' ? 'categorical' : 'higher'),
+            direction: p.direction === 'lower' ? 'lower' : 'higher',
+            normalization_key: normKey,
+            default_threshold: thresholdVal,
+            minimum: Number(p.minimum ?? 0),
+            maximum: thresholdVal,
+            required: false,
+            categorical: p.type === 'select',
+            options: p.options && p.options.length ? p.options : (p.type === 'select' ? ['Level 1', 'Level 2'] : []),
+            scores: p.scores || (p.type === 'select' ? {'Level 1': 50, 'Level 2': 100} : null)
+        });
+    });
+
+    const usedNormKeys = new Set();
+    function createNormKey(rawName, fallback) {
+        let base = String(rawName || '')
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '');
+        if (!base || !/^[a-z]/.test(base)) {
+            base = `${fallback}_${base}`.replace(/^_+|_+$/g, '');
+        }
+        if (!/^[a-z]/.test(base)) {
+            base = `${fallback}_1`;
+        }
+        base = base.slice(0, 40);
+        let key = base;
+        let counter = 1;
+        while (usedNormKeys.has(key)) {
+            key = `${base.slice(0, 36)}_${counter++}`;
+        }
+        usedNormKeys.add(key);
+        return key;
+    }
+
+    const normPanelsList = [];
+    normPanels.forEach((p) => {
+        let key;
+        if (!p.isNew && p.originalKey && /^[a-z][a-z0-9_]{0,59}$/.test(p.originalKey) && !usedNormKeys.has(p.originalKey)) {
+            key = p.originalKey;
+            usedNormKeys.add(key);
+        } else {
+            key = createNormKey(p.name, 'norm');
+        }
+        p.key = key;
+
+        const isText = p.type === 'text';
+        let val;
+        if (isText) {
+            val = String(p.value ?? '').trim();
+        } else {
+            const num = Number(p.value);
+            val = Number.isInteger(num) ? num : (Math.round(num) || 100);
+        }
+        normalization[key] = val;
+
+        normPanelsList.push({
+            name: p.name.trim(),
+            key: key,
+            type: isText ? 'text' : 'integer',
+            unit: (p.unit || '').trim(),
+            value: val
+        });
+    });
+
+    let levelScores = {};
+    try { levelScores = JSON.parse(document.getElementById('configLevelScoresHidden').value || '{}'); } catch { levelScores = {}; }
+
+    let auctionRules = {};
+    try { auctionRules = JSON.parse(document.getElementById('configRulesHidden').value || '{}'); } catch { auctionRules = {}; }
+    const budgetValue = Number(document.getElementById('configDefaultBudget').value) || 600000;
+    auctionRules.default_budget = budgetValue;
+    if (!auctionRules.default_timer) auctionRules.default_timer = 20;
+
+    const evaluationRules = {
+        enabled: document.getElementById('configScoringEnabled').checked,
+        scoring_method: 'weighted',
+        fields: fields,
+        evaluation_weights: weights,
+        normalization_thresholds: normalization,
+        normalization_panels: normPanelsList
+    };
+    if (Object.keys(levelScores).length) evaluationRules.highest_level_scores = levelScores;
+
+    return {
+        evaluation_rules: evaluationRules,
+        categories_config: currentSportCategories,
+        default_auction_rules: auctionRules
+    };
+}
+
+async function sendSportConfig(sportId, payload) {
+    const putConfig = body => apiFetch(`/api/sports/${sportId}/config`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    let response = await putConfig(payload);
+    let data = await response.json().catch(() => ({}));
+    const errorMessage = data.detail || data.message || data.error || '';
+    if (!response.ok && /Unknown evaluation rule\(s\):.*evaluation_weights.*normalization_thresholds|Unknown evaluation rule\(s\):.*normalization_thresholds.*evaluation_weights/i.test(errorMessage)) {
+        const legacyRules = {
+            ...payload.evaluation_rules,
+            weights: payload.evaluation_rules.evaluation_weights,
+            normalization: payload.evaluation_rules.normalization_thresholds
+        };
+        delete legacyRules.evaluation_weights;
+        delete legacyRules.normalization_thresholds;
+        response = await putConfig({ ...payload, evaluation_rules: legacyRules });
+        data = await response.json().catch(() => ({}));
+    }
+    if (!response.ok || !data.success) {
+        throw new Error(data.detail || data.message || data.error || `Configuration save failed (${response.status})`);
+    }
+    await loadSports();
+    return data;
+}
+
+async function saveEvaluationSection() {
+    const sportId = document.getElementById('configureSportId').value;
+    const saveBtn = document.getElementById('saveEvaluationSectionBtn');
+    const validation = document.getElementById('sportConfigurationValidation');
+
+    if (currentEvaluationPanels.length === 0) {
+        validation.textContent = 'Please add at least one evaluation rule panel.';
+        return;
+    }
+
+    for (let i = 0; i < currentEvaluationPanels.length; i++) {
+        const p = currentEvaluationPanels[i];
+        if (!p.label || !p.label.trim()) {
+            validation.textContent = `Evaluation panel #${i + 1} requires a criteria name.`;
+            return;
+        }
+        if (p.weight === '' || !Number.isFinite(Number(p.weight)) || Number(p.weight) < 0 || Number(p.weight) > 100) {
+            validation.textContent = `Weight for "${p.label.trim()}" must be between 0 and 100.`;
+            return;
+        }
+    }
+
+    const enabled = document.getElementById('configScoringEnabled').checked;
+    const total = currentEvaluationPanels.reduce((sum, p) => sum + (Number(p.weight) || 0), 0);
+    if (enabled && Math.abs(total - 100) > 0.000001) {
+        validation.textContent = 'Enabled weighted scoring requires a total weight of exactly 100%.';
+        return;
+    }
+
+    validation.textContent = '';
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    }
+
+    try {
+        const payload = buildConfigurationPayload(
+            currentEvaluationPanels,
+            normalizationEditMode ? currentNormalizationPanels : savedNormalizationPanels
+        );
+        await sendSportConfig(sportId, payload);
+
+        savedEvaluationPanels = JSON.parse(JSON.stringify(currentEvaluationPanels));
+        savedScoringEnabled = document.getElementById('configScoringEnabled').checked;
+        evaluationEditMode = false;
+
+        updateEvaluationHeaderActions();
+        renderEvaluationPanelsUI();
+        updateTotalWeight();
+        const checkbox = document.getElementById('configScoringEnabled');
+        if (checkbox) checkbox.disabled = true;
+
+        showModal('Success', 'Evaluation rules saved successfully.');
+    } catch (error) {
+        validation.textContent = error.message;
+        showModal('Configuration Error', error.message);
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+        }
+    }
+}
+
+async function saveNormalizationSection() {
+    const sportId = document.getElementById('configureSportId').value;
+    const saveBtn = document.getElementById('saveNormalizationSectionBtn');
+    const validation = document.getElementById('sportConfigurationValidation');
+
+    if (currentNormalizationPanels.length === 0) {
+        validation.textContent = 'Please add at least one normalization threshold panel.';
+        return;
+    }
+
+    for (let i = 0; i < currentNormalizationPanels.length; i++) {
+        const p = currentNormalizationPanels[i];
+        if (!p.name || !p.name.trim()) {
+            validation.textContent = `Normalization panel #${i + 1} requires a criteria name.`;
+            return;
+        }
+        if (p.type === 'text') {
+            if (p.value === undefined || p.value === null || String(p.value).trim() === '') {
+                validation.textContent = `Threshold value for "${p.name.trim()}" is required.`;
+                return;
+            }
+        } else {
+            const numVal = Number(p.value);
+            if (p.value === '' || !Number.isFinite(numVal) || !Number.isInteger(numVal) || numVal <= 0) {
+                validation.textContent = `Threshold for "${p.name.trim()}" must be a positive whole integer.`;
+                return;
+            }
+        }
+    }
+
+    validation.textContent = '';
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    }
+
+    try {
+        const payload = buildConfigurationPayload(
+            evaluationEditMode ? currentEvaluationPanels : savedEvaluationPanels,
+            currentNormalizationPanels
+        );
+        await sendSportConfig(sportId, payload);
+
+        savedNormalizationPanels = JSON.parse(JSON.stringify(currentNormalizationPanels));
+        normalizationEditMode = false;
+
+        updateNormalizationHeaderActions();
+        renderNormalizationPanelsUI();
+        validateSportThresholds();
+
+        showModal('Success', 'Normalization thresholds saved successfully.');
+    } catch (error) {
+        validation.textContent = error.message;
+        showModal('Configuration Error', error.message);
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+        }
+    }
 }
 
 async function saveSportConfiguration() {
@@ -3517,77 +4211,84 @@ async function saveSportConfiguration() {
         validation.textContent = 'Team budget must be greater than zero.';
         return;
     }
-    if (!updateTotalWeight()) return;
 
-    const weights = {};
-    const normalization = {};
-    for (const input of document.querySelectorAll('#sportEvaluationWeightFields [data-config-weight]')) {
-        weights[input.dataset.configWeight] = Number(input.value);
+    // Check evaluation panels
+    if (currentEvaluationPanels.length === 0) {
+        validation.textContent = 'Please add at least one evaluation rule panel.';
+        return;
     }
-    for (const input of document.querySelectorAll('#sportNormalizationFields [data-config-threshold]')) {
-        const value = Number(input.value);
-        if (!Number.isFinite(value) || value <= 0 || (input.max && value > Number(input.max))) {
-            validation.textContent = `${input.dataset.configThreshold} must be greater than zero.`;
-            input.focus();
+    for (let i = 0; i < currentEvaluationPanels.length; i++) {
+        const p = currentEvaluationPanels[i];
+        if (!p.label || !p.label.trim()) {
+            validation.textContent = `Evaluation panel #${i + 1} requires a criteria name.`;
             return;
         }
-        normalization[input.dataset.configThreshold] = value;
+        if (p.weight === '' || !Number.isFinite(Number(p.weight)) || Number(p.weight) < 0 || Number(p.weight) > 100) {
+            validation.textContent = `Weight for "${p.label.trim()}" must be between 0 and 100.`;
+            return;
+        }
     }
 
-    let levelScores = {};
-    try { levelScores = JSON.parse(document.getElementById('configLevelScoresHidden').value || '{}'); } catch { levelScores = {}; }
+    const enabled = document.getElementById('configScoringEnabled').checked;
+    const total = currentEvaluationPanels.reduce((sum, p) => sum + (Number(p.weight) || 0), 0);
+    if (enabled && Math.abs(total - 100) > 0.000001) {
+        validation.textContent = 'Enabled weighted scoring requires a total weight of exactly 100%.';
+        return;
+    }
 
-    let auctionRules = {};
-    try { auctionRules = JSON.parse(document.getElementById('configRulesHidden').value || '{}'); } catch { auctionRules = {}; }
-    auctionRules.default_budget = budgetValue;
-    if (!auctionRules.default_timer) auctionRules.default_timer = 20;
+    // Check normalization panels
+    for (let i = 0; i < currentNormalizationPanels.length; i++) {
+        const p = currentNormalizationPanels[i];
+        if (!p.name || !p.name.trim()) {
+            validation.textContent = `Normalization panel #${i + 1} requires a criteria name.`;
+            return;
+        }
+        if (p.type === 'text') {
+            if (p.value === undefined || p.value === null || String(p.value).trim() === '') {
+                validation.textContent = `Threshold value for "${p.name.trim()}" is required.`;
+                return;
+            }
+        } else {
+            const numVal = Number(p.value);
+            if (p.value === '' || !Number.isFinite(numVal) || !Number.isInteger(numVal) || numVal <= 0) {
+                validation.textContent = `Threshold for "${p.name.trim()}" must be a positive whole integer.`;
+                return;
+            }
+        }
+    }
 
-    const evaluationRules = {
-        enabled: document.getElementById('configScoringEnabled').checked,
-        scoring_method: 'weighted',
-        evaluation_weights: weights,
-        normalization_thresholds: normalization
-    };
-    if (Object.keys(levelScores).length) evaluationRules.highest_level_scores = levelScores;
+    if (currentSportCategories.length > 0) {
+        const orderedCats = [...currentSportCategories].sort((a, b) => a.min_score - b.min_score);
+        if (Math.abs(orderedCats[0].min_score) > 0.000001 || Math.abs(orderedCats[orderedCats.length - 1].max_score - 100) > 0.000001) {
+            validation.textContent = `Category ranges must cover the full 0–100 evaluation score (currently ${orderedCats[0].min_score}–${orderedCats[orderedCats.length - 1].max_score}).`;
+            showModal('Configuration Error', `Category ranges must cover the full 0–100 evaluation score. The lowest range must start at 0 and the highest range must end at 100 (current coverage is ${orderedCats[0].min_score} to ${orderedCats[orderedCats.length - 1].max_score}).`);
+            return;
+        }
+        for (let i = 0; i < orderedCats.length - 1; i++) {
+            if (Math.abs(orderedCats[i].max_score - orderedCats[i + 1].min_score) > 0.000001) {
+                validation.textContent = `Gap detected between "${orderedCats[i].name}" (${orderedCats[i].max_score}) and "${orderedCats[i + 1].name}" (${orderedCats[i + 1].min_score}). Ranges must be contiguous.`;
+                showModal('Configuration Error', `Category ranges must be contiguous with no gaps. There is a gap between "${orderedCats[i].name}" (ends at ${orderedCats[i].max_score}) and "${orderedCats[i + 1].name}" (starts at ${orderedCats[i + 1].min_score}).`);
+                return;
+            }
+        }
+    }
 
-    saveButton.disabled = true;
-    saveButton.textContent = 'Saving?';
     validation.textContent = '';
+    saveButton.disabled = true;
+    saveButton.textContent = 'Saving...';
+
     try {
-        const configPayload = {
-            evaluation_rules: evaluationRules,
-            categories_config: currentSportCategories,
-            default_auction_rules: auctionRules
-        };
-        const putConfig = payload => apiFetch(`/api/sports/${sportId}/config`, {
-            method: 'PUT',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        let response = await putConfig(configPayload);
-        let data = await response.json().catch(() => ({}));
-        const errorMessage = data.detail || data.message || data.error || '';
-        if (!response.ok && /Unknown evaluation rule\(s\):.*evaluation_weights.*normalization_thresholds|Unknown evaluation rule\(s\):.*normalization_thresholds.*evaluation_weights/i.test(errorMessage)) {
-            // Older running backend processes only recognize the former field
-            // names. Retry once with their shape; updated backends adapt it to
-            // the canonical split schema before persisting.
-            const legacyRules = {
-                ...evaluationRules,
-                weights: evaluationRules.evaluation_weights,
-                normalization: evaluationRules.normalization_thresholds
-            };
-            delete legacyRules.evaluation_weights;
-            delete legacyRules.normalization_thresholds;
-            response = await putConfig({ ...configPayload, evaluation_rules: legacyRules });
-            data = await response.json().catch(() => ({}));
-        }
-        if (!response.ok || !data.success) {
-            throw new Error(data.detail || data.message || data.error || `Configuration save failed (${response.status})`);
-        }
+        const payload = buildConfigurationPayload(currentEvaluationPanels, currentNormalizationPanels);
+        await sendSportConfig(sportId, payload);
+
+        savedEvaluationPanels = JSON.parse(JSON.stringify(currentEvaluationPanels));
+        savedNormalizationPanels = JSON.parse(JSON.stringify(currentNormalizationPanels));
+        savedScoringEnabled = document.getElementById('configScoringEnabled').checked;
+        evaluationEditMode = false;
+        normalizationEditMode = false;
+
         closeConfigureSportModal();
-        await loadSports();
-        showModal('Success', `${currentSportConfigSchema.name} configuration saved successfully.`);
+        showModal('Success', `${currentSportConfigSchema ? currentSportConfigSchema.name : 'Sport'} configuration saved successfully.`);
     } catch (error) {
         validation.textContent = error.message;
         showModal('Configuration Error', error.message);
@@ -3598,16 +4299,18 @@ async function saveSportConfiguration() {
 }
 
 async function deleteSport(id) {
-    if (!confirm("Are you sure you want to delete this sport?")) return;
+    if (!confirm('Permanently delete this sport, its player skill ratings and profile data, and its event links? Events and player accounts will be kept.')) return;
     try {
         const response = await fetch(`/api/admin/sports/${id}`, { method: 'DELETE' });
-        if (response.ok) {
-            loadSports();
-            alert("Sport deleted successfully.");
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || `Failed to delete sport (${response.status})`);
         }
-    } catch (e) {
-        console.error(e);
-        alert("Failed to delete sport.");
+        await loadSports();
+        alert('Sport deleted permanently.');
+    } catch (error) {
+        console.error('Error deleting sport:', error);
+        showModal('Delete Sport Error', error.message);
     }
 }
 
@@ -3839,11 +4542,11 @@ async function submitCreateSportForm(event) {
         }
         closeCreateSportModal();
         sectionNotice.textContent = data.existing
-            ? 'Existing sport added to the active Tier 1 list and tournament sport list.'
-            : 'Sport added to the Sports section and tournament sport list.';
+            ? 'Existing sport added to the active sports catalog.'
+            : 'Sport added to the Sports section.';
         sectionNotice.style.color = '#22c55e';
         form.reset();
-        await Promise.all([loadSports(), loadTournamentSports()]);
+        await loadSports();
     } catch (error) {
         notice.textContent = error.message;
         notice.style.color = '#ef4444';
@@ -3953,9 +4656,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (typeof loadSports === 'function') {
         loadSports();
     }
-    document.getElementById('createTournamentForm')?.addEventListener('submit', createTournamentFromDashboard);
-    document.getElementById('tournamentSport')?.addEventListener('change', updateTournamentOptions);
-
     // Set up event listeners for tab switching
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function () {
@@ -3966,7 +4666,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             // Hide all sections
             const tabId = this.getAttribute('data-tab');
             const sections = [
-                'dashboardSection', 'sportsSection', 'tournamentsSection', 'teamsSection',
+                'dashboardSection', 'sportsSection', 'teamsSection',
                 'registrationsSection', 'teamOwnerRegistrationsSection',
                 'auctionsSection', 'reportsSection'
             ];
@@ -3991,11 +4691,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                 const el = document.getElementById('sportsSection');
                 if (el) el.style.display = 'block';
                 if (typeof loadSports === 'function') loadSports();
-            } else if (tabId === 'tournaments') {
-                const el = document.getElementById('tournamentsSection');
-                if (el) el.style.display = 'block';
-                loadTournamentSports();
-                loadTournaments();
             } else if (tabId === 'teams') {
                 const el = document.getElementById('teamsSection');
                 if (el) el.style.display = 'block';

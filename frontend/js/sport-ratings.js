@@ -1,5 +1,21 @@
+/**
+ * Dynamic Sport Ratings & Normalization Thresholds for Player Registration
+ * 
+ * Fetches the authoritative sport configuration and Normalization Thresholds
+ * for the event and renders the required criteria inputs at the end of the
+ * registration form with their configured maximum expected values (100/100 score target).
+ */
 
-// Load sports for the selected event and create rating inputs
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 async function loadSportRatingsForEvent(eventId) {
     const container = document.getElementById('sportRatingsContainer');
     const inputsContainer = document.getElementById('sportRatingsInputs');
@@ -9,194 +25,216 @@ async function loadSportRatingsForEvent(eventId) {
         return;
     }
 
+    // Reset container and show loading state
+    inputsContainer.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 1.5rem; color: #94a3b8;">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem;">Loading sport requirements and normalization thresholds...</p>
+        </div>
+    `;
+    container.style.display = 'block';
+
     try {
-        console.log(`Fetching sports for event ${eventId}`);
+        console.log(`Fetching registration configuration for event ${eventId}`);
+        const response = await fetch(`/api/events/${eventId}/registration-config`);
 
-        // Fetch sports for this event
-        const response = await fetch(`/api/events/${eventId}/sports`);
-        if (!response.ok) {
-            console.error('Failed to fetch sports for event');
-            container.style.display = 'none';
-            return;
-        }
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Registration config fetched:', data);
 
-        const sports = await response.json();
-        console.log('Sports fetched:', sports);
-
-        if (sports.length === 0) {
-            console.log('No sports found for this event');
-            container.style.display = 'none';
-            return;
-        }
-
-        // Clear previous inputs
-        inputsContainer.innerHTML = '';
-
-        // Create rating input for each sport
-        for (const sport of sports) {
-            const isCricket = sport.name.toLowerCase() === 'cricket';
-
-            if (!isCricket) {
-                const ratingDiv = document.createElement('div');
-                ratingDiv.className = 'form-group';
-                ratingDiv.style.marginBottom = '1rem';
-
-                ratingDiv.innerHTML = `
-                    <label for="sport_${sport.sport_id}" style="color: #e2e8f0; margin-bottom: 0.5rem; display: block;">
-                        ${sport.name} *
-                    </label>
-                    <input 
-                        type="number" 
-                        id="sport_${sport.sport_id}" 
-                        name="sport_${sport.sport_id}"
-                        data-sport-id="${sport.sport_id}"
-                        data-sport-name="${sport.name}"
-                        class="form-input sport-rating-input" 
-                        min="0" 
-                        max="10" 
-                        step="1"
-                        required
-                        placeholder="Rate 0-10"
-                        style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0;"
-                    />
-                    <small style="color: #94a3b8; font-size: 0.85rem;">0 = No experience, 10 = Expert</small>
-                `;
-
-                inputsContainer.appendChild(ratingDiv);
-            }
-            
-            // --- CRICKET SPORT MASTER INTEGRATION ---
-            if (isCricket) {
-                // Add a header for Cricket
-                const headerDiv = document.createElement('div');
-                headerDiv.style.marginTop = '1rem';
-                headerDiv.style.marginBottom = '1rem';
-                headerDiv.style.borderBottom = '1px solid #334155';
-                headerDiv.style.paddingBottom = '0.5rem';
-                headerDiv.innerHTML = `<h5 style="color: #38bdf8; margin: 0; font-size: 1.05rem;"><i class="fas fa-cricket-bat-ball"></i> Cricket Information</h5>`;
-                inputsContainer.appendChild(headerDiv);
-
-                try {
-                    const masterRes = await fetch(`/api/sports/${sport.sport_id}`);
-                    if (masterRes.ok) {
-                        const masterData = await masterRes.json();
-                        if (masterData.success && masterData.sport) {
-                            
-                            // 1. Render Role Dropdown
-                            if (masterData.sport.roles_config && masterData.sport.roles_config.length > 0) {
-                                const roleDiv = document.createElement('div');
-                                roleDiv.className = 'form-group';
-                                roleDiv.style.marginBottom = '1rem';
-                                
-                                let selectHtml = `<select id="profile_${sport.name}_role" data-sport="${sport.name}" data-attr="role" class="form-input sport-profile-input" required style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0;">`;
-                                selectHtml += `<option value="">Select Primary Role</option>`;
-                                masterData.sport.roles_config.forEach(role => {
-                                    selectHtml += `<option value="${role}">${role}</option>`;
-                                });
-                                selectHtml += `</select>`;
-                                
-                                roleDiv.innerHTML = `
-                                    <label for="profile_${sport.name}_role" style="color: #e2e8f0; margin-bottom: 0.5rem; display: block;">
-                                        Playing Role *
-                                    </label>
-                                    ${selectHtml}
-                                `;
-                                inputsContainer.appendChild(roleDiv);
-                            }
-
-                            // 2. Render Attributes Schema (Batting Style, Bowling Style)
-                            if (masterData.sport.attributes_schema) {
-                                const schema = masterData.sport.attributes_schema;
-                                for (const [attrName, options] of Object.entries(schema)) {
-                                    const attrDiv = document.createElement('div');
-                                    attrDiv.className = 'form-group';
-                                    attrDiv.style.marginBottom = '1rem';
-                                    
-                                    const niceName = attrName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                                    
-                                    let selectHtml = `<select id="profile_${sport.name}_${attrName}" data-sport="${sport.name}" data-attr="${attrName}" class="form-input sport-profile-input" required style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0;">`;
-                                    selectHtml += `<option value="">Select ${niceName}</option>`;
-                                    options.forEach(opt => {
-                                        selectHtml += `<option value="${opt}">${opt}</option>`;
-                                    });
-                                    selectHtml += `</select>`;
-                                    
-                                    attrDiv.innerHTML = `
-                                        <label for="profile_${sport.name}_${attrName}" style="color: #e2e8f0; margin-bottom: 0.5rem; display: block;">
-                                            ${niceName} *
-                                        </label>
-                                        ${selectHtml}
-                                    `;
-                                    inputsContainer.appendChild(attrDiv);
-                                }
-                            }
-                        }
-                    }
-                } catch(e) {
-                    console.error("Failed to load sport master attributes schema", e);
-                }
-
-                // 3. Add Factual Information Fields
-                const isBadminton = sport.name.toLowerCase() === 'badminton';
-                const factualFields = isBadminton 
-                    ? [
-                        { id: 'matches_played', label: 'Matches Played', type: 'number', min: '0' },
-                        { id: 'win_rate', label: 'Win Rate (%)', type: 'number', min: '0' },
-                        { id: 'tournaments_won', label: 'Tournaments Won', type: 'number', min: '0' },
-                        { id: 'years_experience', label: 'Years of Experience', type: 'number', min: '0' }
-                    ]
-                    : [
-                        { id: 'matches_played', label: 'Matches Played', type: 'number', min: '0' },
-                        { id: 'runs', label: 'Runs', type: 'number', min: '0' },
-                        { id: 'wickets', label: 'Wickets', type: 'number', min: '0' },
-                        { id: 'years_experience', label: 'Years of Experience', type: 'number', min: '0' }
-                    ];
-                
-                factualFields.forEach(field => {
-                    const fieldDiv = document.createElement('div');
-                    fieldDiv.className = 'form-group';
-                    fieldDiv.style.marginBottom = '1rem';
-                    fieldDiv.innerHTML = `
-                        <label for="profile_${sport.name}_${field.id}" style="color: #e2e8f0; margin-bottom: 0.5rem; display: block;">
-                            ${field.label} *
-                        </label>
-                        <input type="${field.type}" id="profile_${sport.name}_${field.id}" 
-                               data-sport="${sport.name}" data-attr="${field.id}" 
-                               class="form-input sport-profile-input" min="${field.min}" required 
-                               placeholder="Enter ${field.label.toLowerCase()}"
-                               style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0;">
-                    `;
-                    inputsContainer.appendChild(fieldDiv);
-                });
-                
-                // 4. Add Highest Level Played Dropdown
-                const levelDiv = document.createElement('div');
-                levelDiv.className = 'form-group';
-                levelDiv.style.marginBottom = '1rem';
-                levelDiv.innerHTML = `
-                    <label for="profile_${sport.name}_highest_level" style="color: #e2e8f0; margin-bottom: 0.5rem; display: block;">
-                        Highest Level Played *
-                    </label>
-                    <select id="profile_${sport.name}_highest_level" data-sport="${sport.name}" data-attr="highest_level" class="form-input sport-profile-input" required style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0;">
-                        <option value="">Select Level</option>
-                        <option value="Local">Local / Club</option>
-                        <option value="District">District</option>
-                        <option value="State">State</option>
-                        <option value="National">National</option>
-                        <option value="Professional">Professional</option>
-                        <option value="International">International</option>
-                    </select>
-                `;
-                inputsContainer.appendChild(levelDiv);
+            if (data && Array.isArray(data.fields) && data.fields.length > 0) {
+                renderDynamicSportInputs(data, inputsContainer);
+                return;
             }
         }
 
-        // Show the container
-        container.style.display = 'block';
-        console.log(`Added ${sports.length} sport rating inputs`);
+        // Fallback: If registration-config returns no fields or is unavailable, check /api/events/${eventId}/sports
+        console.warn(`Falling back to legacy sports check for event ${eventId}`);
+        const fallbackRes = await fetch(`/api/events/${eventId}/sports`);
+        if (fallbackRes.ok) {
+            const sports = await fallbackRes.json();
+            if (Array.isArray(sports) && sports.length > 0) {
+                renderLegacyFallbackInputs(sports, inputsContainer);
+                return;
+            }
+        }
 
-    } catch (error) {
-        console.error('Error loading sport ratings:', error);
+        // If no sport information at all
         container.style.display = 'none';
+        inputsContainer.innerHTML = '';
+    } catch (error) {
+        console.error('Error loading sport ratings and normalization thresholds:', error);
+        container.style.display = 'none';
+        inputsContainer.innerHTML = '';
     }
 }
+
+function renderDynamicSportInputs(data, inputsContainer) {
+    inputsContainer.innerHTML = '';
+
+    const sportName = data.sport_name || 'Sport';
+    const cleanSport = sportName.toLowerCase();
+
+    // 1. Sport Header with Normalization Notice
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'sport-config-header';
+    headerDiv.style.gridColumn = '1 / -1';
+    headerDiv.style.marginBottom = '1rem';
+    headerDiv.style.paddingBottom = '0.75rem';
+    headerDiv.style.borderBottom = '1px solid #334155';
+
+    headerDiv.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <h5 style="color: #38bdf8; margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-trophy"></i>
+                <span>${escapeHtml(sportName)} Information</span>
+            </h5>
+            <span style="font-size: 0.75rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 0.25rem 0.65rem; border-radius: 9999px; font-weight: 500;">
+                <i class="fas fa-bullseye"></i> Normalization Thresholds
+            </span>
+        </div>
+        <p style="color: #94a3b8; font-size: 0.825rem; margin: 0.4rem 0 0 0;">
+            Please enter your player statistics and profile details for <strong>${escapeHtml(sportName)}</strong>. Scoring is calculated against the sport's normalization thresholds (maximum expected values for 100/100 score).
+        </p>
+    `;
+    inputsContainer.appendChild(headerDiv);
+
+    // 2. Hidden sport rating input for backward compatibility
+    if (data.sport_id) {
+        const hiddenRating = document.createElement('input');
+        hiddenRating.type = 'hidden';
+        hiddenRating.className = 'sport-rating-input';
+        hiddenRating.dataset.sportId = String(data.sport_id);
+        hiddenRating.dataset.sportName = sportName;
+        hiddenRating.value = '5';
+        inputsContainer.appendChild(hiddenRating);
+    }
+
+    // 3. Render Fields (Normalization Thresholds, Roles, Attributes)
+    data.fields.forEach(field => {
+        const fieldDiv = document.createElement('div');
+        fieldDiv.className = 'form-group';
+        fieldDiv.style.marginBottom = '1rem';
+
+        const type = String(field.type || 'integer').toLowerCase();
+        const hasThreshold = field.maximum !== null && field.maximum !== undefined;
+        const unitSuffix = field.unit ? ` (${escapeHtml(field.unit)})` : '';
+        const requiredMark = field.required ? ' <span style="color: #ef4444;">*</span>' : '';
+
+        if (type === 'select') {
+            // Dropdown for Roles, Attributes, or Categorical Competition Levels
+            const options = Array.isArray(field.options) ? field.options : [];
+            let optionsHtml = `<option value="">Select ${escapeHtml(field.label)}</option>`;
+            options.forEach(opt => {
+                const optVal = typeof opt === 'object' && opt !== null ? (opt.value ?? opt.label) : opt;
+                const optLabel = typeof opt === 'object' && opt !== null ? (opt.label ?? opt.value) : opt;
+                optionsHtml += `<option value="${escapeHtml(String(optVal))}">${escapeHtml(String(optLabel))}</option>`;
+            });
+
+            fieldDiv.innerHTML = `
+                <label for="profile_${cleanSport}_${escapeHtml(field.key)}" style="color: #e2e8f0; margin-bottom: 0.45rem; display: block; font-weight: 500; font-size: 0.9rem;">
+                    ${escapeHtml(field.label)}${requiredMark}
+                </label>
+                <select id="profile_${cleanSport}_${escapeHtml(field.key)}" 
+                        name="profile_${cleanSport}_${escapeHtml(field.key)}" 
+                        data-sport="${cleanSport}" 
+                        data-attr="${escapeHtml(field.key)}" 
+                        data-type="select" 
+                        class="form-input sport-profile-input" 
+                        ${field.required ? 'required' : ''} 
+                        style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0; font-size: 0.95rem;">
+                    ${optionsHtml}
+                </select>
+            `;
+        } else if (type === 'text') {
+            // Text Field
+            fieldDiv.innerHTML = `
+                <label for="profile_${cleanSport}_${escapeHtml(field.key)}" style="color: #e2e8f0; margin-bottom: 0.45rem; display: block; font-weight: 500; font-size: 0.9rem;">
+                    ${escapeHtml(field.label)}${requiredMark}
+                </label>
+                <input type="text" 
+                       id="profile_${cleanSport}_${escapeHtml(field.key)}" 
+                       name="profile_${cleanSport}_${escapeHtml(field.key)}" 
+                       data-sport="${cleanSport}" 
+                       data-attr="${escapeHtml(field.key)}" 
+                       data-type="text" 
+                       class="form-input sport-profile-input" 
+                       ${field.required ? 'required' : ''} 
+                       placeholder="Enter ${escapeHtml(field.label.toLowerCase())}" 
+                       style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0; font-size: 0.95rem;">
+                ${hasThreshold ? `
+                    <small style="color: #94a3b8; font-size: 0.8rem; display: flex; align-items: center; gap: 0.35rem; margin-top: 0.35rem;">
+                        <i class="fas fa-bullseye" style="color: #38bdf8;"></i>
+                        <span>Normalization threshold: <strong style="color: #38bdf8;">${escapeHtml(String(field.maximum))}</strong></span>
+                    </small>
+                ` : ''}
+            `;
+        } else {
+            // Numeric Input (Integer or Decimal)
+            const isDecimal = type === 'decimal';
+            const stepVal = isDecimal ? 'any' : '1';
+            const minVal = field.minimum !== null && field.minimum !== undefined ? field.minimum : 0;
+            const placeholderText = hasThreshold
+                ? `Enter ${field.label.toLowerCase()} (Target for 100/100: ${field.maximum}${field.unit ? ' ' + field.unit : ''})`
+                : `Enter ${field.label.toLowerCase()}`;
+
+            fieldDiv.innerHTML = `
+                <label for="profile_${cleanSport}_${escapeHtml(field.key)}" style="color: #e2e8f0; margin-bottom: 0.45rem; display: block; font-weight: 500; font-size: 0.9rem;">
+                    ${escapeHtml(field.label)}${unitSuffix}${requiredMark}
+                </label>
+                <input type="number" 
+                       id="profile_${cleanSport}_${escapeHtml(field.key)}" 
+                       name="profile_${cleanSport}_${escapeHtml(field.key)}" 
+                       data-sport="${cleanSport}" 
+                       data-attr="${escapeHtml(field.key)}" 
+                       data-type="${isDecimal ? 'decimal' : 'integer'}" 
+                       class="form-input sport-profile-input" 
+                       min="${minVal}" 
+                       step="${stepVal}" 
+                       ${field.required ? 'required' : ''} 
+                       placeholder="${escapeHtml(placeholderText)}" 
+                       style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0; font-size: 0.95rem;">
+                ${hasThreshold ? `
+                    <small style="color: #94a3b8; font-size: 0.8rem; display: flex; align-items: center; gap: 0.35rem; margin-top: 0.35rem;">
+                        <i class="fas fa-bullseye" style="color: #38bdf8;"></i>
+                        <span>Normalization threshold: <strong style="color: #38bdf8;">${escapeHtml(String(field.maximum))}${field.unit ? ' ' + escapeHtml(field.unit) : ''}</strong> (Max expected value for 100/100 score)</span>
+                    </small>
+                ` : ''}
+            `;
+        }
+
+        inputsContainer.appendChild(fieldDiv);
+    });
+}
+
+function renderLegacyFallbackInputs(sports, inputsContainer) {
+    inputsContainer.innerHTML = '';
+    sports.forEach(sport => {
+        const ratingDiv = document.createElement('div');
+        ratingDiv.className = 'form-group';
+        ratingDiv.style.marginBottom = '1rem';
+        ratingDiv.innerHTML = `
+            <label for="sport_${sport.sport_id}" style="color: #e2e8f0; margin-bottom: 0.5rem; display: block;">
+                ${escapeHtml(sport.name)} Rating (0-10) *
+            </label>
+            <input 
+                type="number" 
+                id="sport_${sport.sport_id}" 
+                name="sport_${sport.sport_id}"
+                data-sport-id="${sport.sport_id}"
+                data-sport-name="${escapeHtml(sport.name)}"
+                class="form-input sport-rating-input" 
+                min="0" 
+                max="10" 
+                step="1"
+                required
+                placeholder="Rate 0-10"
+                style="width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.375rem; background-color: #1e293b; color: #e2e8f0;"
+            />
+            <small style="color: #94a3b8; font-size: 0.85rem;">0 = No experience, 10 = Expert</small>
+        `;
+        inputsContainer.appendChild(ratingDiv);
+    });
+}
+
+window.loadSportRatingsForEvent = loadSportRatingsForEvent;
